@@ -1,0 +1,385 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Authentication Models
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String?   @unique
+  password      String
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Master Data Models
+model KategoriBarang {
+  id          Int      @id @default(autoincrement())
+  nama        String   @unique
+  deskripsi   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  barang      Barang[]
+  hargaBarang HargaBarang[]
+}
+
+model SatuanBarang {
+  id        String   @id @default(cuid())
+  nama      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  barang    Barang[]
+}
+
+model MerekKendaraan {
+  id              String              @id @default(cuid())
+  nama            String              @unique
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  tipeKendaraan   TipeKendaraan[]
+  kendaraan       Kendaraan[]
+}
+
+model TipeKendaraan {
+  id                String              @id @default(cuid())
+  nama              String
+  merekId           String
+  merekKendaraan    MerekKendaraan      @relation(fields: [merekId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  kendaraan         Kendaraan[]
+}
+
+// Item Management Models
+model Barang {
+  id              String              @id @default(cuid())
+  kode            String              @unique
+  nama            String
+  kategoriId      Int
+  kategoriBarang  KategoriBarang      @relation(fields: [kategoriId], references: [id])
+  satuanId        String
+  satuanBarang    SatuanBarang        @relation(fields: [satuanId], references: [id])
+  stok            Int                 @default(0)
+  stokMinimum     Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  hargaBarang     HargaBarang[]
+  barangMasuk     BarangMasuk[]
+  barangKeluar    BarangKeluar[]
+  purchaseOrder   PurchaseOrderItem[]
+}
+
+model HargaBarang {
+  id              String              @id @default(cuid())
+  barangId        String
+  barang          Barang              @relation(fields: [barangId], references: [id])
+  supplierId      String
+  supplier        Supplier            @relation(fields: [supplierId], references: [id])
+  kategoriId      Int
+  kategoriBarang  KategoriBarang      @relation(fields: [kategoriId], references: [id])
+  harga           Float
+  adalahHargaTerbaik Boolean          @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  @@unique([barangId, supplierId])
+}
+
+model Supplier {
+  id              String              @id @default(cuid())
+  kode            String              @unique
+  nama            String
+  alamat          String?
+  telepon         String?
+  email           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  hargaBarang     HargaBarang[]
+  purchaseOrder   PurchaseOrder[]
+  tagihanSupplier TagihanSupplier[]
+  barangMasuk     BarangMasuk[]
+}
+
+model PurchaseOrder {
+  id              String              @id @default(cuid())
+  nomor           String              @unique
+  tanggal         DateTime
+  supplierId      String
+  supplier        Supplier            @relation(fields: [supplierId], references: [id])
+  status          POStatus            @default(DRAFT)
+  total           Float
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  items           PurchaseOrderItem[]
+  tagihanSupplier TagihanSupplier[]
+  barangMasuk     BarangMasuk[]
+}
+
+model PurchaseOrderItem {
+  id              String              @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder        @relation(fields: [purchaseOrderId], references: [id])
+  barangId        String
+  barang          Barang              @relation(fields: [barangId], references: [id])
+  jumlah          Int
+  harga           Float
+  subtotal        Float
+}
+
+model BarangMasuk {
+  id              String              @id @default(cuid())
+  nomor           String              @unique
+  tanggal         DateTime
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
+  supplierId      String
+  supplier        Supplier            @relation(fields: [supplierId], references: [id])
+  barangId        String
+  barang          Barang              @relation(fields: [barangId], references: [id])
+  jumlah          Int
+  kondisi         String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model BarangKeluar {
+  id              String              @id @default(cuid())
+  nomor           String              @unique
+  tanggal         DateTime
+  barangId        String
+  barang          Barang              @relation(fields: [barangId], references: [id])
+  jumlah          Int
+  karyawanId      String
+  karyawan        Karyawan            @relation(fields: [karyawanId], references: [id])
+  kendaraanId     String
+  kendaraan       Kendaraan           @relation(fields: [kendaraanId], references: [id])
+  deskripsi       String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model TagihanSupplier {
+  id              String              @id @default(cuid())
+  nomor           String              @unique
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder        @relation(fields: [purchaseOrderId], references: [id])
+  supplierId      String
+  supplier        Supplier            @relation(fields: [supplierId], references: [id])
+  jumlah          Float
+  tempo           DateTime
+  status          TagihanStatus       @default(BELUM_DIBAYAR)
+  metodePembayaran PembayaranMethod?
+  buktiPembayaran String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+// Employee Management
+model Karyawan {
+  id              String              @id @default(cuid())
+  nik             String              @unique
+  nama            String
+  jabatan         String
+  telepon         String?
+  alamat          String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  barangKeluar    BarangKeluar[]
+  spekOrder       SpekOrder[]
+}
+
+// Vehicle Management
+model Customer {
+  id              String              @id @default(cuid())
+  kode            String              @unique
+  nama            String
+  alamat          String?
+  telepon         String?
+  email           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  kendaraan       Kendaraan[]
+  kendaraanMasuk  KendaraanMasuk[]
+}
+
+model Kendaraan {
+  id              String              @id @default(cuid())
+  nomorPolisi     String              @unique
+  nomorChasis     String
+  nomorMesin      String
+  merekId         String
+  merekKendaraan  MerekKendaraan      @relation(fields: [merekId], references: [id])
+  tipeId          String
+  tipeKendaraan   TipeKendaraan       @relation(fields: [tipeId], references: [id])
+  customerId      String
+  customer        Customer            @relation(fields: [customerId], references: [id])
+  status          KendaraanStatus     @default(MASUK)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  kendaraanMasuk  KendaraanMasuk[]
+  kendaraanKeluar KendaraanKeluar[]
+  barangKeluar    BarangKeluar[]
+  spekOrder       SpekOrder[]
+}
+
+model KendaraanMasuk {
+  id              String              @id @default(cuid())
+  nomor           String              @unique
+  tanggalMasuk    DateTime
+  showroom        String
+  customerId      String
+  customer        Customer            @relation(fields: [customerId], references: [id])
+  kendaraanId     String
+  kendaraan       Kendaraan           @relation(fields: [kendaraanId], references: [id])
+  pengerjaan      Pengerjaan[]
+  kelengkapan     KelengkapanAlat[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model KendaraanKeluar {
+  id              String              @id @default(cuid())
+  nomor           String              @unique
+  tanggalKeluar   DateTime
+  kendaraanId     String
+  kendaraan       Kendaraan           @relation(fields: [kendaraanId], references: [id])
+  qcResult        String
+  layakKeluar     Boolean
+  suratJalan     String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model Pengerjaan {
+  id              String              @id @default(cuid())
+  kendaraanMasukId String
+  kendaraanMasuk  KendaraanMasuk      @relation(fields: [kendaraanMasukId], references: [id])
+  jenis           String
+  deskripsi       String?
+}
+
+model KelengkapanAlat {
+  id              String              @id @default(cuid())
+  kendaraanMasukId String
+  kendaraanMasuk  KendaraanMasuk      @relation(fields: [kendaraanMasukId], references: [id])
+  area            String
+  nama            String
+  jumlah          Int?
+  kondisi         String
+  deskripsi       String?
+}
+
+model SpekOrder {
+  id              String              @id @default(cuid())
+  nomor           String              @unique
+  kendaraanId     String
+  kendaraan       Kendaraan           @relation(fields: [kendaraanId], references: [id])
+  karyawanId      String
+  karyawan        Karyawan            @relation(fields: [karyawanId], references: [id])
+  jenis           JenisSpek
+  deskripsi       String
+  upah            Float
+  status          SpekStatus          @default(BELUM_DIBAYAR)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  pembayaran      PembayaranSpek[]
+}
+
+model PembayaranSpek {
+  id              String              @id @default(cuid())
+  spekOrderId     String
+  spekOrder       SpekOrder           @relation(fields: [spekOrderId], references: [id])
+  jumlah          Float
+  metode          PembayaranMethod
+  bukti           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+// Enums
+enum POStatus {
+  DRAFT
+  DIAJUKAN
+  DISETUJUI
+  DITOLAK
+  SELESAI
+}
+
+enum TagihanStatus {
+  BELUM_DIBAYAR
+  SUDAH_DIBAYAR
+}
+
+enum PembayaranMethod {
+  TRANSFER
+  CASH
+  GIRO
+}
+
+enum KendaraanStatus {
+  MASUK
+  TAHAP_PERAKITAN
+  PROSES_PENGCATAN
+  PROSES_PEMBUATAN_LOGO
+  SELESAI
+  KELUAR
+}
+
+enum JenisSpek {
+  TUKANG_RAKIT
+  TUKANG_CAT
+  TUKANG_AKSESORIS
+}
+
+enum SpekStatus {
+  BELUM_DIBAYAR
+  SUDAH_DIBAYAR
+}
