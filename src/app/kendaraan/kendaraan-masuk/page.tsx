@@ -43,7 +43,7 @@ import {
   XCircle,
   AlertTriangle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface Customer {
@@ -279,7 +279,11 @@ export default function KendaraanMasukPage() {
         },
         { id: "2", jenis: "Logo", deskripsi: "Logo perusahaan di samping" },
       ],
-      kelengkapan: kelengkapanTemplate.slice(0, 10),
+      kelengkapan: kelengkapanTemplate.slice(0, 10).map((item, index) => ({
+        ...item,
+        id: `k1-${index}`,
+        deskripsi: "",
+      })),
       createdAt: "2024-01-15",
     },
     {
@@ -308,7 +312,11 @@ export default function KendaraanMasukPage() {
           deskripsi: "Cat ulang kabin warna biru",
         },
       ],
-      kelengkapan: kelengkapanTemplate.slice(0, 15),
+      kelengkapan: kelengkapanTemplate.slice(0, 15).map((item, index) => ({
+        ...item,
+        id: `k2-${index}`,
+        deskripsi: "",
+      })),
       createdAt: "2024-01-16",
     },
   ]);
@@ -321,18 +329,31 @@ export default function KendaraanMasukPage() {
   const [viewingKendaraanMasuk, setViewingKendaraanMasuk] =
     useState<KendaraanMasuk | null>(null);
   const [formData, setFormData] = useState({
-    tanggalMasuk: new Date().toISOString().split("T")[0],
+    tanggalMasuk: "",
     showroom: "",
     customerId: "",
     nomorPolisi: "",
     merek: "",
     tipe: "",
     selectedPengerjaan: [] as string[],
-    kelengkapan: kelengkapanTemplate.map((item) => ({
+    kelengkapan: kelengkapanTemplate.map((item, index) => ({
       ...item,
-      id: Math.random().toString(),
+      id: `temp-${index}`,
+      deskripsi: "",
     })),
   });
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      tanggalMasuk: new Date().toISOString().split("T")[0],
+      kelengkapan: kelengkapanTemplate.map((item) => ({
+        ...item,
+        id: Math.random().toString(),
+        deskripsi: "",
+      })),
+    }));
+  }, []);
 
   const filteredKendaraanMasuk = kendaraanMasukList.filter(
     (km) =>
@@ -395,6 +416,7 @@ export default function KendaraanMasukPage() {
       kelengkapan: kelengkapanTemplate.map((item) => ({
         ...item,
         id: Math.random().toString(),
+        deskripsi: "",
       })),
     });
   };

@@ -139,7 +139,7 @@ export function Sidebar() {
                 >
                   <Icon
                     className={cn(
-                      "mr-3 h-5 w-5 transition-colors",
+                      "mr-3 h-5 w-5 transition-colors shrink-0",
                       active
                         ? "text-white"
                         : "text-slate-400 group-hover:text-blue-600"
