@@ -186,7 +186,7 @@ export default function LoginPage() {
           priority
           sizes="50vw"
         />
-        <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/40 to-black/20" />
+        <div className="absolute inset-0 bg-linear-to-tr from-blue-900/40 to-black/20" />
 
         {/* Quote / Overlay Text */}
         <div className="absolute bottom-20 left-12 right-12 z-20 text-white">

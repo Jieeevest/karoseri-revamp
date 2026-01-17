@@ -1,164 +1,233 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import { 
-  Settings, 
-  Package, 
-  Users, 
-  Car, 
-  FileText, 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import {
+  Settings,
+  Package,
+  Users,
+  Car,
+  FileText,
   ChevronDown,
   ChevronRight,
-  Building2,
-  ShoppingCart,
-  Truck,
-  Wrench,
-  Receipt,
-  ClipboardList
-} from 'lucide-react'
-import { useState } from 'react'
+  LayoutDashboard,
+} from "lucide-react";
+import { useState, useEffect } from "react";
 
 const menuItems = [
   {
-    title: 'Menu Master',
+    title: "Dashboard",
+    icon: LayoutDashboard,
+    href: "/",
+  },
+  {
+    title: "Menu Master",
     icon: Settings,
     submenus: [
-      { title: 'Kategori Barang', href: '/master/kategori-barang' },
-      { title: 'Satuan Barang', href: '/master/satuan-barang' },
-      { title: 'Merek Kendaraan', href: '/master/merek-kendaraan' },
-      { title: 'Tipe Kendaraan', href: '/master/tipe-kendaraan' },
-    ]
+      { title: "Kategori Barang", href: "/master/kategori-barang" },
+      { title: "Satuan Barang", href: "/master/satuan-barang" },
+      { title: "Merek Kendaraan", href: "/master/merek-kendaraan" },
+      { title: "Tipe Kendaraan", href: "/master/tipe-kendaraan" },
+    ],
   },
   {
-    title: 'Manajemen Barang',
+    title: "Manajemen Barang",
     icon: Package,
     submenus: [
-      { title: 'Data Barang', href: '/barang/data-barang' },
-      { title: 'Harga Barang', href: '/barang/harga-barang' },
-      { title: 'Data Supplier', href: '/barang/supplier' },
-      { title: 'Purchase Order', href: '/barang/purchase-order' },
-      { title: 'Konfirmasi PO', href: '/barang/konfirmasi-po' },
-      { title: 'Barang Masuk', href: '/barang/barang-masuk' },
-      { title: 'Barang Keluar', href: '/barang/barang-keluar' },
-      { title: 'Tagihan Supplier', href: '/barang/tagihan-supplier' },
-    ]
+      { title: "Data Barang", href: "/barang/data-barang" },
+      { title: "Harga Barang", href: "/barang/harga-barang" },
+      { title: "Data Supplier", href: "/barang/supplier" },
+      { title: "Purchase Order", href: "/barang/purchase-order" },
+      { title: "Konfirmasi PO", href: "/barang/konfirmasi-po" },
+      { title: "Barang Masuk", href: "/barang/barang-masuk" },
+      { title: "Barang Keluar", href: "/barang/barang-keluar" },
+      { title: "Tagihan Supplier", href: "/barang/tagihan-supplier" },
+    ],
   },
   {
-    title: 'Manajemen Karyawan',
+    title: "Manajemen Karyawan",
     icon: Users,
-    href: '/karyawan'
+    href: "/karyawan",
   },
   {
-    title: 'Manajemen Kendaraan',
+    title: "Manajemen Kendaraan",
     icon: Car,
     submenus: [
-      { title: 'Data Kendaraan', href: '/kendaraan/data-kendaraan' },
-      { title: 'Data Customer', href: '/kendaraan/customer' },
-      { title: 'Form Kendaraan Masuk', href: '/kendaraan/kendaraan-masuk' },
-      { title: 'Form Kendaraan Keluar', href: '/kendaraan/kendaraan-keluar' },
-      { title: 'Data Spek Order', href: '/kendaraan/spek-order' },
-    ]
+      { title: "Data Kendaraan", href: "/kendaraan/data-kendaraan" },
+      { title: "Data Customer", href: "/kendaraan/customer" },
+      { title: "Form Kendaraan Masuk", href: "/kendaraan/kendaraan-masuk" },
+      { title: "Form Kendaraan Keluar", href: "/kendaraan/kendaraan-keluar" },
+      { title: "Data Spek Order", href: "/kendaraan/spek-order" },
+    ],
   },
   {
-    title: 'Laporan',
+    title: "Laporan",
     icon: FileText,
-    href: '/laporan'
-  }
-]
+    href: "/laporan",
+  },
+];
 
 export function Sidebar() {
-  const pathname = usePathname()
-  const [expandedMenus, setExpandedMenus] = useState<string[]>([])
+  const pathname = usePathname();
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+
+  // Auto-expand menu based on active route
+  useEffect(() => {
+    menuItems.forEach((item) => {
+      if (item.submenus) {
+        const hasActiveChild = item.submenus.some(
+          (sub) => pathname === sub.href
+        );
+        if (hasActiveChild && !expandedMenus.includes(item.title)) {
+          setExpandedMenus((prev) => [...prev, item.title]);
+        }
+      }
+    });
+  }, [pathname]);
 
   const toggleMenu = (title: string) => {
-    setExpandedMenus(prev => 
-      prev.includes(title) 
-        ? prev.filter(item => item !== title)
+    setExpandedMenus((prev) =>
+      prev.includes(title)
+        ? prev.filter((item) => item !== title)
         : [...prev, title]
-    )
-  }
+    );
+  };
 
-  const isActive = (href: string) => {
-    return pathname === href
-  }
+  const isActive = (href: string) => pathname === href;
+  const isChildActive = (item: any) =>
+    item.submenus?.some((sub: any) => pathname === sub.href);
 
   return (
-    <div className="flex h-full w-64 flex-col bg-gray-50 border-r">
-      <div className="flex h-16 items-center px-6 border-b">
-        <div className="flex items-center space-x-2">
-          <Building2 className="h-8 w-8 text-blue-600" />
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Karoseri</h1>
-            <p className="text-xs text-gray-500">Management System</p>
+    <div className="flex h-full w-72 flex-col bg-white text-slate-900 shadow-xl relative overflow-hidden font-sans border-r border-slate-200">
+      {/* Header */}
+      <div className="flex items-center px-6 h-20 border-b border-slate-100 relative z-10 shrink-0">
+        <div className="flex items-center space-x-3.5">
+          <div className="flex items-center justify-center w-10 h-10 bg-linear-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg shadow-blue-500/20 ring-2 ring-blue-50">
+            <Car className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-none">
+              Karoseri<span className="text-blue-600">Sys</span>
+            </h1>
+            <p className="text-[10px] font-medium text-slate-500 mt-1 uppercase tracking-wider">
+              Enterprise Solution
+            </p>
           </div>
         </div>
       </div>
-      
-      <nav className="flex-1 space-y-1 px-3 py-4">
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
         {menuItems.map((item) => {
-          const Icon = item.icon
-          const isExpanded = expandedMenus.includes(item.title)
-          const hasSubmenu = item.submenus && item.submenus.length > 0
-          
+          const Icon = item.icon;
+          const isExpanded = expandedMenus.includes(item.title);
+          const hasSubmenu = item.submenus && item.submenus.length > 0;
+          const active = item.href ? isActive(item.href) : isChildActive(item);
+
           return (
-            <div key={item.title}>
+            <div key={item.title} className="mb-1">
               {item.href ? (
                 <Link
                   href={item.href}
                   className={cn(
-                    'flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                    isActive(item.href)
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    "cursor-pointer group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ease-in-out relative overflow-hidden",
+                    active
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                   )}
                 >
-                  <Icon className="mr-3 h-4 w-4" />
-                  {item.title}
+                  <Icon
+                    className={cn(
+                      "mr-3 h-5 w-5 transition-colors",
+                      active
+                        ? "text-white"
+                        : "text-slate-400 group-hover:text-blue-600"
+                    )}
+                  />
+                  <span className="relative z-10">{item.title}</span>
+
+                  {active && (
+                    <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-blue-500 opacity-100 z-0" />
+                  )}
                 </Link>
               ) : (
                 <button
                   onClick={() => toggleMenu(item.title)}
                   className={cn(
-                    'flex items-center justify-between w-full rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                    'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    "cursor-pointer group flex items-center justify-between w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ease-in-out",
+                    "text-slate-600 hover:text-slate-900 hover:bg-slate-50",
+                    isExpanded && "bg-slate-50 text-slate-900"
                   )}
                 >
                   <div className="flex items-center">
-                    <Icon className="mr-3 h-4 w-4" />
+                    <Icon
+                      className={cn(
+                        "mr-3 h-5 w-5 transition-colors",
+                        active || isExpanded
+                          ? "text-blue-600"
+                          : "text-slate-400 group-hover:text-blue-600"
+                      )}
+                    />
                     {item.title}
                   </div>
                   {isExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-4 w-4 text-blue-600" />
                   ) : (
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600" />
                   )}
                 </button>
               )}
-              
-              {hasSubmenu && isExpanded && (
-                <div className="mt-1 ml-6 space-y-1">
-                  {item.submenus.map((submenu) => (
+
+              {/* Submenu */}
+              <div
+                className={cn(
+                  "overflow-hidden transition-all duration-300 ease-in-out",
+                  isExpanded && hasSubmenu
+                    ? "max-h-[500px] opacity-100 mt-1"
+                    : "max-h-0 opacity-0"
+                )}
+              >
+                <div className="ml-4 pl-4 border-l border-slate-200 space-y-1 py-1">
+                  {item.submenus?.map((submenu) => (
                     <Link
                       key={submenu.href}
                       href={submenu.href}
                       className={cn(
-                        'flex items-center rounded-lg px-3 py-2 text-sm transition-colors',
+                        "cursor-pointer flex items-center px-3 py-2 text-sm rounded-lg transition-all duration-200",
                         isActive(submenu.href)
-                          ? 'bg-blue-50 text-blue-600 border-l-2 border-blue-600'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? "text-blue-700 bg-blue-50 font-medium"
+                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
                       )}
                     >
+                      <span
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full mr-3 transition-colors",
+                          isActive(submenu.href)
+                            ? "bg-blue-600"
+                            : "bg-slate-300 group-hover:bg-slate-400"
+                        )}
+                      />
                       {submenu.title}
                     </Link>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
-          )
+          );
         })}
       </nav>
+
+      {/* Footer / User Profile Snippet */}
+      <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center px-2 py-2 rounded-xl bg-white border border-slate-200 shadow-sm">
+          <div className="flex-1 min-w-0 ml-1">
+            <p className="text-xs font-medium text-slate-500 truncate">
+              © 2026 Karoseri System
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
-  )
+  );
 }

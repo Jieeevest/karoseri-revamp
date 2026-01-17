@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -21,469 +21,643 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Plus, Edit, Trash2, Search, ShoppingCart, Eye, Send, Check, X } from 'lucide-react'
-import { useState } from 'react'
+} from "@/components/ui/select";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  ShoppingCart,
+  Eye,
+  Send,
+  Check,
+  X,
+} from "lucide-react";
+import { useState } from "react";
 
 interface Supplier {
-  id: string
-  kode: string
-  nama: string
+  id: string;
+  kode: string;
+  nama: string;
 }
 
 interface Barang {
-  id: string
-  kode: string
-  nama: string
-  satuan: string
+  id: string;
+  kode: string;
+  nama: string;
+  satuan: string;
 }
 
 interface PurchaseOrderItem {
-  id: string
-  barangId: string
-  barang: Barang
-  jumlah: number
-  harga: number
-  subtotal: number
+  id: string;
+  barangId: string;
+  barang: Barang;
+  jumlah: number;
+  harga: number;
+  subtotal: number;
 }
 
 interface PurchaseOrder {
-  id: string
-  nomor: string
-  tanggal: string
-  supplierId: string
-  supplier: Supplier
-  status: 'DRAFT' | 'DIAJUKAN' | 'DISETUJUI' | 'DITOLAK' | 'SELESAI'
-  total: number
-  items: PurchaseOrderItem[]
-  createdAt: string
+  id: string;
+  nomor: string;
+  tanggal: string;
+  supplierId: string;
+  supplier: Supplier;
+  status: "DRAFT" | "DIAJUKAN" | "DISETUJUI" | "DITOLAK" | "SELESAI";
+  total: number;
+  items: PurchaseOrderItem[];
+  createdAt: string;
 }
 
 export default function PurchaseOrderPage() {
   const [supplierList] = useState<Supplier[]>([
-    { id: '1', kode: 'SUP001', nama: 'Supplier ABC' },
-    { id: '2', kode: 'SUP002', nama: 'Supplier XYZ' },
-    { id: '3', kode: 'SUP003', nama: 'Supplier Jaya' },
-  ])
+    { id: "1", kode: "SUP001", nama: "Supplier ABC" },
+    { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
+    { id: "3", kode: "SUP003", nama: "Supplier Jaya" },
+  ]);
 
   const [barangList] = useState<Barang[]>([
-    { id: '1', kode: 'BRG001', nama: 'Cat Semprot Hitam', satuan: 'Liter' },
-    { id: '2', kode: 'BRG002', nama: 'Besi Hollow 4x4', satuan: 'Meter' },
-    { id: '3', kode: 'BRG003', nama: 'Paku 10cm', satuan: 'Kg' },
-    { id: '4', kode: 'BRG004', nama: 'Lampu LED', satuan: 'Unit' },
-  ])
+    { id: "1", kode: "BRG001", nama: "Cat Semprot Hitam", satuan: "Liter" },
+    { id: "2", kode: "BRG002", nama: "Besi Hollow 4x4", satuan: "Meter" },
+    { id: "3", kode: "BRG003", nama: "Paku 10cm", satuan: "Kg" },
+    { id: "4", kode: "BRG004", nama: "Lampu LED", satuan: "Unit" },
+  ]);
 
   const [poList, setPoList] = useState<PurchaseOrder[]>([
     {
-      id: '1',
-      nomor: 'PO-2024-001',
-      tanggal: '2024-01-15',
-      supplierId: '1',
-      supplier: { id: '1', kode: 'SUP001', nama: 'Supplier ABC' },
-      status: 'DRAFT',
+      id: "1",
+      nomor: "PO-2024-001",
+      tanggal: "2024-01-15",
+      supplierId: "1",
+      supplier: { id: "1", kode: "SUP001", nama: "Supplier ABC" },
+      status: "DRAFT",
       total: 650000,
       items: [
         {
-          id: '1',
-          barangId: '1',
-          barang: { id: '1', kode: 'BRG001', nama: 'Cat Semprot Hitam', satuan: 'Liter' },
+          id: "1",
+          barangId: "1",
+          barang: {
+            id: "1",
+            kode: "BRG001",
+            nama: "Cat Semprot Hitam",
+            satuan: "Liter",
+          },
           jumlah: 2,
           harga: 150000,
-          subtotal: 300000
+          subtotal: 300000,
         },
         {
-          id: '2',
-          barangId: '2',
-          barang: { id: '2', kode: 'BRG002', nama: 'Besi Hollow 4x4', satuan: 'Meter' },
+          id: "2",
+          barangId: "2",
+          barang: {
+            id: "2",
+            kode: "BRG002",
+            nama: "Besi Hollow 4x4",
+            satuan: "Meter",
+          },
           jumlah: 5,
           harga: 70000,
-          subtotal: 350000
-        }
+          subtotal: 350000,
+        },
       ],
-      createdAt: '2024-01-15'
+      createdAt: "2024-01-15",
     },
     {
-      id: '2',
-      nomor: 'PO-2024-002',
-      tanggal: '2024-01-16',
-      supplierId: '2',
-      supplier: { id: '2', kode: 'SUP002', nama: 'Supplier XYZ' },
-      status: 'DIAJUKAN',
+      id: "2",
+      nomor: "PO-2024-002",
+      tanggal: "2024-01-16",
+      supplierId: "2",
+      supplier: { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
+      status: "DIAJUKAN",
       total: 480000,
       items: [
         {
-          id: '3',
-          barangId: '3',
-          barang: { id: '3', kode: 'BRG003', nama: 'Paku 10cm', satuan: 'Kg' },
+          id: "3",
+          barangId: "3",
+          barang: { id: "3", kode: "BRG003", nama: "Paku 10cm", satuan: "Kg" },
           jumlah: 10,
           harga: 48000,
-          subtotal: 480000
-        }
+          subtotal: 480000,
+        },
       ],
-      createdAt: '2024-01-16'
+      createdAt: "2024-01-16",
     },
     {
-      id: '3',
-      nomor: 'PO-2024-003',
-      tanggal: '2024-01-17',
-      supplierId: '3',
-      supplier: { id: '3', kode: 'SUP003', nama: 'Supplier Jaya' },
-      status: 'DISETUJUI',
+      id: "3",
+      nomor: "PO-2024-003",
+      tanggal: "2024-01-17",
+      supplierId: "3",
+      supplier: { id: "3", kode: "SUP003", nama: "Supplier Jaya" },
+      status: "DISETUJUI",
       total: 1200000,
       items: [
         {
-          id: '4',
-          barangId: '4',
-          barang: { id: '4', kode: 'BRG004', nama: 'Lampu LED', satuan: 'Unit' },
+          id: "4",
+          barangId: "4",
+          barang: {
+            id: "4",
+            kode: "BRG004",
+            nama: "Lampu LED",
+            satuan: "Unit",
+          },
           jumlah: 20,
           harga: 60000,
-          subtotal: 1200000
-        }
+          subtotal: 1200000,
+        },
       ],
-      createdAt: '2024-01-17'
+      createdAt: "2024-01-17",
     },
-  ])
+  ]);
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
-  const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null)
-  const [viewingPO, setViewingPO] = useState<PurchaseOrder | null>(null)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
+  const [viewingPO, setViewingPO] = useState<PurchaseOrder | null>(null);
   const [formData, setFormData] = useState({
-    supplierId: '',
-    tanggal: new Date().toISOString().split('T')[0]
-  })
-  const [items, setItems] = useState<PurchaseOrderItem[]>([])
+    supplierId: "",
+    tanggal: new Date().toISOString().split("T")[0],
+  });
+  const [items, setItems] = useState<PurchaseOrderItem[]>([]);
 
-  const filteredPO = poList.filter(po =>
-    po.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    po.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    po.status.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredPO = poList.filter(
+    (po) =>
+      po.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      po.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      po.status.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      DRAFT: { color: 'bg-gray-100 text-gray-800', label: 'Draft' },
-      DIAJUKAN: { color: 'bg-blue-100 text-blue-800', label: 'Diajukan' },
-      DISETUJUI: { color: 'bg-green-100 text-green-800', label: 'Disetujui' },
-      DITOLAK: { color: 'bg-red-100 text-red-800', label: 'Ditolak' },
-      SELESAI: { color: 'bg-purple-100 text-purple-800', label: 'Selesai' },
-    }
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.DRAFT
-    return <Badge className={config.color}>{config.label}</Badge>
-  }
+      DRAFT: { color: "bg-gray-100 text-gray-800", label: "Draft" },
+      DIAJUKAN: { color: "bg-blue-100 text-blue-800", label: "Diajukan" },
+      DISETUJUI: { color: "bg-green-100 text-green-800", label: "Disetujui" },
+      DITOLAK: { color: "bg-red-100 text-red-800", label: "Ditolak" },
+      SELESAI: { color: "bg-purple-100 text-purple-800", label: "Selesai" },
+    };
+
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.DRAFT;
+    return <Badge className={config.color}>{config.label}</Badge>;
+  };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
 
   const addItem = () => {
     const newItem: PurchaseOrderItem = {
       id: Date.now().toString(),
-      barangId: '',
-      barang: { id: '', kode: '', nama: '', satuan: '' },
+      barangId: "",
+      barang: { id: "", kode: "", nama: "", satuan: "" },
       jumlah: 1,
       harga: 0,
-      subtotal: 0
-    }
-    setItems([...items, newItem])
-  }
+      subtotal: 0,
+    };
+    setItems([...items, newItem]);
+  };
 
   const updateItem = (index: number, field: string, value: any) => {
-    const updatedItems = [...items]
-    if (field === 'barangId') {
-      const selectedBarang = barangList.find(b => b.id === value)
+    const updatedItems = [...items];
+    if (field === "barangId") {
+      const selectedBarang = barangList.find((b) => b.id === value);
       if (selectedBarang) {
-        updatedItems[index].barang = selectedBarang
-        updatedItems[index].barangId = value
-        updatedItems[index].subtotal = updatedItems[index].jumlah * updatedItems[index].harga
+        updatedItems[index].barang = selectedBarang;
+        updatedItems[index].barangId = value;
+        updatedItems[index].subtotal =
+          updatedItems[index].jumlah * updatedItems[index].harga;
       }
-    } else if (field === 'jumlah' || field === 'harga') {
-      updatedItems[index][field] = value
-      updatedItems[index].subtotal = updatedItems[index].jumlah * updatedItems[index].harga
+    } else if (field === "jumlah" || field === "harga") {
+      updatedItems[index][field] = value;
+      updatedItems[index].subtotal =
+        updatedItems[index].jumlah * updatedItems[index].harga;
     }
-    setItems(updatedItems)
-  }
+    setItems(updatedItems);
+  };
 
   const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index))
-  }
+    setItems(items.filter((_, i) => i !== index));
+  };
 
   const calculateTotal = () => {
-    return items.reduce((total, item) => total + item.subtotal, 0)
-  }
+    return items.reduce((total, item) => total + item.subtotal, 0);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (items.length === 0) {
-      alert('Silakan tambahkan minimal 1 barang')
-      return
+      alert("Silakan tambahkan minimal 1 barang");
+      return;
     }
 
-    const selectedSupplier = supplierList.find(s => s.id === formData.supplierId)
-    if (!selectedSupplier) return
+    const selectedSupplier = supplierList.find(
+      (s) => s.id === formData.supplierId
+    );
+    if (!selectedSupplier) return;
 
     const newPO: PurchaseOrder = {
       id: Date.now().toString(),
-      nomor: `PO-2024-${String(poList.length + 1).padStart(3, '0')}`,
+      nomor: `PO-2024-${String(poList.length + 1).padStart(3, "0")}`,
       tanggal: formData.tanggal,
       supplierId: formData.supplierId,
       supplier: selectedSupplier,
-      status: 'DRAFT',
+      status: "DRAFT",
       total: calculateTotal(),
       items: items,
-      createdAt: new Date().toISOString().split('T')[0]
-    }
+      createdAt: new Date().toISOString().split("T")[0],
+    };
 
-    setPoList([...poList, newPO])
-    setFormData({ supplierId: '', tanggal: new Date().toISOString().split('T')[0] })
-    setItems([])
-    setIsDialogOpen(false)
-  }
+    setPoList([...poList, newPO]);
+    setFormData({
+      supplierId: "",
+      tanggal: new Date().toISOString().split("T")[0],
+    });
+    setItems([]);
+    setIsDialogOpen(false);
+  };
 
   const handleView = (po: PurchaseOrder) => {
-    setViewingPO(po)
-    setIsDetailDialogOpen(true)
-  }
+    setViewingPO(po);
+    setIsDetailDialogOpen(true);
+  };
 
   const handleAjukan = (id: string) => {
-    if (confirm('Apakah Anda yakin ingin mengajukan Purchase Order ini?')) {
-      setPoList(prev => 
-        prev.map(po => 
-          po.id === id ? { ...po, status: 'DIAJUKAN' } : po
-        )
-      )
+    if (confirm("Apakah Anda yakin ingin mengajukan Purchase Order ini?")) {
+      setPoList((prev) =>
+        prev.map((po) => (po.id === id ? { ...po, status: "DIAJUKAN" } : po))
+      );
     }
-  }
+  };
 
   const handleDelete = (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus PO ini?')) {
-      setPoList(prev => prev.filter(po => po.id !== id))
+    if (confirm("Apakah Anda yakin ingin menghapus PO ini?")) {
+      setPoList((prev) => prev.filter((po) => po.id !== id));
     }
-  }
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Purchase Order</h1>
-            <p className="text-gray-600">Manajemen permohonan restok barang</p>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Purchase Order
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Manajemen permohonan restok barang.
+            </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer">
                 <Plus className="mr-2 h-4 w-4" />
                 Buat PO Baru
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto rounded-xl border-slate-100 shadow-2xl">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
-                  <DialogTitle>Buat Purchase Order Baru</DialogTitle>
-                  <DialogDescription>
-                    Buat permohonan restok barang ke supplier
+                  <DialogTitle className="text-xl font-bold text-slate-900">
+                    Buat Purchase Order Baru
+                  </DialogTitle>
+                  <DialogDescription className="text-slate-500">
+                    Isi formulir di bawah untuk membuat permohonan restok barang
+                    ke supplier.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid items-center gap-4">
-                      <Label htmlFor="supplierId">Supplier</Label>
+                <div className="grid gap-6 py-6">
+                  <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                    <div className="grid gap-2">
+                      <Label
+                        htmlFor="supplierId"
+                        className="text-slate-700 font-medium"
+                      >
+                        Supplier
+                      </Label>
                       <Select
                         value={formData.supplierId}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, supplierId: value }))}
+                        onValueChange={(value) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            supplierId: value,
+                          }))
+                        }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
                           <SelectValue placeholder="Pilih supplier" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl border-slate-100 shadow-xl">
                           {supplierList.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id}>
+                            <SelectItem
+                              key={supplier.id}
+                              value={supplier.id}
+                              className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                            >
                               {supplier.kode} - {supplier.nama}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="grid items-center gap-4">
-                      <Label htmlFor="tanggal">Tanggal</Label>
+                    <div className="grid gap-2">
+                      <Label
+                        htmlFor="tanggal"
+                        className="text-slate-700 font-medium"
+                      >
+                        Tanggal
+                      </Label>
                       <Input
                         id="tanggal"
                         type="date"
                         value={formData.tanggal}
-                        onChange={(e) => setFormData(prev => ({ ...prev, tanggal: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            tanggal: e.target.value,
+                          }))
+                        }
+                        className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 bg-white"
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <Label>Barang</Label>
-                      <Button type="button" variant="outline" size="sm" onClick={addItem}>
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                      <Label className="text-lg font-semibold text-slate-800">
+                        Daftar Barang
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addItem}
+                        className="rounded-xl border-slate-200 hover:bg-slate-50 text-blue-600 hover:text-blue-700 cursor-pointer"
+                      >
                         <Plus className="mr-2 h-4 w-4" />
                         Tambah Barang
                       </Button>
                     </div>
-                    
-                    {items.map((item, index) => (
-                      <div key={item.id} className="grid grid-cols-12 gap-2 items-end">
-                        <div className="col-span-5">
-                          <Select
-                            value={item.barangId}
-                            onValueChange={(value) => updateItem(index, 'barangId', value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Pilih barang" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {barangList.map((barang) => (
-                                <SelectItem key={barang.id} value={barang.id}>
-                                  {barang.kode} - {barang.nama}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="col-span-2">
-                          <Input
-                            type="number"
-                            placeholder="Jumlah"
-                            value={item.jumlah || ''}
-                            onChange={(e) => updateItem(index, 'jumlah', parseInt(e.target.value) || 0)}
-                            min="1"
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <Input
-                            type="number"
-                            placeholder="Harga"
-                            value={item.harga || ''}
-                            onChange={(e) => updateItem(index, 'harga', parseInt(e.target.value) || 0)}
-                            min="0"
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <Input
-                            value={formatCurrency(item.subtotal)}
-                            readOnly
-                            className="bg-gray-50"
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeItem(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+
+                    {items.length === 0 ? (
+                      <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500">
+                        Belum ada barang yang ditambahkan
                       </div>
-                    ))}
+                    ) : (
+                      items.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className="grid grid-cols-12 gap-3 items-end p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-slate-300 transition-colors"
+                        >
+                          <div className="col-span-5">
+                            <Label className="text-xs text-slate-500 mb-1.5 block">
+                              Barang
+                            </Label>
+                            <Select
+                              value={item.barangId}
+                              onValueChange={(value) =>
+                                updateItem(index, "barangId", value)
+                              }
+                            >
+                              <SelectTrigger className="rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                                <SelectValue placeholder="Pilih barang" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                                {barangList.map((barang) => (
+                                  <SelectItem
+                                    key={barang.id}
+                                    value={barang.id}
+                                    className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                                  >
+                                    {barang.kode} - {barang.nama}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="col-span-2">
+                            <Label className="text-xs text-slate-500 mb-1.5 block">
+                              Qty
+                            </Label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={item.jumlah || ""}
+                              onChange={(e) =>
+                                updateItem(
+                                  index,
+                                  "jumlah",
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              min="1"
+                              className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                            />
+                          </div>
+                          <div className="col-span-3">
+                            <Label className="text-xs text-slate-500 mb-1.5 block">
+                              Harga Satuan
+                            </Label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={item.harga || ""}
+                              onChange={(e) =>
+                                updateItem(
+                                  index,
+                                  "harga",
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              min="0"
+                              className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                            />
+                          </div>
+                          <div className="col-span-2 flex gap-2">
+                            <div className="flex-1">
+                              <Label className="text-xs text-slate-500 mb-1.5 block">
+                                Subtotal
+                              </Label>
+                              <Input
+                                value={formatCurrency(item.subtotal)}
+                                readOnly
+                                className="bg-slate-50 rounded-xl border-slate-200 text-slate-600 text-xs font-medium"
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeItem(index)}
+                              className="mb-0.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg h-9 w-9 shrink-0 cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
 
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-lg font-semibold">Total</Label>
-                      <span className="text-lg font-bold">{formatCurrency(calculateTotal())}</span>
+                  <div className="flex justify-end pt-4 border-t border-slate-100">
+                    <div className="bg-slate-50 px-6 py-4 rounded-xl border border-slate-200 w-full sm:w-auto">
+                      <div className="flex justify-between items-center gap-8">
+                        <Label className="text-lg font-semibold text-slate-700">
+                          Total Keseluruhan
+                        </Label>
+                        <span className="text-2xl font-bold text-blue-700">
+                          {formatCurrency(calculateTotal())}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button type="submit">Simpan PO</Button>
+                <DialogFooter className="gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                    className="rounded-xl cursor-pointer"
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
+                  >
+                    Simpan PO
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Daftar Purchase Order</CardTitle>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
+          <CardHeader className="border-b border-slate-100 pb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <CardTitle className="text-lg font-bold text-slate-900">
+                Daftar Purchase Order
+              </CardTitle>
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   placeholder="Cari PO..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64 pl-10"
+                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Nomor PO</TableHead>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
+                <TableRow className="hover:bg-slate-50/50 border-slate-100">
+                  <TableHead className="px-6 font-semibold text-slate-500">
+                    Nomor PO
+                  </TableHead>
+                  <TableHead className="px-6 font-semibold text-slate-500">
+                    Tanggal
+                  </TableHead>
+                  <TableHead className="px-6 font-semibold text-slate-500">
+                    Supplier
+                  </TableHead>
+                  <TableHead className="px-6 font-semibold text-slate-500">
+                    Total
+                  </TableHead>
+                  <TableHead className="px-6 font-semibold text-slate-500">
+                    Status
+                  </TableHead>
+                  <TableHead className="px-6 text-center font-semibold text-slate-500">
+                    Aksi
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPO.map((po) => (
-                  <TableRow key={po.id}>
-                    <TableCell className="font-medium">{po.nomor}</TableCell>
-                    <TableCell>{po.tanggal}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{po.supplier.nama}</p>
-                        <p className="text-xs text-gray-500">{po.supplier.kode}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{formatCurrency(po.total)}</TableCell>
-                    <TableCell>{getStatusBadge(po.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleView(po)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {po.status === 'DRAFT' && (
+                {filteredPO.length > 0 ? (
+                  filteredPO.map((po) => (
+                    <TableRow
+                      key={po.id}
+                      className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
+                    >
+                      <TableCell className="px-6 font-medium text-slate-900">
+                        {po.nomor}
+                      </TableCell>
+                      <TableCell className="px-6 text-slate-600">
+                        {po.tanggal}
+                      </TableCell>
+                      <TableCell className="px-6">
+                        <div>
+                          <p className="font-medium text-slate-900">
+                            {po.supplier.nama}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {po.supplier.kode}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-900">
+                        {formatCurrency(po.total)}
+                      </TableCell>
+                      <TableCell className="px-6">
+                        {getStatusBadge(po.status)}
+                      </TableCell>
+                      <TableCell className="px-6 text-center">
+                        <div className="flex justify-center gap-2">
                           <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAjukan(po.id)}
-                            className="text-blue-600 hover:text-blue-700"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleView(po)}
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
                           >
-                            <Send className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(po.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                          {po.status === "DRAFT" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleAjukan(po.id)}
+                              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg cursor-pointer"
+                            >
+                              <Send className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(po.id)}
+                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="px-6 h-24 text-center text-slate-500"
+                    >
+                      Data tidak ditemukan.
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -491,59 +665,100 @@ export default function PurchaseOrderPage() {
 
         {/* Detail Dialog */}
         <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Detail Purchase Order</DialogTitle>
+          <DialogContent className="sm:max-w-[650px] rounded-xl border-slate-100 shadow-2xl">
+            <DialogHeader className="border-b border-slate-100 pb-4">
+              <DialogTitle className="text-xl font-bold text-slate-900">
+                Detail Purchase Order
+              </DialogTitle>
             </DialogHeader>
             {viewingPO && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6 pt-4">
+                <div className="grid grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
                   <div>
-                    <Label className="text-sm font-medium">Nomor PO</Label>
-                    <p className="font-semibold">{viewingPO.nomor}</p>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Nomor PO
+                    </Label>
+                    <p className="font-bold text-slate-900 mt-1">
+                      {viewingPO.nomor}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Tanggal</Label>
-                    <p>{viewingPO.tanggal}</p>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Status
+                    </Label>
+                    <div className="mt-1">
+                      {getStatusBadge(viewingPO.status)}
+                    </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Supplier</Label>
-                    <p>{viewingPO.supplier.nama}</p>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Tanggal
+                    </Label>
+                    <p className="font-medium text-slate-700 mt-1">
+                      {viewingPO.tanggal}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Status</Label>
-                    <div>{getStatusBadge(viewingPO.status)}</div>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Supplier
+                    </Label>
+                    <p className="font-medium text-slate-700 mt-1">
+                      {viewingPO.supplier.nama}
+                    </p>
                   </div>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium">Barang</Label>
-                  <div className="mt-2 space-y-2">
+                  <Label className="text-sm font-bold text-slate-900 mb-3 block">
+                    Rincian Barang
+                  </Label>
+                  <div className="space-y-3">
                     {viewingPO.items.map((item) => (
-                      <div key={item.id} className="flex justify-between items-center p-2 border rounded">
+                      <div
+                        key={item.id}
+                        className="flex justify-between items-center p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors"
+                      >
                         <div>
-                          <p className="font-medium">{item.barang.nama}</p>
-                          <p className="text-sm text-gray-500">
-                            {item.jumlah} {item.barang.satuan} × {formatCurrency(item.harga)}
+                          <p className="font-medium text-slate-900">
+                            {item.barang.nama}
+                          </p>
+                          <p className="text-sm text-slate-500 mt-0.5">
+                            {item.jumlah} {item.barang.satuan} ×{" "}
+                            {formatCurrency(item.harga)}
                           </p>
                         </div>
-                        <p className="font-medium">{formatCurrency(item.subtotal)}</p>
+                        <p className="font-bold text-slate-900">
+                          {formatCurrency(item.subtotal)}
+                        </p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
+                <div className="border-t border-slate-100 pt-4 mt-2">
                   <div className="flex justify-between items-center">
-                    <Label className="text-lg font-semibold">Total</Label>
-                    <span className="text-lg font-bold">{formatCurrency(viewingPO.total)}</span>
+                    <Label className="text-lg font-bold text-slate-700">
+                      Total Pembelian
+                    </Label>
+                    <span className="text-2xl font-bold text-blue-700">
+                      {formatCurrency(viewingPO.total)}
+                    </span>
                   </div>
                 </div>
               </div>
             )}
+            <DialogFooter className="mt-4">
+              <Button
+                onClick={() => setIsDetailDialogOpen(false)}
+                variant="outline"
+                className="w-full rounded-xl cursor-pointer"
+              >
+                Tutup
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
     </DashboardLayout>
-  )
+  );
 }
