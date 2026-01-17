@@ -203,16 +203,22 @@ model BarangKeluar {
   id              String              @id @default(cuid())
   nomor           String              @unique
   tanggal         DateTime
+  jenis           JenisPengeluaran @default(PRODUKSI)
   barangId        String
   barang          Barang              @relation(fields: [barangId], references: [id])
   jumlah          Int
   karyawanId      String
   karyawan        Karyawan            @relation(fields: [karyawanId], references: [id])
-  kendaraanId     String
-  kendaraan       Kendaraan           @relation(fields: [kendaraanId], references: [id])
+  kendaraanId     String?
+  kendaraan       Kendaraan?          @relation(fields: [kendaraanId], references: [id])
   deskripsi       String
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
+}
+
+enum JenisPengeluaran {
+  PRODUKSI
+  OPERASIONAL
 }
 
 model TagihanSupplier {
@@ -257,6 +263,7 @@ model Customer {
   updatedAt       DateTime            @updatedAt
   kendaraan       Kendaraan[]
   kendaraanMasuk  KendaraanMasuk[]
+  projects        Project[]
 }
 
 model Kendaraan {
@@ -271,6 +278,8 @@ model Kendaraan {
   customerId      String
   customer        Customer            @relation(fields: [customerId], references: [id])
   status          KendaraanStatus     @default(MASUK)
+  projectId       String?
+  project         Project?            @relation(fields: [projectId], references: [id])
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   kendaraanMasuk  KendaraanMasuk[]
@@ -353,6 +362,21 @@ model PembayaranSpek {
   updatedAt       DateTime            @updatedAt
 }
 
+model Project {
+  id            String        @id @default(cuid())
+  nomor         String        @unique // Nomor Penawaran / SPK
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  deskripsi     String        // e.g. "Wing Box Hydraulic 5 Unit"
+  quantity      Int           @default(1)
+  hargaPerUnit  Float
+  totalHarga    Float
+  status        ProjectStatus @default(OFFER)
+  tanggal       DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  kendaraan     Kendaraan[]
+}
+
 // Enums
 enum POStatus {
   DRAFT
@@ -391,4 +415,12 @@ enum JenisSpek {
 enum SpekStatus {
   BELUM_DIBAYAR
   SUDAH_DIBAYAR
+}
+
+enum ProjectStatus {
+  OFFER
+  DEAL
+  ON_PROGRESS
+  DONE
+  CANCELLED
 }

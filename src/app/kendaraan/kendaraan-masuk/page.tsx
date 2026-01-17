@@ -57,6 +57,14 @@ interface Kendaraan {
   nomorPolisi: string;
   merek: string;
   tipe: string;
+  projectId?: string;
+  project?: Project;
+}
+
+interface Project {
+  id: string;
+  nomor: string;
+  deskripsi: string;
 }
 
 interface Pengerjaan {
@@ -87,6 +95,11 @@ interface KendaraanMasuk {
   kelengkapan: KelengkapanAlat[];
   createdAt: string;
 }
+
+const mockProjects: Project[] = [
+  { id: "1", nomor: "SPK-2024-001", deskripsi: "Wing Box Hydraulic - 5 Unit" },
+  { id: "2", nomor: "SPK-2024-002", deskripsi: "Box Besi Standart - 3 Unit" },
+];
 
 const pengerjaanOptions = [
   "Wing Box",
@@ -332,6 +345,7 @@ export default function KendaraanMasukPage() {
     tanggalMasuk: "",
     showroom: "",
     customerId: "",
+    projectId: "",
     nomorPolisi: "",
     merek: "",
     tipe: "",
@@ -389,6 +403,8 @@ export default function KendaraanMasukPage() {
         nomorPolisi: formData.nomorPolisi,
         merek: formData.merek,
         tipe: formData.tipe,
+        projectId: formData.projectId,
+        project: mockProjects.find((p) => p.id === formData.projectId),
       },
       pengerjaan: formData.selectedPengerjaan.map((jenis, index) => ({
         id: (index + 1).toString(),
@@ -409,6 +425,7 @@ export default function KendaraanMasukPage() {
       tanggalMasuk: new Date().toISOString().split("T")[0],
       showroom: "",
       customerId: "",
+      projectId: "",
       nomorPolisi: "",
       merek: "",
       tipe: "",
@@ -581,6 +598,34 @@ export default function KendaraanMasukPage() {
                                 className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
                               >
                                 {customer.kode} - {customer.nama}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid items-center gap-2">
+                        <Label
+                          htmlFor="projectId"
+                          className="text-slate-700 font-medium"
+                        >
+                          Link Project (SPK)
+                        </Label>
+                        <Select
+                          value={formData.projectId}
+                          onValueChange={(value) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              projectId: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full rounded-xl border-slate-200">
+                            <SelectValue placeholder="Pilih Project / SPK (Opsional)" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                            {mockProjects.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.nomor} - {p.deskripsi}
                               </SelectItem>
                             ))}
                           </SelectContent>

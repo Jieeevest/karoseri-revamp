@@ -353,7 +353,7 @@ export default function KendaraanKeluarPage() {
       kendaraan: selectedKendaraan,
       qcResult: formData.qcResult,
       layakKeluar: formData.layakKeluar,
-      suratJalan: `surat_jalan_${Date.now()}.pdf`,
+      suratJalan: formData.layakKeluar ? `surat_jalan_${Date.now()}.pdf` : "",
       createdAt: new Date().toISOString().split("T")[0],
     };
 
@@ -561,7 +561,6 @@ export default function KendaraanKeluarPage() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={!formData.layakKeluar}
                     className="bg-blue-600 hover:bg-blue-700 distabled:opacity-50 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
                   >
                     Proses Kendaraan Keluar

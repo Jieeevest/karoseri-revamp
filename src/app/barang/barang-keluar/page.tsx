@@ -40,8 +40,11 @@ import {
   User,
   Car,
   ArrowRight,
+  Briefcase,
+  Wrench,
 } from "lucide-react";
 import { useState } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Barang {
   id: string;
@@ -64,17 +67,21 @@ interface Kendaraan {
   tipe: string;
 }
 
+type JenisPengeluaran = "PRODUKSI" | "OPERASIONAL";
+
 interface BarangKeluar {
   id: string;
   nomor: string;
   tanggal: string;
+  jenis: JenisPengeluaran;
   barangId: string;
   barang: Barang;
   jumlah: number;
   karyawanId: string;
   karyawan: Karyawan;
-  kendaraanId: string;
-  kendaraan: Kendaraan;
+
+  kendaraanId?: string;
+  kendaraan?: Kendaraan;
   deskripsi: string;
   createdAt: string;
 }
@@ -127,6 +134,7 @@ export default function BarangKeluarPage() {
       id: "1",
       nomor: "BK-2024-001",
       tanggal: "2024-01-15",
+      jenis: "PRODUKSI",
       barangId: "1",
       barang: {
         id: "1",
@@ -152,6 +160,7 @@ export default function BarangKeluarPage() {
       id: "2",
       nomor: "BK-2024-002",
       tanggal: "2024-01-16",
+      jenis: "PRODUKSI",
       barangId: "2",
       barang: {
         id: "2",
@@ -177,6 +186,7 @@ export default function BarangKeluarPage() {
       id: "3",
       nomor: "BK-2024-003",
       tanggal: "2024-01-17",
+      jenis: "PRODUKSI",
       barangId: "3",
       barang: {
         id: "3",
@@ -206,6 +216,7 @@ export default function BarangKeluarPage() {
     useState<BarangKeluar | null>(null);
   const [formData, setFormData] = useState({
     tanggal: new Date().toISOString().split("T")[0],
+    jenis: "PRODUKSI" as JenisPengeluaran,
     barangId: "",
     jumlah: 0,
     karyawanId: "",
@@ -216,9 +227,10 @@ export default function BarangKeluarPage() {
   const filteredBarangKeluar = barangKeluarList.filter(
     (bk) =>
       bk.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bk.jenis.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bk.barang.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bk.karyawan.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bk.kendaraan.nomorPolisi.toLowerCase().includes(searchTerm.toLowerCase())
+      bk.kendaraan?.nomorPolisi.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -228,11 +240,17 @@ export default function BarangKeluarPage() {
     const selectedKaryawan = karyawanList.find(
       (k) => k.id === formData.karyawanId
     );
-    const selectedKendaraan = kendaraanList.find(
-      (k) => k.id === formData.kendaraanId
-    );
 
-    if (!selectedBarang || !selectedKaryawan || !selectedKendaraan) return;
+    const selectedKendaraan =
+      formData.jenis === "PRODUKSI"
+        ? kendaraanList.find((k) => k.id === formData.kendaraanId)
+        : undefined;
+
+    if (!selectedBarang || !selectedKaryawan) return;
+    if (formData.jenis === "PRODUKSI" && !selectedKendaraan) {
+      alert("Untuk pengeluaran PRODUKSI, wajib memilih kendaraan.");
+      return;
+    }
 
     if (formData.jumlah > selectedBarang.stok) {
       alert(
@@ -245,12 +263,14 @@ export default function BarangKeluarPage() {
       id: Date.now().toString(),
       nomor: `BK-2024-${String(barangKeluarList.length + 1).padStart(3, "0")}`,
       tanggal: formData.tanggal,
+      jenis: formData.jenis,
       barangId: formData.barangId,
       barang: selectedBarang,
       jumlah: formData.jumlah,
       karyawanId: formData.karyawanId,
       karyawan: selectedKaryawan,
-      kendaraanId: formData.kendaraanId,
+
+      kendaraanId: selectedKendaraan?.id,
       kendaraan: selectedKendaraan,
       deskripsi: formData.deskripsi,
       createdAt: new Date().toISOString().split("T")[0],
@@ -264,6 +284,7 @@ export default function BarangKeluarPage() {
   const resetForm = () => {
     setFormData({
       tanggal: new Date().toISOString().split("T")[0],
+      jenis: "PRODUKSI",
       barangId: "",
       jumlah: 0,
       karyawanId: "",
@@ -276,10 +297,12 @@ export default function BarangKeluarPage() {
     setEditingBarangKeluar(barangKeluar);
     setFormData({
       tanggal: barangKeluar.tanggal,
+      jenis: barangKeluar.jenis,
       barangId: barangKeluar.barangId,
       jumlah: barangKeluar.jumlah,
       karyawanId: barangKeluar.karyawanId,
-      kendaraanId: barangKeluar.kendaraanId,
+
+      kendaraanId: barangKeluar.kendaraanId || "",
       deskripsi: barangKeluar.deskripsi,
     });
     setIsDialogOpen(true);
@@ -304,10 +327,12 @@ export default function BarangKeluarPage() {
     return {
       total: todayItems.length,
       totalItems: todayItems.reduce((sum, bk) => sum + bk.jumlah, 0),
+
       uniqueKaryawan: [...new Set(todayItems.map((bk) => bk.karyawanId))]
         .length,
-      uniqueKendaraan: [...new Set(todayItems.map((bk) => bk.kendaraanId))]
-        .length,
+      uniqueKendaraan: [
+        ...new Set(todayItems.map((bk) => bk.kendaraanId).filter(Boolean)),
+      ].length,
     };
   };
 
@@ -349,7 +374,60 @@ export default function BarangKeluarPage() {
                       : "Isi formulir untuk mencatat barang yang keluar dari gudang."}
                   </DialogDescription>
                 </DialogHeader>
+
                 <div className="grid gap-6 py-6">
+                  <div className="space-y-4">
+                    <Label className="text-slate-700 font-medium">
+                      Jenis Pengeluaran
+                    </Label>
+                    <RadioGroup
+                      defaultValue="PRODUKSI"
+                      value={formData.jenis}
+                      onValueChange={(val) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          jenis: val as JenisPengeluaran,
+                        }))
+                      }
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <div>
+                        <RadioGroupItem
+                          value="PRODUKSI"
+                          id="produksi"
+                          className="peer sr-only"
+                        />
+                        <Label
+                          htmlFor="produksi"
+                          className="flex flex-col items-center justify-between rounded-xl border-2 border-slate-100 bg-white p-4 hover:bg-slate-50 peer-data-[state=checked]:border-blue-600 peer-data-[state=checked]:text-blue-600 cursor-pointer transition-all"
+                        >
+                          <Wrench className="mb-2 h-6 w-6" />
+                          <span className="font-semibold">Produksi</span>
+                          <span className="text-xs text-slate-500 mt-1 text-center">
+                            Untuk Kendaraan
+                          </span>
+                        </Label>
+                      </div>
+                      <div>
+                        <RadioGroupItem
+                          value="OPERASIONAL"
+                          id="operasional"
+                          className="peer sr-only"
+                        />
+                        <Label
+                          htmlFor="operasional"
+                          className="flex flex-col items-center justify-between rounded-xl border-2 border-slate-100 bg-white p-4 hover:bg-slate-50 peer-data-[state=checked]:border-blue-600 peer-data-[state=checked]:text-blue-600 cursor-pointer transition-all"
+                        >
+                          <Briefcase className="mb-2 h-6 w-6" />
+                          <span className="font-semibold">Operasional</span>
+                          <span className="text-xs text-slate-500 mt-1 text-center">
+                            Alat / Umum
+                          </span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
                     <div className="grid gap-2">
                       <Label
@@ -372,39 +450,41 @@ export default function BarangKeluarPage() {
                         required
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label
-                        htmlFor="kendaraanId"
-                        className="text-slate-700 font-medium"
-                      >
-                        Kendaraan (Opsional)
-                      </Label>
-                      <Select
-                        value={formData.kendaraanId}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            kendaraanId: value,
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
-                          <SelectValue placeholder="Pilih kendaraan" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          {kendaraanList.map((kendaraan) => (
-                            <SelectItem
-                              key={kendaraan.id}
-                              value={kendaraan.id}
-                              className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                            >
-                              {kendaraan.nomorPolisi} - {kendaraan.merek}{" "}
-                              {kendaraan.tipe}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {formData.jenis === "PRODUKSI" && (
+                      <div className="grid gap-2">
+                        <Label
+                          htmlFor="kendaraanId"
+                          className="text-slate-700 font-medium"
+                        >
+                          Kendaraan
+                        </Label>
+                        <Select
+                          value={formData.kendaraanId}
+                          onValueChange={(value) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              kendaraanId: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
+                            <SelectValue placeholder="Pilih kendaraan" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                            {kendaraanList.map((kendaraan) => (
+                              <SelectItem
+                                key={kendaraan.id}
+                                value={kendaraan.id}
+                                className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                              >
+                                {kendaraan.nomorPolisi} - {kendaraan.merek}{" "}
+                                {kendaraan.tipe}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid gap-4">
@@ -645,6 +725,9 @@ export default function BarangKeluarPage() {
                     Tanggal
                   </TableHead>
                   <TableHead className="font-semibold text-slate-500">
+                    Jenis
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-500">
                     Barang
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
@@ -678,6 +761,22 @@ export default function BarangKeluarPage() {
                         {barangKeluar.tanggal}
                       </TableCell>
                       <TableCell className="px-6">
+                        <Badge
+                          variant={
+                            barangKeluar.jenis === "PRODUKSI"
+                              ? "default"
+                              : "secondary"
+                          }
+                          className={`font-normal ${
+                            barangKeluar.jenis === "PRODUKSI"
+                              ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          }`}
+                        >
+                          {barangKeluar.jenis}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-6">
                         <div>
                           <p className="font-medium text-slate-900">
                             {barangKeluar.barang.nama}
@@ -706,15 +805,19 @@ export default function BarangKeluarPage() {
                         </div>
                       </TableCell>
                       <TableCell className="px-6">
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {barangKeluar.kendaraan.nomorPolisi}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {barangKeluar.kendaraan.merek}{" "}
-                            {barangKeluar.kendaraan.tipe}
-                          </p>
-                        </div>
+                        {barangKeluar.kendaraan ? (
+                          <div>
+                            <p className="font-medium text-slate-900">
+                              {barangKeluar.kendaraan.nomorPolisi}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {barangKeluar.kendaraan.merek}{" "}
+                              {barangKeluar.kendaraan.tipe}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 text-sm">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="px-6">
                         <div

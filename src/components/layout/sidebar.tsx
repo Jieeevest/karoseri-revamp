@@ -51,6 +51,11 @@ const menuItems = [
     href: "/karyawan",
   },
   {
+    title: "Project / Penawaran",
+    icon: FileText,
+    href: "/project",
+  },
+  {
     title: "Manajemen Kendaraan",
     icon: Car,
     submenus: [
