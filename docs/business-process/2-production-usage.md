@@ -15,7 +15,8 @@ graph TD
         %% Path 1: Usage for Vehicle
         IdentifyType -->|Produksi Kendaraan| SelectVehicle["Pilih Kendaraan / SPK"]
         SelectVehicle --> InputItem1["Input Barang & Qty"]
-        InputItem1 --> CalcHPP["Hitung HPP Kendaraan"]
+        InputItem1 --> InputReceiver["Input Penerima Barang"]
+        InputReceiver --> CalcHPP["Hitung HPP Kendaraan (Opsional)"]
         CalcHPP --> RecordUsage1["Catat di Detail Kendaraan"]
 
         %% Path 2: Usage for Tools/Consumables
@@ -38,7 +39,7 @@ graph TD
     classDef logic fill:#fff8e1,stroke:#ff8f00,stroke-width:1px;
     classDef system fill:#e3f2fd,stroke:#1565c0,stroke-width:1px;
 
-    class RequestBarang,InputItem1,InputItem2,SelectVehicle,SelectTool action;
+    class RequestBarang,InputItem1,InputItem2,SelectVehicle,SelectTool,InputReceiver action;
     class IdentifyType,Alert logic;
     class CalcHPP,RecordUsage1,GeneralCost,DeductStock,NotifyPurchase system;
 ```
@@ -46,7 +47,10 @@ graph TD
 ## Penjelasan Alur
 
 1.  **Identifikasi Penggunaan**: Barang keluar dibagi menjadi dua jalur utama.
-    - **Produksi Kendaraan**: Untuk bahan baku yang menempel pada unit (misal: Plat, CNP, Cat untuk unit X). Ini **wajib** memilih Kendaraan tujuan agar biaya tercatat dalam HPP unit tersebut.
+    - **Produksi Kendaraan**: Untuk bahan baku yang menempel pada unit (misal: Plat, CNP, Cat untuk unit X).
+      - Wajib memilih **Kendaraan tujuan**.
+      - Wajib catat **Penerima Barang** untuk pertanggungjawaban.
+      - Otomatis menghitung **HPP Kendaraan** (jika ada harga).
     - **Alat / Habis Pakai**: Untuk alat kerja (misal: Kawat Las, Gerinda, Sarung Tangan) yang sifatnya umum. Biaya ini masuk ke Biaya Operasional/Overhead dan **tidak** dibebankan spesifik ke satu unit kendaraan tertentu secara langsung.
 2.  **Pencatatan**:
     - Material Kendaraan -> Muncul di "Detail Kendaraan" -> Akumulasi HPP.

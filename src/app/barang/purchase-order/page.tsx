@@ -42,6 +42,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 interface Supplier {
   id: string;
@@ -78,6 +79,8 @@ interface PurchaseOrder {
 }
 
 export default function PurchaseOrderPage() {
+  const { data: session } = useSession();
+  const isGudang = session?.user?.role === "GUDANG";
   const [supplierList] = useState<Supplier[]>([
     { id: "1", kode: "SUP001", nama: "Supplier ABC" },
     { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
@@ -320,230 +323,233 @@ export default function PurchaseOrderPage() {
               Manajemen permohonan restok barang.
             </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer">
-                <Plus className="mr-2 h-4 w-4" />
-                Buat PO Baru
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto rounded-xl border-slate-100 shadow-2xl">
-              <form onSubmit={handleSubmit}>
-                <DialogHeader>
-                  <DialogTitle className="text-xl font-bold text-slate-900">
-                    Buat Purchase Order Baru
-                  </DialogTitle>
-                  <DialogDescription className="text-slate-500">
-                    Isi formulir di bawah untuk membuat permohonan restok barang
-                    ke supplier.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 py-6">
-                  <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
-                    <div className="grid gap-2">
-                      <Label
-                        htmlFor="supplierId"
-                        className="text-slate-700 font-medium"
-                      >
-                        Supplier
-                      </Label>
-                      <Select
-                        value={formData.supplierId}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            supplierId: value,
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
-                          <SelectValue placeholder="Pilih supplier" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          {supplierList.map((supplier) => (
-                            <SelectItem
-                              key={supplier.id}
-                              value={supplier.id}
-                              className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                            >
-                              {supplier.kode} - {supplier.nama}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label
-                        htmlFor="tanggal"
-                        className="text-slate-700 font-medium"
-                      >
-                        Tanggal
-                      </Label>
-                      <Input
-                        id="tanggal"
-                        type="date"
-                        value={formData.tanggal}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            tanggal: e.target.value,
-                          }))
-                        }
-                        className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 bg-white"
-                        required
-                      />
-                    </div>
-                  </div>
 
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                      <Label className="text-lg font-semibold text-slate-800">
-                        Daftar Barang
-                      </Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addItem}
-                        className="rounded-xl border-slate-200 hover:bg-slate-50 text-blue-600 hover:text-blue-700 cursor-pointer"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Tambah Barang
-                      </Button>
-                    </div>
-
-                    {items.length === 0 ? (
-                      <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500">
-                        Belum ada barang yang ditambahkan
-                      </div>
-                    ) : (
-                      items.map((item, index) => (
-                        <div
-                          key={item.id}
-                          className="grid grid-cols-12 gap-3 items-end p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-slate-300 transition-colors"
+          {isGudang ? (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Buat PO Baru
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto rounded-xl border-slate-100 shadow-2xl">
+                <form onSubmit={handleSubmit}>
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-slate-900">
+                      Buat Purchase Order Baru
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-500">
+                      Isi formulir di bawah untuk membuat permohonan restok
+                      barang ke supplier.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-6 py-6">
+                    <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                      <div className="grid gap-2">
+                        <Label
+                          htmlFor="supplierId"
+                          className="text-slate-700 font-medium"
                         >
-                          <div className="col-span-5">
-                            <Label className="text-xs text-slate-500 mb-1.5 block">
-                              Barang
-                            </Label>
-                            <Select
-                              value={item.barangId}
-                              onValueChange={(value) =>
-                                updateItem(index, "barangId", value)
-                              }
-                            >
-                              <SelectTrigger className="rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                                <SelectValue placeholder="Pilih barang" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                                {barangList.map((barang) => (
-                                  <SelectItem
-                                    key={barang.id}
-                                    value={barang.id}
-                                    className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                                  >
-                                    {barang.kode} - {barang.nama}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="col-span-2">
-                            <Label className="text-xs text-slate-500 mb-1.5 block">
-                              Qty
-                            </Label>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              value={item.jumlah || ""}
-                              onChange={(e) =>
-                                updateItem(
-                                  index,
-                                  "jumlah",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              min="1"
-                              className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                            />
-                          </div>
-                          <div className="col-span-3">
-                            <Label className="text-xs text-slate-500 mb-1.5 block">
-                              Harga Satuan
-                            </Label>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              value={item.harga || ""}
-                              onChange={(e) =>
-                                updateItem(
-                                  index,
-                                  "harga",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              min="0"
-                              className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                            />
-                          </div>
-                          <div className="col-span-2 flex gap-2">
-                            <div className="flex-1">
+                          Supplier
+                        </Label>
+                        <Select
+                          value={formData.supplierId}
+                          onValueChange={(value) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              supplierId: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
+                            <SelectValue placeholder="Pilih supplier" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                            {supplierList.map((supplier) => (
+                              <SelectItem
+                                key={supplier.id}
+                                value={supplier.id}
+                                className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                              >
+                                {supplier.kode} - {supplier.nama}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label
+                          htmlFor="tanggal"
+                          className="text-slate-700 font-medium"
+                        >
+                          Tanggal
+                        </Label>
+                        <Input
+                          id="tanggal"
+                          type="date"
+                          value={formData.tanggal}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              tanggal: e.target.value,
+                            }))
+                          }
+                          className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 bg-white"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <Label className="text-lg font-semibold text-slate-800">
+                          Daftar Barang
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addItem}
+                          className="rounded-xl border-slate-200 hover:bg-slate-50 text-blue-600 hover:text-blue-700 cursor-pointer"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Tambah Barang
+                        </Button>
+                      </div>
+
+                      {items.length === 0 ? (
+                        <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500">
+                          Belum ada barang yang ditambahkan
+                        </div>
+                      ) : (
+                        items.map((item, index) => (
+                          <div
+                            key={item.id}
+                            className="grid grid-cols-12 gap-3 items-end p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-slate-300 transition-colors"
+                          >
+                            <div className="col-span-5">
                               <Label className="text-xs text-slate-500 mb-1.5 block">
-                                Subtotal
+                                Barang
+                              </Label>
+                              <Select
+                                value={item.barangId}
+                                onValueChange={(value) =>
+                                  updateItem(index, "barangId", value)
+                                }
+                              >
+                                <SelectTrigger className="rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                                  <SelectValue placeholder="Pilih barang" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                                  {barangList.map((barang) => (
+                                    <SelectItem
+                                      key={barang.id}
+                                      value={barang.id}
+                                      className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                                    >
+                                      {barang.kode} - {barang.nama}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="col-span-2">
+                              <Label className="text-xs text-slate-500 mb-1.5 block">
+                                Qty
                               </Label>
                               <Input
-                                value={formatCurrency(item.subtotal)}
-                                readOnly
-                                className="bg-slate-50 rounded-xl border-slate-200 text-slate-600 text-xs font-medium"
+                                type="number"
+                                placeholder="0"
+                                value={item.jumlah || ""}
+                                onChange={(e) =>
+                                  updateItem(
+                                    index,
+                                    "jumlah",
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
+                                min="1"
+                                className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                               />
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeItem(index)}
-                              className="mb-0.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg h-9 w-9 shrink-0 cursor-pointer"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="col-span-3">
+                              <Label className="text-xs text-slate-500 mb-1.5 block">
+                                Harga Satuan
+                              </Label>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={item.harga || ""}
+                                onChange={(e) =>
+                                  updateItem(
+                                    index,
+                                    "harga",
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
+                                min="0"
+                                className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                              />
+                            </div>
+                            <div className="col-span-2 flex gap-2">
+                              <div className="flex-1">
+                                <Label className="text-xs text-slate-500 mb-1.5 block">
+                                  Subtotal
+                                </Label>
+                                <Input
+                                  value={formatCurrency(item.subtotal)}
+                                  readOnly
+                                  className="bg-slate-50 rounded-xl border-slate-200 text-slate-600 text-xs font-medium"
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeItem(index)}
+                                className="mb-0.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg h-9 w-9 shrink-0 cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                        ))
+                      )}
+                    </div>
 
-                  <div className="flex justify-end pt-4 border-t border-slate-100">
-                    <div className="bg-slate-50 px-6 py-4 rounded-xl border border-slate-200 w-full sm:w-auto">
-                      <div className="flex justify-between items-center gap-8">
-                        <Label className="text-lg font-semibold text-slate-700">
-                          Total Keseluruhan
-                        </Label>
-                        <span className="text-2xl font-bold text-blue-700">
-                          {formatCurrency(calculateTotal())}
-                        </span>
+                    <div className="flex justify-end pt-4 border-t border-slate-100">
+                      <div className="bg-slate-50 px-6 py-4 rounded-xl border border-slate-200 w-full sm:w-auto">
+                        <div className="flex justify-between items-center gap-8">
+                          <Label className="text-lg font-semibold text-slate-700">
+                            Total Keseluruhan
+                          </Label>
+                          <span className="text-2xl font-bold text-blue-700">
+                            {formatCurrency(calculateTotal())}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <DialogFooter className="gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    className="rounded-xl cursor-pointer"
-                  >
-                    Batal
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
-                  >
-                    Simpan PO
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <DialogFooter className="gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      className="rounded-xl cursor-pointer"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
+                    >
+                      Simpan PO
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          ) : null}
         </div>
 
         <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">

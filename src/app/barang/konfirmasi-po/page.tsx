@@ -34,6 +34,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 interface Supplier {
   id: string;
@@ -70,6 +71,8 @@ interface PurchaseOrder {
 }
 
 export default function KonfirmasiPOPage() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
   const [purchaseOrderList, setPurchaseOrderList] = useState<PurchaseOrder[]>([
     {
       id: "1",
@@ -491,24 +494,28 @@ export default function KonfirmasiPOPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleApprove(po)}
-                            className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg cursor-pointer"
-                            title="Setujui"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleReject(po)}
-                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
-                            title="Tolak"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
+                          {isAdmin && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleApprove(po)}
+                                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg cursor-pointer"
+                                title="Setujui"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleReject(po)}
+                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                                title="Tolak"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

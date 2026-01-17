@@ -24,6 +24,15 @@ model User {
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
+  role          Role      @default(USER)
+}
+
+enum Role {
+  USER
+  ADMIN
+  GUDANG
+  PURCHASING
+  PRODUKSI
 }
 
 model Account {

@@ -13,7 +13,8 @@ graph TD
     %% Inbound
     subgraph "1. Project & Inbound"
         Start(("Mulai")) --> Offer["Penawaran Harga (Project Customer)"]
-        Offer --> Deal{"Deal Project?"}
+        Offer --> Deal{"Deal Project?
+        (Harga/Unit x Qty)"}
         Deal -- Ya --> UnitDatang["Unit Kendaraan Masuk"]
         UnitDatang --> QCIn["QC Kendaraan Masuk"]
         QCIn -->|Cek Jumlah & Kondisi| CheckInValid{"Sesuai Perjanjian?"}

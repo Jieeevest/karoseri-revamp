@@ -43,6 +43,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 interface Barang {
   id: string;
@@ -86,6 +87,8 @@ interface BarangMasuk {
 }
 
 export default function BarangMasukPage() {
+  const { data: session } = useSession();
+  const isGudang = session?.user?.role === "GUDANG";
   const [barangList] = useState<Barang[]>([
     { id: "1", kode: "BRG001", nama: "Cat Semprot Hitam", satuan: "Liter" },
     { id: "2", kode: "BRG002", nama: "Besi Hollow 4x4", satuan: "Meter" },
@@ -367,247 +370,253 @@ export default function BarangMasukPage() {
               Pencatatan barang yang diterima dari supplier.
             </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                onClick={openAddDialog}
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Catat Barang Masuk
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[650px] rounded-xl border-slate-100 shadow-2xl">
-              <form onSubmit={handleSubmit}>
-                <DialogHeader>
-                  <DialogTitle className="text-xl font-bold text-slate-900">
-                    {editingBarangMasuk
-                      ? "Edit Barang Masuk"
-                      : "Catat Barang Masuk"}
-                  </DialogTitle>
-                  <DialogDescription className="text-slate-500">
-                    {editingBarangMasuk
-                      ? "Update informasi barang yang diterima."
-                      : "Isi formulir untuk mencatat penerimaan barang dari supplier."}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 py-6">
-                  <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
-                    <div className="grid gap-2">
-                      <Label
-                        htmlFor="tanggal"
-                        className="text-slate-700 font-medium"
-                      >
-                        Tanggal
-                      </Label>
-                      <Input
-                        id="tanggal"
-                        type="date"
-                        value={formData.tanggal}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            tanggal: e.target.value,
-                          }))
-                        }
-                        className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 bg-white"
-                        required
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label
-                        htmlFor="purchaseOrderId"
-                        className="text-slate-700 font-medium"
-                      >
-                        Purchase Order (Opsional)
-                      </Label>
-                      <Select
-                        value={formData.purchaseOrderId}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            purchaseOrderId: value,
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
-                          <SelectValue placeholder="Pilih PO (jika ada)" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          <SelectItem
-                            value=""
-                            className="cursor-pointer focus:bg-slate-50"
-                          >
-                            Tanpa PO
-                          </SelectItem>
-                          {purchaseOrderList
-                            .filter((po) => po.status === "DISETUJUI")
-                            .map((po) => (
-                              <SelectItem
-                                key={po.id}
-                                value={po.id}
-                                className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                              >
-                                {po.nomor} - {po.supplier.nama}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
 
-                  <div className="grid gap-4">
-                    <div className="grid grid-cols-2 gap-4">
+          {isGudang ? (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  onClick={openAddDialog}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Catat Barang Masuk
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[650px] rounded-xl border-slate-100 shadow-2xl">
+                <form onSubmit={handleSubmit}>
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-slate-900">
+                      {editingBarangMasuk
+                        ? "Edit Barang Masuk"
+                        : "Catat Barang Masuk"}
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-500">
+                      {editingBarangMasuk
+                        ? "Update informasi barang yang diterima."
+                        : "Isi formulir untuk mencatat penerimaan barang dari supplier."}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-6 py-6">
+                    <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
                       <div className="grid gap-2">
                         <Label
-                          htmlFor="supplierId"
+                          htmlFor="tanggal"
                           className="text-slate-700 font-medium"
                         >
-                          Supplier
-                        </Label>
-                        <Select
-                          value={formData.supplierId}
-                          onValueChange={(value) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              supplierId: value,
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                            <SelectValue placeholder="Pilih supplier" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                            {supplierList.map((supplier) => (
-                              <SelectItem
-                                key={supplier.id}
-                                value={supplier.id}
-                                className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                              >
-                                {supplier.kode} - {supplier.nama}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label
-                          htmlFor="kondisi"
-                          className="text-slate-700 font-medium"
-                        >
-                          Kondisi Barang
-                        </Label>
-                        <Select
-                          value={formData.kondisi}
-                          onValueChange={(value) =>
-                            setFormData((prev) => ({ ...prev, kondisi: value }))
-                          }
-                        >
-                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                            <SelectValue placeholder="Pilih kondisi" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                            <SelectItem
-                              value="Baik"
-                              className="text-green-600 cursor-pointer focus:bg-green-50"
-                            >
-                              Baik
-                            </SelectItem>
-                            <SelectItem
-                              value="Ada yang rusak"
-                              className="text-yellow-600 cursor-pointer focus:bg-yellow-50"
-                            >
-                              Ada yang rusak
-                            </SelectItem>
-                            <SelectItem
-                              value="Rusak semua"
-                              className="text-red-600 cursor-pointer focus:bg-red-50"
-                            >
-                              Rusak semua
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-12 gap-4">
-                      <div className="col-span-8 grid gap-2">
-                        <Label
-                          htmlFor="barangId"
-                          className="text-slate-700 font-medium"
-                        >
-                          Barang
-                        </Label>
-                        <Select
-                          value={formData.barangId}
-                          onValueChange={(value) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              barangId: value,
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                            <SelectValue placeholder="Pilih barang" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                            {barangList.map((barang) => (
-                              <SelectItem
-                                key={barang.id}
-                                value={barang.id}
-                                className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                              >
-                                {barang.kode} - {barang.nama}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="col-span-4 grid gap-2">
-                        <Label
-                          htmlFor="jumlah"
-                          className="text-slate-700 font-medium"
-                        >
-                          Jumlah
+                          Tanggal
                         </Label>
                         <Input
-                          id="jumlah"
-                          type="number"
-                          value={formData.jumlah}
+                          id="tanggal"
+                          type="date"
+                          value={formData.tanggal}
                           onChange={(e) =>
                             setFormData((prev) => ({
                               ...prev,
-                              jumlah: parseInt(e.target.value) || 0,
+                              tanggal: e.target.value,
                             }))
                           }
-                          placeholder="0"
-                          min="1"
-                          className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                          className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 bg-white"
                           required
                         />
                       </div>
+                      <div className="grid gap-2">
+                        <Label
+                          htmlFor="purchaseOrderId"
+                          className="text-slate-700 font-medium"
+                        >
+                          Purchase Order (Opsional)
+                        </Label>
+                        <Select
+                          value={formData.purchaseOrderId}
+                          onValueChange={(value) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              purchaseOrderId: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
+                            <SelectValue placeholder="Pilih PO (jika ada)" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                            <SelectItem
+                              value=""
+                              className="cursor-pointer focus:bg-slate-50"
+                            >
+                              Tanpa PO
+                            </SelectItem>
+                            {purchaseOrderList
+                              .filter((po) => po.status === "DISETUJUI")
+                              .map((po) => (
+                                <SelectItem
+                                  key={po.id}
+                                  value={po.id}
+                                  className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                                >
+                                  {po.nomor} - {po.supplier.nama}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label
+                            htmlFor="supplierId"
+                            className="text-slate-700 font-medium"
+                          >
+                            Supplier
+                          </Label>
+                          <Select
+                            value={formData.supplierId}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                supplierId: value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                              <SelectValue placeholder="Pilih supplier" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                              {supplierList.map((supplier) => (
+                                <SelectItem
+                                  key={supplier.id}
+                                  value={supplier.id}
+                                  className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                                >
+                                  {supplier.kode} - {supplier.nama}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label
+                            htmlFor="kondisi"
+                            className="text-slate-700 font-medium"
+                          >
+                            Kondisi Barang
+                          </Label>
+                          <Select
+                            value={formData.kondisi}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                kondisi: value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                              <SelectValue placeholder="Pilih kondisi" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                              <SelectItem
+                                value="Baik"
+                                className="text-green-600 cursor-pointer focus:bg-green-50"
+                              >
+                                Baik
+                              </SelectItem>
+                              <SelectItem
+                                value="Ada yang rusak"
+                                className="text-yellow-600 cursor-pointer focus:bg-yellow-50"
+                              >
+                                Ada yang rusak
+                              </SelectItem>
+                              <SelectItem
+                                value="Rusak semua"
+                                className="text-red-600 cursor-pointer focus:bg-red-50"
+                              >
+                                Rusak semua
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-12 gap-4">
+                        <div className="col-span-8 grid gap-2">
+                          <Label
+                            htmlFor="barangId"
+                            className="text-slate-700 font-medium"
+                          >
+                            Barang
+                          </Label>
+                          <Select
+                            value={formData.barangId}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                barangId: value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                              <SelectValue placeholder="Pilih barang" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                              {barangList.map((barang) => (
+                                <SelectItem
+                                  key={barang.id}
+                                  value={barang.id}
+                                  className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                                >
+                                  {barang.kode} - {barang.nama}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-4 grid gap-2">
+                          <Label
+                            htmlFor="jumlah"
+                            className="text-slate-700 font-medium"
+                          >
+                            Jumlah
+                          </Label>
+                          <Input
+                            id="jumlah"
+                            type="number"
+                            value={formData.jumlah}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                jumlah: parseInt(e.target.value) || 0,
+                              }))
+                            }
+                            placeholder="0"
+                            min="1"
+                            className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <DialogFooter className="gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    className="rounded-xl cursor-pointer"
-                  >
-                    Batal
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
-                  >
-                    {editingBarangMasuk ? "Simpan Perubahan" : "Catat Barang"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <DialogFooter className="gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      className="rounded-xl cursor-pointer"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
+                    >
+                      {editingBarangMasuk ? "Simpan Perubahan" : "Catat Barang"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          ) : null}
         </div>
 
         {/* Statistics Cards */}
