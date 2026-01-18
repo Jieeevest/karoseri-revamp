@@ -33,148 +33,41 @@ import {
 import { Plus, Edit, Trash2, Search, Car, Eye } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-
-interface MerekKendaraan {
-  id: string;
-  nama: string;
-}
-
-interface TipeKendaraan {
-  id: string;
-  nama: string;
-  merekId: string;
-  merekKendaraan: MerekKendaraan;
-}
-
-interface Customer {
-  id: string;
-  kode: string;
-  nama: string;
-}
-
-interface Kendaraan {
-  id: string;
-  nomorPolisi: string;
-  nomorChasis: string;
-  nomorMesin: string;
-  merekId: string;
-  merekKendaraan: MerekKendaraan;
-  tipeId: string;
-  tipeKendaraan: TipeKendaraan;
-  customerId: string;
-  customer: Customer;
-  status:
-    | "MASUK"
-    | "TAHAP_PERAKITAN"
-    | "PROSES_PENGCATAN"
-    | "PROSES_PEMBUATAN_LOGO"
-    | "SELESAI"
-    | "KELUAR";
-  createdAt: string;
-}
+import {
+  useKendaraan,
+  useCreateKendaraan,
+  useUpdateKendaraan,
+  useDeleteKendaraan,
+  Kendaraan,
+} from "@/hooks/use-kendaraan";
+import {
+  useMerekKendaraan,
+  useTipeKendaraan,
+  MerekKendaraan,
+  TipeKendaraan,
+} from "@/hooks/use-master";
+import { useCustomer, Customer } from "@/hooks/use-customer";
 
 export default function DataKendaraanPage() {
-  const [merekList] = useState<MerekKendaraan[]>([
-    { id: "1", nama: "Hino" },
-    { id: "2", nama: "Isuzu" },
-    { id: "3", nama: "Mitsubishi" },
-  ]);
-
-  const [tipeList] = useState<TipeKendaraan[]>([
-    {
-      id: "1",
-      nama: "Ranger",
-      merekId: "1",
-      merekKendaraan: { id: "1", nama: "Hino" },
-    },
-    {
-      id: "2",
-      nama: "Dutro",
-      merekId: "2",
-      merekKendaraan: { id: "2", nama: "Isuzu" },
-    },
-    {
-      id: "3",
-      nama: "Elf",
-      merekId: "2",
-      merekKendaraan: { id: "2", nama: "Isuzu" },
-    },
-  ]);
-
-  const [customerList] = useState<Customer[]>([
-    { id: "1", kode: "CUS001", nama: "PT. Maju Bersama" },
-    { id: "2", kode: "CUS002", nama: "CV. Jaya Transport" },
-    { id: "3", kode: "CUS003", nama: "PT. Logistik Indonesia" },
-  ]);
-
-  const [kendaraanList, setKendaraanList] = useState<Kendaraan[]>([
-    {
-      id: "1",
-      nomorPolisi: "B 1234 ABC",
-      nomorChasis: "MHK12345678901234",
-      nomorMesin: "4D567890",
-      merekId: "1",
-      merekKendaraan: { id: "1", nama: "Hino" },
-      tipeId: "1",
-      tipeKendaraan: {
-        id: "1",
-        nama: "Ranger",
-        merekId: "1",
-        merekKendaraan: { id: "1", nama: "Hino" },
-      },
-      customerId: "1",
-      customer: { id: "1", kode: "CUS001", nama: "PT. Maju Bersama" },
-      status: "MASUK",
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      nomorPolisi: "B 5678 DEF",
-      nomorChasis: "MHK98765432109876",
-      nomorMesin: "4D567891",
-      merekId: "2",
-      merekKendaraan: { id: "2", nama: "Isuzu" },
-      tipeId: "2",
-      tipeKendaraan: {
-        id: "2",
-        nama: "Dutro",
-        merekId: "2",
-        merekKendaraan: { id: "2", nama: "Isuzu" },
-      },
-      customerId: "2",
-      customer: { id: "2", kode: "CUS002", nama: "CV. Jaya Transport" },
-      status: "TAHAP_PERAKITAN",
-      createdAt: "2024-01-16",
-    },
-    {
-      id: "3",
-      nomorPolisi: "B 9012 GHI",
-      nomorChasis: "MHK55555555555555",
-      nomorMesin: "4D567892",
-      merekId: "2",
-      merekKendaraan: { id: "2", nama: "Isuzu" },
-      tipeId: "3",
-      tipeKendaraan: {
-        id: "3",
-        nama: "Elf",
-        merekId: "2",
-        merekKendaraan: { id: "2", nama: "Isuzu" },
-      },
-      customerId: "3",
-      customer: { id: "3", kode: "CUS003", nama: "PT. Logistik Indonesia" },
-      status: "PROSES_PENGCATAN",
-      createdAt: "2024-01-17",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Hooks
+  const { data: kendaraanList = [], refetch } = useKendaraan(searchTerm);
+  const { data: merekList = [] } = useMerekKendaraan();
+  const { data: tipeList = [] } = useTipeKendaraan(); // Fetch all types
+  const { data: customerList = [] } = useCustomer();
+
+  const createKendaraan = useCreateKendaraan();
+  const updateKendaraan = useUpdateKendaraan();
+  const deleteKendaraan = useDeleteKendaraan();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [editingKendaraan, setEditingKendaraan] = useState<Kendaraan | null>(
-    null
+    null,
   );
   const [viewingKendaraan, setViewingKendaraan] = useState<Kendaraan | null>(
-    null
+    null,
   );
   const [formData, setFormData] = useState({
     nomorPolisi: "",
@@ -185,21 +78,13 @@ export default function DataKendaraanPage() {
     customerId: "",
   });
 
-  const filteredKendaraan = kendaraanList.filter(
-    (kendaraan) =>
-      kendaraan.nomorPolisi.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      kendaraan.nomorChasis.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      kendaraan.merekKendaraan.nama
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      kendaraan.tipeKendaraan.nama
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      kendaraan.customer.nama.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Helper to filter types based on selected Merek in form
+  const filteredTipeList = formData.merekId
+    ? tipeList.filter((t) => t.merekId === formData.merekId)
+    : [];
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
+    const statusConfig: any = {
       MASUK: { color: "bg-blue-100 text-blue-800", label: "Masuk" },
       TAHAP_PERAKITAN: {
         color: "bg-yellow-100 text-yellow-800",
@@ -217,8 +102,7 @@ export default function DataKendaraanPage() {
       KELUAR: { color: "bg-gray-100 text-gray-800", label: "Keluar" },
     };
 
-    const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.MASUK;
+    const config = statusConfig[status] || statusConfig.MASUK;
     return (
       <Badge variant="secondary" className={cn("font-medium", config.color)}>
         {config.label}
@@ -226,54 +110,36 @@ export default function DataKendaraanPage() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const selectedMerek = merekList.find((m) => m.id === formData.merekId);
-    const selectedTipe = tipeList.find((t) => t.id === formData.tipeId);
-    const selectedCustomer = customerList.find(
-      (c) => c.id === formData.customerId
-    );
+    try {
+      if (editingKendaraan) {
+        await updateKendaraan.mutateAsync({
+          id: editingKendaraan.id,
+          ...formData,
+        });
+      } else {
+        await createKendaraan.mutateAsync({
+          ...formData,
+        });
+      }
 
-    if (!selectedMerek || !selectedTipe || !selectedCustomer) return;
-
-    if (editingKendaraan) {
-      setKendaraanList((prev) =>
-        prev.map((k) =>
-          k.id === editingKendaraan.id
-            ? {
-                ...k,
-                ...formData,
-                merekKendaraan: selectedMerek,
-                tipeKendaraan: selectedTipe,
-                customer: selectedCustomer,
-              }
-            : k
-        )
-      );
-    } else {
-      const newKendaraan: Kendaraan = {
-        id: Date.now().toString(),
-        ...formData,
-        merekKendaraan: selectedMerek,
-        tipeKendaraan: selectedTipe,
-        customer: selectedCustomer,
-        status: "MASUK",
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setKendaraanList((prev) => [...prev, newKendaraan]);
+      setFormData({
+        nomorPolisi: "",
+        nomorChasis: "",
+        nomorMesin: "",
+        merekId: "",
+        tipeId: "",
+        customerId: "",
+      });
+      setEditingKendaraan(null);
+      setIsDialogOpen(false);
+      refetch();
+    } catch (error) {
+      console.error("Failed to save kendaraan", error);
+      alert("Gagal menyimpan kendaraan");
     }
-
-    setFormData({
-      nomorPolisi: "",
-      nomorChasis: "",
-      nomorMesin: "",
-      merekId: "",
-      tipeId: "",
-      customerId: "",
-    });
-    setEditingKendaraan(null);
-    setIsDialogOpen(false);
   };
 
   const handleEdit = (kendaraan: Kendaraan) => {
@@ -289,9 +155,15 @@ export default function DataKendaraanPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus data kendaraan ini?")) {
-      setKendaraanList((prev) => prev.filter((k) => k.id !== id));
+      try {
+        await deleteKendaraan.mutateAsync(id);
+        refetch();
+      } catch (error) {
+        console.error("Delete failed", error);
+        alert("Gagal menghapus kendaraan");
+      }
     }
   };
 
@@ -506,17 +378,15 @@ export default function DataKendaraanPage() {
                           <SelectValue placeholder="Pilih tipe" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          {tipeList
-                            .filter((tipe) => tipe.merekId === formData.merekId)
-                            .map((tipe) => (
-                              <SelectItem
-                                key={tipe.id}
-                                value={tipe.id}
-                                className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                              >
-                                {tipe.nama}
-                              </SelectItem>
-                            ))}
+                          {filteredTipeList.map((tipe) => (
+                            <SelectItem
+                              key={tipe.id}
+                              value={tipe.id}
+                              className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                            >
+                              {tipe.nama}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -566,7 +436,7 @@ export default function DataKendaraanPage() {
           {Object.entries(statusStats)
             .slice(0, 3)
             .map(([status, count]) => {
-              const statusConfig = {
+              const statusConfig: any = {
                 MASUK: { color: "bg-blue-50", icon: "🚛" },
                 TAHAP_PERAKITAN: { color: "bg-yellow-50", icon: "🔧" },
                 PROSES_PENGCATAN: { color: "bg-purple-50", icon: "🎨" },
@@ -575,9 +445,7 @@ export default function DataKendaraanPage() {
                 KELUAR: { color: "bg-gray-50", icon: "🚗" },
               };
 
-              const config =
-                statusConfig[status as keyof typeof statusConfig] ||
-                statusConfig.MASUK;
+              const config = statusConfig[status] || statusConfig.MASUK;
               const statusLabel = status
                 .replace(/_/g, " ")
                 .toLowerCase()
@@ -652,8 +520,8 @@ export default function DataKendaraanPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredKendaraan.length > 0 ? (
-                  filteredKendaraan.map((kendaraan) => (
+                {kendaraanList.length > 0 ? (
+                  kendaraanList.map((kendaraan) => (
                     <TableRow
                       key={kendaraan.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
@@ -805,10 +673,10 @@ export default function DataKendaraanPage() {
                 </div>
               </div>
             )}
-            <DialogFooter className="mt-4">
+            <DialogFooter className="pt-4 border-t border-slate-100">
               <Button
                 onClick={() => setIsDetailDialogOpen(false)}
-                className="rounded-xl cursor-pointer"
+                className="w-full bg-slate-900 text-white hover:bg-slate-800 rounded-xl"
               >
                 Tutup
               </Button>

@@ -37,31 +37,20 @@ import {
   Car,
   CheckCircle,
   XCircle,
-  AlertTriangle,
   FileText,
-  Eye,
   Download,
   Calendar,
-  User,
-  Building,
   ClipboardCheck,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-
-interface Customer {
-  id: string;
-  kode: string;
-  nama: string;
-}
-
-interface Kendaraan {
-  id: string;
-  nomorPolisi: string;
-  merek: string;
-  tipe: string;
-  status: string;
-}
+import {
+  useKendaraanKeluar,
+  useCreateKendaraanKeluar,
+  useDeleteKendaraanKeluar,
+} from "@/hooks/use-kendaraan-keluar";
+import { useKendaraan } from "@/hooks/use-kendaraan";
 
 interface QCChecklist {
   id: string;
@@ -71,104 +60,13 @@ interface QCChecklist {
   catatan: string;
 }
 
-interface KendaraanKeluar {
-  id: string;
-  nomor: string;
-  tanggalKeluar: string;
-  kendaraanId: string;
-  kendaraan: Kendaraan;
-  qcResult: string;
-  layakKeluar: boolean;
-  suratJalan: string;
-  createdAt: string;
-}
-
 export default function KendaraanKeluarPage() {
-  const [customerList] = useState<Customer[]>([
-    { id: "1", kode: "CUS001", nama: "PT. Maju Bersama" },
-    { id: "2", kode: "CUS002", nama: "CV. Jaya Transport" },
-    { id: "3", kode: "CUS003", nama: "PT. Logistik Indonesia" },
-  ]);
-
-  const [kendaraanList] = useState<Kendaraan[]>([
-    {
-      id: "1",
-      nomorPolisi: "B 1234 ABC",
-      merek: "Hino",
-      tipe: "Ranger",
-      status: "SELESAI",
-    },
-    {
-      id: "2",
-      nomorPolisi: "B 5678 DEF",
-      merek: "Isuzu",
-      tipe: "Dutro",
-      status: "SELESAI",
-    },
-    {
-      id: "3",
-      nomorPolisi: "B 9012 GHI",
-      merek: "Isuzu",
-      tipe: "Elf",
-      status: "SELESAI",
-    },
-    {
-      id: "4",
-      nomorPolisi: "B 3456 JKL",
-      merek: "Mitsubishi",
-      tipe: "L300",
-      status: "PROSES_PENGCATAN",
-    },
-  ]);
-
-  const [kendaraanKeluarList, setKendaraanKeluarList] = useState<
-    KendaraanKeluar[]
-  >([
-    {
-      id: "1",
-      nomor: "KK-2024-001",
-      tanggalKeluar: "2024-01-20",
-      kendaraanId: "1",
-      kendaraan: {
-        id: "1",
-        nomorPolisi: "B 1234 ABC",
-        merek: "Hino",
-        tipe: "Ranger",
-        status: "SELESAI",
-      },
-      qcResult:
-        "Kendaraan dalam kondisi baik, semua fungsi normal, cat sesuai standar",
-      layakKeluar: true,
-      suratJalan: "surat_jalan_001.pdf",
-      createdAt: "2024-01-20",
-    },
-    {
-      id: "2",
-      nomor: "KK-2024-002",
-      tanggalKeluar: "2024-01-22",
-      kendaraanId: "2",
-      kendaraan: {
-        id: "2",
-        nomorPolisi: "B 5678 DEF",
-        merek: "Isuzu",
-        tipe: "Dutro",
-        status: "SELESAI",
-      },
-      qcResult: "Kendaraan siap digunakan, semua peralatan lengkap",
-      layakKeluar: true,
-      suratJalan: "surat_jalan_002.pdf",
-      createdAt: "2024-01-22",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isQCDialogOpen, setIsQCDialogOpen] = useState(false);
   const [isSuratDialogOpen, setIsSuratDialogOpen] = useState(false);
-  const [selectedKendaraan, setSelectedKendaraan] =
-    useState<KendaraanKeluar | null>(null);
-  const [editingKendaraan, setEditingKendaraan] =
-    useState<KendaraanKeluar | null>(null);
+  const [selectedKendaraan, setSelectedKendaraan] = useState<any | null>(null);
+
   const [formData, setFormData] = useState({
     tanggalKeluar: new Date().toISOString().split("T")[0],
     kendaraanId: "",
@@ -178,7 +76,6 @@ export default function KendaraanKeluarPage() {
   });
 
   const [qcChecklist, setQcChecklist] = useState<QCChecklist[]>([
-    // Eksterior
     {
       id: "1",
       area: "Eksterior",
@@ -215,7 +112,6 @@ export default function KendaraanKeluarPage() {
       catatan: "",
     },
     { id: "6", area: "Eksterior", item: "Ban", kondisi: "BAIK", catatan: "" },
-    // Interior
     {
       id: "7",
       area: "Interior",
@@ -238,7 +134,6 @@ export default function KendaraanKeluarPage() {
       catatan: "",
     },
     { id: "10", area: "Interior", item: "AC", kondisi: "BAIK", catatan: "" },
-    // Pengerjaan
     {
       id: "11",
       area: "Pengerjaan",
@@ -260,7 +155,6 @@ export default function KendaraanKeluarPage() {
       kondisi: "BAIK",
       catatan: "",
     },
-    // Keamanan
     {
       id: "14",
       area: "Keamanan",
@@ -272,94 +166,40 @@ export default function KendaraanKeluarPage() {
     { id: "16", area: "Keamanan", item: "APAR", kondisi: "BAIK", catatan: "" },
   ]);
 
-  const filteredKendaraanKeluar = kendaraanKeluarList.filter(
-    (kk) =>
-      kk.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      kk.kendaraan.nomorPolisi
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      kk.kendaraan.merek.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const { data: kendaraanKeluarList = [] } = useKendaraanKeluar(searchTerm);
+  const { data: allKendaraanData } = useKendaraan();
+  const kendaraanList = (allKendaraanData as any[]) || [];
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      MASUK: { color: "bg-blue-100 text-blue-800", label: "Masuk" },
-      TAHAP_PERAKITAN: {
-        color: "bg-yellow-100 text-yellow-800",
-        label: "Tahap Perakitan",
-      },
-      PROSES_PENGCATAN: {
-        color: "bg-purple-100 text-purple-800",
-        label: "Proses Pengecatan",
-      },
-      PROSES_PEMBUATAN_LOGO: {
-        color: "bg-pink-100 text-pink-800",
-        label: "Proses Logo",
-      },
-      SELESAI: { color: "bg-green-100 text-green-800", label: "Selesai" },
-      KELUAR: { color: "bg-gray-100 text-gray-800", label: "Keluar" },
-    };
+  const createKendaraanKeluar = useCreateKendaraanKeluar();
+  const deleteKendaraanKeluar = useDeleteKendaraanKeluar();
 
-    const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.MASUK;
-    return (
-      <Badge variant="outline" className={cn("font-medium", config.color)}>
-        {config.label}
-      </Badge>
-    );
-  };
-
-  const getKondisiBadge = (kondisi: string) => {
-    const kondisiConfig = {
-      BAIK: { color: "bg-green-100 text-green-800", label: "Baik" },
-      RUSAK: { color: "bg-red-100 text-red-800", label: "Rusak" },
-      PERLU_PERBAIKAN: {
-        color: "bg-yellow-100 text-yellow-800",
-        label: "Perlu Perbaikan",
-      },
-    };
-
-    const config =
-      kondisiConfig[kondisi as keyof typeof kondisiConfig] ||
-      kondisiConfig.BAIK;
-    return (
-      <Badge variant="outline" className={cn("font-medium", config.color)}>
-        {config.label}
-      </Badge>
-    );
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const selectedKendaraan = kendaraanList.find(
-      (k) => k.id === formData.kendaraanId
+    const selectedVeh = kendaraanList.find(
+      (k: any) => k.id === formData.kendaraanId,
     );
-    if (!selectedKendaraan) return;
+    if (!selectedVeh) return;
 
-    if (selectedKendaraan.status !== "SELESAI") {
+    if (selectedVeh.status !== "SELESAI") {
       alert('Kendaraan harus memiliki status "Selesai" sebelum dapat keluar!');
       return;
     }
 
-    const newKendaraanKeluar: KendaraanKeluar = {
-      id: Date.now().toString(),
-      nomor: `KK-2024-${String(kendaraanKeluarList.length + 1).padStart(
-        3,
-        "0"
-      )}`,
-      tanggalKeluar: formData.tanggalKeluar,
-      kendaraanId: formData.kendaraanId,
-      kendaraan: selectedKendaraan,
-      qcResult: formData.qcResult,
-      layakKeluar: formData.layakKeluar,
-      suratJalan: formData.layakKeluar ? `surat_jalan_${Date.now()}.pdf` : "",
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-
-    setKendaraanKeluarList([...kendaraanKeluarList, newKendaraanKeluar]);
-    resetForm();
-    setIsDialogOpen(false);
+    try {
+      await createKendaraanKeluar.mutateAsync({
+        tanggalKeluar: formData.tanggalKeluar,
+        kendaraanId: formData.kendaraanId,
+        qcResult: formData.qcResult,
+        layakKeluar: formData.layakKeluar,
+        suratJalan: formData.layakKeluar ? `surat_jalan_${Date.now()}.pdf` : "",
+      });
+      resetForm();
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to create kendaraan keluar", error);
+      alert("Gagal menyimpan data");
+    }
   };
 
   const resetForm = () => {
@@ -371,23 +211,29 @@ export default function KendaraanKeluarPage() {
       suratJalan: "",
     });
     setQcChecklist(
-      qcChecklist.map((item) => ({ ...item, kondisi: "BAIK", catatan: "" }))
+      qcChecklist.map((item) => ({ ...item, kondisi: "BAIK", catatan: "" })),
     );
   };
 
-  const handleQC = (kendaraanKeluar: KendaraanKeluar) => {
+  const handleQC = (kendaraanKeluar: any) => {
     setSelectedKendaraan(kendaraanKeluar);
     setIsQCDialogOpen(true);
   };
 
-  const handleViewSurat = (kendaraanKeluar: KendaraanKeluar) => {
+  const handleViewSurat = (kendaraanKeluar: any) => {
     setSelectedKendaraan(kendaraanKeluar);
     setIsSuratDialogOpen(true);
   };
 
+  const handleDelete = async (id: string) => {
+    if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+      await deleteKendaraanKeluar.mutateAsync(id);
+    }
+  };
+
   const updateQCChecklist = (id: string, field: string, value: any) => {
     setQcChecklist((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
     );
   };
 
@@ -395,7 +241,7 @@ export default function KendaraanKeluarPage() {
     const baik = qcChecklist.filter((item) => item.kondisi === "BAIK").length;
     const rusak = qcChecklist.filter((item) => item.kondisi === "RUSAK").length;
     const perluPerbaikan = qcChecklist.filter(
-      (item) => item.kondisi === "PERLU_PERBAIKAN"
+      (item) => item.kondisi === "PERLU_PERBAIKAN",
     ).length;
 
     return { baik, rusak, perluPerbaikan };
@@ -406,13 +252,13 @@ export default function KendaraanKeluarPage() {
   const getTodayStats = () => {
     const today = new Date().toISOString().split("T")[0];
     const todayItems = kendaraanKeluarList.filter(
-      (kk) => kk.tanggalKeluar === today
+      (kk: any) => kk.tanggalKeluar && kk.tanggalKeluar.split("T")[0] === today,
     );
 
     return {
       total: todayItems.length,
-      layakKeluar: todayItems.filter((kk) => kk.layakKeluar).length,
-      tidakLayak: todayItems.filter((kk) => !kk.layakKeluar).length,
+      layakKeluar: todayItems.filter((kk: any) => kk.layakKeluar).length,
+      tidakLayak: todayItems.filter((kk: any) => !kk.layakKeluar).length,
     };
   };
 
@@ -432,7 +278,10 @@ export default function KendaraanKeluarPage() {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer">
+              <Button
+                onClick={resetForm}
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
+              >
                 <Car className="mr-2 h-4 w-4" />
                 Kendaraan Keluar
               </Button>
@@ -491,15 +340,18 @@ export default function KendaraanKeluarPage() {
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-xl">
                           {kendaraanList
-                            .filter((k) => k.status === "SELESAI")
-                            .map((kendaraan) => (
+                            .filter((k: any) => k.status === "SELESAI")
+                            .map((kendaraan: any) => (
                               <SelectItem
                                 key={kendaraan.id}
                                 value={kendaraan.id}
                                 className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
                               >
-                                {kendaraan.nomorPolisi} - {kendaraan.merek}{" "}
-                                {kendaraan.tipe}
+                                {kendaraan.nomorPolisi} -{" "}
+                                {kendaraan.merekKendaraan?.nama ||
+                                  kendaraan.merek}{" "}
+                                {kendaraan.tipeKendaraan?.nama ||
+                                  kendaraan.tipe}
                               </SelectItem>
                             ))}
                         </SelectContent>
@@ -689,8 +541,8 @@ export default function KendaraanKeluarPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredKendaraanKeluar.length > 0 ? (
-                  filteredKendaraanKeluar.map((kendaraanKeluar) => (
+                {kendaraanKeluarList.length > 0 ? (
+                  kendaraanKeluarList.map((kendaraanKeluar: any) => (
                     <TableRow
                       key={kendaraanKeluar.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
@@ -704,16 +556,24 @@ export default function KendaraanKeluarPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="px-6 text-slate-600">
-                        {kendaraanKeluar.tanggalKeluar}
+                        {kendaraanKeluar.tanggalKeluar
+                          ? new Date(
+                              kendaraanKeluar.tanggalKeluar,
+                            ).toLocaleDateString()
+                          : "-"}
                       </TableCell>
                       <TableCell className="px-6">
                         <div>
                           <p className="font-medium text-slate-900">
-                            {kendaraanKeluar.kendaraan.nomorPolisi}
+                            {kendaraanKeluar.kendaraan?.nomorPolisi || "-"}
                           </p>
                           <p className="text-sm text-slate-500">
-                            {kendaraanKeluar.kendaraan.merek}{" "}
-                            {kendaraanKeluar.kendaraan.tipe}
+                            {kendaraanKeluar.kendaraan?.merekKendaraan?.nama ||
+                              kendaraanKeluar.kendaraan?.merek ||
+                              ""}{" "}
+                            {kendaraanKeluar.kendaraan?.tipeKendaraan?.nama ||
+                              kendaraanKeluar.kendaraan?.tipe ||
+                              ""}
                           </p>
                         </div>
                       </TableCell>
@@ -775,6 +635,14 @@ export default function KendaraanKeluarPage() {
                               <FileText className="h-4 w-4" />
                             </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(kendaraanKeluar.id)}
+                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -804,7 +672,7 @@ export default function KendaraanKeluarPage() {
               <DialogDescription className="text-slate-500">
                 Checklist QC untuk kendaraan{" "}
                 <span className="font-semibold text-slate-700">
-                  {selectedKendaraan?.kendaraan.nomorPolisi}
+                  {selectedKendaraan?.kendaraan?.nomorPolisi}
                 </span>
               </DialogDescription>
             </DialogHeader>
@@ -857,11 +725,16 @@ export default function KendaraanKeluarPage() {
                                   </span>
                                   <Select
                                     value={item.kondisi}
-                                    onValueChange={(value) =>
+                                    onValueChange={(
+                                      value:
+                                        | "BAIK"
+                                        | "RUSAK"
+                                        | "PERLU_PERBAIKAN",
+                                    ) =>
                                       updateQCChecklist(
                                         item.id,
                                         "kondisi",
-                                        value
+                                        value,
                                       )
                                     }
                                   >
@@ -871,8 +744,8 @@ export default function KendaraanKeluarPage() {
                                         item.kondisi === "BAIK"
                                           ? "bg-green-50 ring-green-200 text-green-700"
                                           : item.kondisi === "RUSAK"
-                                          ? "bg-red-50 ring-red-200 text-red-700"
-                                          : "bg-yellow-50 ring-yellow-200 text-yellow-700"
+                                            ? "bg-red-50 ring-red-200 text-red-700"
+                                            : "bg-yellow-50 ring-yellow-200 text-yellow-700",
                                       )}
                                     >
                                       <SelectValue />
@@ -908,7 +781,7 @@ export default function KendaraanKeluarPage() {
                                     updateQCChecklist(
                                       item.id,
                                       "catatan",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="w-full sm:w-64 h-9 rounded-lg border-slate-200 focus-visible:ring-blue-600"
@@ -918,7 +791,7 @@ export default function KendaraanKeluarPage() {
                           ))}
                       </div>
                     </div>
-                  )
+                  ),
                 )}
               </div>
             )}
@@ -935,7 +808,7 @@ export default function KendaraanKeluarPage() {
               <DialogDescription className="text-slate-500">
                 Surat jalan untuk kendaraan{" "}
                 <span className="font-semibold text-slate-700">
-                  {selectedKendaraan?.kendaraan.nomorPolisi}
+                  {selectedKendaraan?.kendaraan?.nomorPolisi}
                 </span>
               </DialogDescription>
             </DialogHeader>
@@ -966,7 +839,11 @@ export default function KendaraanKeluarPage() {
                           Tanggal
                         </p>
                         <p className="font-medium text-slate-900">
-                          {selectedKendaraan.tanggalKeluar}
+                          {selectedKendaraan.tanggalKeluar
+                            ? new Date(
+                                selectedKendaraan.tanggalKeluar,
+                              ).toLocaleDateString()
+                            : "-"}
                         </p>
                       </div>
                       <div className="space-y-1">
@@ -974,7 +851,7 @@ export default function KendaraanKeluarPage() {
                           Kendaraan
                         </p>
                         <p className="font-medium text-slate-900">
-                          {selectedKendaraan.kendaraan.nomorPolisi}
+                          {selectedKendaraan.kendaraan?.nomorPolisi}
                         </p>
                       </div>
                       <div className="space-y-1">
@@ -982,8 +859,10 @@ export default function KendaraanKeluarPage() {
                           Merek/Tipe
                         </p>
                         <p className="font-medium text-slate-900">
-                          {selectedKendaraan.kendaraan.merek}{" "}
-                          {selectedKendaraan.kendaraan.tipe}
+                          {selectedKendaraan.kendaraan?.merekKendaraan?.nama ||
+                            selectedKendaraan.kendaraan?.merek}{" "}
+                          {selectedKendaraan.kendaraan?.tipeKendaraan?.nama ||
+                            selectedKendaraan.kendaraan?.tipe}
                         </p>
                       </div>
                       <div className="col-span-2 space-y-1 pt-2">
@@ -1004,7 +883,6 @@ export default function KendaraanKeluarPage() {
                       </div>
                     </div>
                   </div>
-
                   <div className="mt-16 pt-8 border-t border-slate-200">
                     <div className="grid grid-cols-3 gap-8">
                       <div className="text-center">

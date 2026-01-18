@@ -13,31 +13,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
   FileText,
   Download,
-  Search,
-  Calendar,
   TrendingUp,
   Package,
   Car,
   Users,
   DollarSign,
-  PieChart,
   Activity,
-  Wallet,
   ArrowLeft,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useLaporan } from "@/hooks/use-laporan";
 
 export default function LaporanPage() {
   const [selectedReport, setSelectedReport] = useState("");
@@ -45,143 +35,8 @@ export default function LaporanPage() {
     start: "",
     end: "",
   });
-  const [searchTerm, setSearchTerm] = useState("");
 
-  // Sample data for reports
-  const laporanStok = [
-    {
-      id: 1,
-      nama: "Cat Semprot Hitam",
-      stokAwal: 20,
-      masuk: 50,
-      keluar: 35,
-      stokAkhir: 35,
-      satuan: "Liter",
-    },
-    {
-      id: 2,
-      nama: "Besi Hollow 4x4",
-      stokAwal: 100,
-      masuk: 200,
-      keluar: 150,
-      stokAkhir: 150,
-      satuan: "Meter",
-    },
-    {
-      id: 3,
-      nama: "Paku 10cm",
-      stokAwal: 50,
-      masuk: 100,
-      keluar: 80,
-      stokAkhir: 70,
-      satuan: "Kg",
-    },
-    {
-      id: 4,
-      nama: "Lampu LED",
-      stokAwal: 30,
-      masuk: 50,
-      keluar: 25,
-      stokAkhir: 55,
-      satuan: "Unit",
-    },
-  ];
-
-  const laporanKendaraan = [
-    {
-      id: 1,
-      nomorPolisi: "B 1234 ABC",
-      customer: "PT. Maju Bersama",
-      tanggalMasuk: "2024-01-15",
-      tanggalKeluar: "2024-01-20",
-      status: "Selesai",
-      pengerjaan: "Wing Box + Logo",
-    },
-    {
-      id: 2,
-      nomorPolisi: "B 5678 DEF",
-      customer: "CV. Jaya Transport",
-      tanggalMasuk: "2024-01-16",
-      tanggalKeluar: "-",
-      status: "Proses",
-      pengerjaan: "Box Besi Standart",
-    },
-    {
-      id: 3,
-      nomorPolisi: "B 9012 GHI",
-      customer: "PT. Logistik Indonesia",
-      tanggalMasuk: "2024-01-17",
-      tanggalKeluar: "-",
-      status: "Proses",
-      pengerjaan: "Topi Kabin Fiber",
-    },
-  ];
-
-  const laporanKeuangan = [
-    {
-      id: 1,
-      jenis: "Pemasukan",
-      keterangan: "Pembayaran Customer - PT. Maju Bersama",
-      jumlah: 15000000,
-      tanggal: "2024-01-20",
-    },
-    {
-      id: 2,
-      jenis: "Pengeluaran",
-      keterangan: "Pembayaran Upah - Ahmad Fauzi",
-      jumlah: 3500000,
-      tanggal: "2024-01-18",
-    },
-    {
-      id: 3,
-      jenis: "Pengeluaran",
-      keterangan: "Pembelian Barang - Supplier ABC",
-      jumlah: 25000000,
-      tanggal: "2024-01-15",
-    },
-    {
-      id: 4,
-      jenis: "Pemasukan",
-      keterangan: "Pembayaran Customer - CV. Jaya Transport",
-      jumlah: 12000000,
-      tanggal: "2024-01-22",
-    },
-  ];
-
-  const laporanKaryawan = [
-    {
-      id: 1,
-      nama: "Ahmad Fauzi",
-      jabatan: "Tukang Rakit",
-      totalSpek: 5,
-      totalUpah: 17500000,
-      status: "Aktif",
-    },
-    {
-      id: 2,
-      nama: "Budi Santoso",
-      jabatan: "Tukang Cat",
-      totalSpek: 3,
-      totalUpah: 7500000,
-      status: "Aktif",
-    },
-    {
-      id: 3,
-      nama: "Chandra Wijaya",
-      jabatan: "Tukang Aksesoris",
-      totalSpek: 4,
-      totalUpah: 6000000,
-      status: "Aktif",
-    },
-    {
-      id: 4,
-      nama: "Dedi Kurniawan",
-      jabatan: "Tukang Rakit",
-      totalSpek: 2,
-      totalUpah: 7000000,
-      status: "Aktif",
-    },
-  ];
+  const { data: laporanData = [] } = useLaporan(selectedReport, dateRange);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -207,7 +62,8 @@ export default function LaporanPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
+    // Basic status mapping or usage
+    const statusConfig: any = {
       Selesai: {
         color: "bg-green-100 text-green-700 border-green-200",
         label: "Selesai",
@@ -221,9 +77,8 @@ export default function LaporanPage() {
         label: "Aktif",
       },
     };
+    const config = statusConfig[status] || statusConfig.Proses;
 
-    const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.Proses;
     return (
       <Badge variant="outline" className={cn("font-medium", config.color)}>
         {config.label}
@@ -232,8 +87,7 @@ export default function LaporanPage() {
   };
 
   const exportReport = (type: string) => {
-    // In a real application, this would generate and download the report
-    alert(`Exporting ${type} report...`);
+    alert(`Exporting ${type} report... (Feature WIP)`);
   };
 
   const DateFilter = ({ children }: { children?: React.ReactNode }) => (
@@ -326,7 +180,7 @@ export default function LaporanPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {laporanStok.map((item) => (
+                  {laporanData.map((item: any) => (
                     <TableRow
                       key={item.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
@@ -402,7 +256,7 @@ export default function LaporanPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {laporanKendaraan.map((item) => (
+                  {laporanData.map((item: any) => (
                     <TableRow
                       key={item.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
@@ -472,7 +326,7 @@ export default function LaporanPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {laporanKeuangan.map((item) => (
+                  {laporanData.map((item: any) => (
                     <TableRow
                       key={item.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
@@ -507,14 +361,14 @@ export default function LaporanPage() {
                     </TableCell>
                     <TableCell className="px-6 text-right font-bold text-blue-700 text-lg">
                       {formatCurrency(
-                        laporanKeuangan.reduce(
-                          (total, item) =>
+                        laporanData.reduce(
+                          (total: number, item: any) =>
                             total +
                             (item.jenis === "Pemasukan"
                               ? item.jumlah
                               : -item.jumlah),
-                          0
-                        )
+                          0,
+                        ),
                       )}
                     </TableCell>
                   </TableRow>
@@ -566,7 +420,7 @@ export default function LaporanPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {laporanKaryawan.map((item) => (
+                  {laporanData.map((item: any) => (
                     <TableRow
                       key={item.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
@@ -715,7 +569,7 @@ export default function LaporanPage() {
           </div>
         </div>
 
-        {/* Summary Statistics */}
+        {/* Summary Statistics - hardcoded placeholders for now as dashboard stats API is separate */}
         {!selectedReport && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
@@ -800,7 +654,6 @@ export default function LaporanPage() {
           </div>
         )}
 
-        {/* Report Content */}
         {renderReportContent()}
       </div>
     </DashboardLayout>

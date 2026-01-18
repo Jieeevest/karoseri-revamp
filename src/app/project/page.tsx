@@ -23,7 +23,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -31,61 +30,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Plus,
-  ArrowRight,
-  Briefcase,
-  FileText,
-  Calculator,
-  CheckCircle2,
-} from "lucide-react";
+import { Plus, Calculator } from "lucide-react";
 import { useState } from "react";
-
-interface Customer {
-  id: string;
-  kode: string;
-  nama: string;
-}
-
-interface Project {
-  id: string;
-  nomor: string;
-  tanggal: string;
-  customer: Customer;
-  deskripsi: string;
-  quantity: number;
-  hargaPerUnit: number;
-  totalHarga: number;
-  status: "OFFER" | "DEAL" | "ON_PROGRESS" | "DONE" | "CANCELLED";
-  specs?: {
-    panjang: number;
-    lebar: number;
-    tinggi: number;
-    pintuSamping: number;
-  };
-}
-
-// Mock Data
-const mockCustomers = [
-  { id: "1", kode: "CUST-001", nama: "PT. Logistik Jaya" },
-  { id: "2", kode: "CUST-002", nama: "CV. Angkutan Makmur" },
-];
+import { useProject, useCreateProject } from "@/hooks/use-project";
+import { useCustomer } from "@/hooks/use-customer";
 
 export default function ProjectPage() {
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: "1",
-      nomor: "SPK-2024-001",
-      tanggal: "2024-01-10",
-      customer: mockCustomers[0],
-      deskripsi: "Wing Box Hydraulic - 5 Unit",
-      quantity: 5,
-      hargaPerUnit: 150000000,
-      totalHarga: 750000000,
-      status: "DEAL",
-      specs: { panjang: 7500, lebar: 2500, tinggi: 2800, pintuSamping: 4 },
-    },
-  ]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { data: projects = [], refetch } = useProject(searchTerm);
+  const { data: customers = [] } = useCustomer();
+  const createProject = useCreateProject();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -93,7 +47,13 @@ export default function ProjectPage() {
     deskripsi: "",
     quantity: 1,
     hargaPerUnit: 0,
-    specs: { panjang: 0, lebar: 0, tinggi: 0, pintuSamping: 0 },
+    status: "OFFER",
+    specs: {
+      panjang: 0,
+      lebar: 0,
+      tinggi: 0,
+      pintuSamping: 0,
+    },
   });
 
   // Smart Planning Calculation
@@ -114,26 +74,27 @@ export default function ProjectPage() {
 
   const estimates = calculateMaterials();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const customer = mockCustomers.find((c) => c.id === formData.customerId);
-    if (!customer) return;
-
-    const newProject: Project = {
-      id: Date.now().toString(),
-      nomor: `SPK-2024-${String(projects.length + 1).padStart(3, "0")}`,
-      tanggal: new Date().toISOString().split("T")[0],
-      customer,
-      deskripsi: formData.deskripsi,
-      quantity: formData.quantity,
-      hargaPerUnit: formData.hargaPerUnit,
-      totalHarga: formData.quantity * formData.hargaPerUnit,
-      status: "OFFER",
-      specs: formData.specs,
-    };
-
-    setProjects([...projects, newProject]);
-    setIsDialogOpen(false);
+    try {
+      await createProject.mutateAsync({
+        ...formData,
+        totalHarga: formData.quantity * formData.hargaPerUnit,
+      });
+      setIsDialogOpen(false);
+      setFormData({
+        customerId: "",
+        deskripsi: "",
+        quantity: 1,
+        hargaPerUnit: 0,
+        status: "OFFER",
+        specs: { panjang: 0, lebar: 0, tinggi: 0, pintuSamping: 0 },
+      });
+      refetch();
+    } catch (error) {
+      console.error("Failed to create project", error);
+      alert("Gagal membuat project");
+    }
   };
 
   return (
@@ -182,7 +143,7 @@ export default function ProjectPage() {
                           <SelectValue placeholder="Pilih Customer" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          {mockCustomers.map((c) => (
+                          {customers.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
                               {c.nama}
                             </SelectItem>
@@ -354,6 +315,14 @@ export default function ProjectPage() {
               <CardTitle className="text-lg font-bold text-slate-900">
                 Daftar Project Active
               </CardTitle>
+              <div className="relative w-full sm:w-72">
+                <Input
+                  placeholder="Cari project..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -398,8 +367,9 @@ export default function ProjectPage() {
                           {project.deskripsi}
                         </div>
                         <div className="text-xs text-slate-500">
-                          {project.specs?.panjang}x{project.specs?.lebar}x
-                          {project.specs?.tinggi} mm
+                          {project.specs?.panjang
+                            ? `${project.specs?.panjang}x${project.specs?.lebar}x${project.specs?.tinggi} mm`
+                            : ""}
                         </div>
                       </TableCell>
                       <TableCell className="px-6">

@@ -29,74 +29,27 @@ import {
   Edit,
   Trash2,
   Search,
-  Users,
+  Building,
   Phone,
   Mail,
   MapPin,
-  Building,
 } from "lucide-react";
 import { useState } from "react";
-
-interface Customer {
-  id: string;
-  kode: string;
-  nama: string;
-  alamat?: string;
-  telepon?: string;
-  email?: string;
-  createdAt: string;
-}
+import {
+  useCustomer,
+  useCreateCustomer,
+  useUpdateCustomer,
+  useDeleteCustomer,
+  Customer,
+} from "@/hooks/use-customer";
 
 export default function CustomerPage() {
-  const [customerList, setCustomerList] = useState<Customer[]>([
-    {
-      id: "1",
-      kode: "CUS001",
-      nama: "PT. Maju Bersama",
-      alamat: "Jl. Industri Raya No. 100, Jakarta Utara",
-      telepon: "021-5551234",
-      email: "info@majubersama.com",
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      kode: "CUS002",
-      nama: "CV. Jaya Transport",
-      alamat: "Jl. Pergudangan No. 50, Bekasi",
-      telepon: "021-8856789",
-      email: "contact@jayatransport.com",
-      createdAt: "2024-01-16",
-    },
-    {
-      id: "3",
-      kode: "CUS003",
-      nama: "PT. Logistik Indonesia",
-      alamat: "Jl. Terminal Cargo No. 25, Tangerang",
-      telepon: "021-5432109",
-      email: "admin@logistikindonesia.co.id",
-      createdAt: "2024-01-17",
-    },
-    {
-      id: "4",
-      kode: "CUS004",
-      nama: "UD. Sentosa Abadi",
-      alamat: "Jl. Raya Bogor No. 75, Depok",
-      telepon: "021-9876543",
-      email: "sentosaabadi@email.com",
-      createdAt: "2024-01-18",
-    },
-    {
-      id: "5",
-      kode: "CUS005",
-      nama: "PT. Express Delivery",
-      alamat: "Jl. Bandara No. 200, Tangerang",
-      telepon: "021-7654321",
-      email: "support@expressdelivery.com",
-      createdAt: "2024-01-19",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: customerList = [], refetch } = useCustomer(searchTerm);
+  const createCustomer = useCreateCustomer();
+  const updateCustomer = useUpdateCustomer();
+  const deleteCustomer = useDeleteCustomer();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [formData, setFormData] = useState({
@@ -107,35 +60,28 @@ export default function CustomerPage() {
     email: "",
   });
 
-  const filteredCustomer = customerList.filter(
-    (customer) =>
-      customer.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.kode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.alamat?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingCustomer) {
-      setCustomerList((prev) =>
-        prev.map((c) =>
-          c.id === editingCustomer.id ? { ...c, ...formData } : c
-        )
-      );
-    } else {
-      const newCustomer: Customer = {
-        id: Date.now().toString(),
-        ...formData,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setCustomerList((prev) => [...prev, newCustomer]);
+    try {
+      if (editingCustomer) {
+        await updateCustomer.mutateAsync({
+          id: editingCustomer.id,
+          ...formData,
+        });
+      } else {
+        await createCustomer.mutateAsync({
+          ...formData,
+        });
+      }
+      setFormData({ kode: "", nama: "", alamat: "", telepon: "", email: "" });
+      setEditingCustomer(null);
+      setIsDialogOpen(false);
+      refetch();
+    } catch (error) {
+      console.error("Failed to save customer", error);
+      alert("Gagal menyimpan customer");
     }
-
-    setFormData({ kode: "", nama: "", alamat: "", telepon: "", email: "" });
-    setEditingCustomer(null);
-    setIsDialogOpen(false);
   };
 
   const handleEdit = (customer: Customer) => {
@@ -150,9 +96,15 @@ export default function CustomerPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus data customer ini?")) {
-      setCustomerList((prev) => prev.filter((c) => c.id !== id));
+      try {
+        await deleteCustomer.mutateAsync(id);
+        refetch();
+      } catch (error) {
+        console.error("Failed to delete", error);
+        alert("Gagal menghapus customer");
+      }
     }
   };
 
@@ -389,12 +341,11 @@ export default function CustomerPage() {
                 Daftar Customer
               </CardTitle>
               <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   placeholder="Cari customer..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
+                  className="rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
             </div>
@@ -424,8 +375,8 @@ export default function CustomerPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomer.length > 0 ? (
-                  filteredCustomer.map((customer) => (
+                {customerList.length > 0 ? (
+                  customerList.map((customer) => (
                     <TableRow
                       key={customer.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
@@ -481,7 +432,9 @@ export default function CustomerPage() {
                         )}
                       </TableCell>
                       <TableCell className="px-6 text-sm text-slate-600">
-                        {customer.createdAt}
+                        {new Date(customer.createdAt).toLocaleDateString(
+                          "id-ID",
+                        )}
                       </TableCell>
                       <TableCell className="px-6 text-center">
                         <div className="flex justify-center gap-2">

@@ -39,6 +39,12 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  useBarang,
+  useCreateBarang,
+  useUpdateBarang,
+  useDeleteBarang,
+} from "@/hooks/use-barang";
 
 interface KategoriBarang {
   id: number;
@@ -79,58 +85,12 @@ export default function DataBarangPage() {
     { id: "5", nama: "Dus" },
   ]);
 
-  const [barangList, setBarangList] = useState<Barang[]>([
-    {
-      id: "1",
-      kode: "BRG001",
-      nama: "Cat Semprot Hitam",
-      kategoriId: 1,
-      kategoriBarang: { id: 1, nama: "Cat" },
-      satuanId: "3",
-      satuanBarang: { id: "3", nama: "Liter" },
-      stok: 15,
-      stokMinimum: 10,
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      kode: "BRG002",
-      nama: "Besi Hollow 4x4",
-      kategoriId: 2,
-      kategoriBarang: { id: 2, nama: "Besi" },
-      satuanId: "4",
-      satuanBarang: { id: "4", nama: "Meter" },
-      stok: 50,
-      stokMinimum: 20,
-      createdAt: "2024-01-16",
-    },
-    {
-      id: "3",
-      kode: "BRG003",
-      nama: "Paku 10cm",
-      kategoriId: 4,
-      kategoriBarang: { id: 4, nama: "Paku & Sekrup" },
-      satuanId: "2",
-      satuanBarang: { id: "2", nama: "Kg" },
-      stok: 8,
-      stokMinimum: 15,
-      createdAt: "2024-01-17",
-    },
-    {
-      id: "4",
-      kode: "BRG004",
-      nama: "Lampu LED",
-      kategoriId: 3,
-      kategoriBarang: { id: 3, nama: "Aksesoris" },
-      satuanId: "1",
-      satuanBarang: { id: "1", nama: "Unit" },
-      stok: 25,
-      stokMinimum: 10,
-      createdAt: "2024-01-18",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: barangList = [], refetch } = useBarang(searchTerm);
+  const createBarang = useCreateBarang();
+  const updateBarang = useUpdateBarang();
+  const deleteBarang = useDeleteBarang();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBarang, setEditingBarang] = useState<Barang | null>(null);
   const [formData, setFormData] = useState({
@@ -148,7 +108,7 @@ export default function DataBarangPage() {
       barang.kode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       barang.kategoriBarang.nama
         .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+        .includes(searchTerm.toLowerCase()),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -164,14 +124,14 @@ export default function DataBarangPage() {
                 kategoriId: parseInt(formData.kategoriId),
                 kategoriBarang:
                   kategoriList.find(
-                    (k) => k.id === parseInt(formData.kategoriId)
+                    (k) => k.id === parseInt(formData.kategoriId),
                   ) || b.kategoriBarang,
                 satuanBarang:
                   satuanList.find((s) => s.id === formData.satuanId) ||
                   b.satuanBarang,
               }
-            : b
-        )
+            : b,
+        ),
       );
     } else {
       const newBarang: Barang = {
@@ -179,7 +139,7 @@ export default function DataBarangPage() {
         ...formData,
         kategoriId: parseInt(formData.kategoriId),
         kategoriBarang: kategoriList.find(
-          (k) => k.id === parseInt(formData.kategoriId)
+          (k) => k.id === parseInt(formData.kategoriId),
         ) || { id: 0, nama: "" },
         satuanBarang: satuanList.find((s) => s.id === formData.satuanId) || {
           id: "",
@@ -215,9 +175,15 @@ export default function DataBarangPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus barang ini?")) {
-      setBarangList((prev) => prev.filter((b) => b.id !== id));
+      try {
+        await deleteBarang.mutateAsync(id);
+        refetch();
+      } catch (error) {
+        console.error("Failed to delete barang", error);
+        alert("Gagal menghapus barang");
+      }
     }
   };
 
@@ -502,11 +468,11 @@ export default function DataBarangPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredBarang.length > 0 ? (
-                  filteredBarang.map((barang) => {
+                {barangList.length > 0 ? (
+                  barangList.map((barang) => {
                     const stockStatus = getStockStatus(
                       barang.stok,
-                      barang.stokMinimum
+                      barang.stokMinimum,
                     );
                     const StatusIcon = stockStatus.icon;
 

@@ -23,17 +23,19 @@ Welcome to the **Karoseri System** user guide. This document provides step-by-st
     - Go to **Manajemen Barang > Purchase Order**.
     - Click **"Buat PO Baru"**.
     - Select Supplier and add items (with quantity and price).
-    - _System Status_: PO created with status `PENDING`.
+    - _System Status_: PO created with status `DRAFT`.
+    - Click **"Ajukan"** (Send Icon) to submit to Admin.
+    - _System Status_: PO updates to `DIAJUKAN`.
 3.  **Approve PO (Admin)**:
     - Go to **Manajemen Barang > Konfirmasi PO**.
-    - Review pending POs. Click **"Approve"**.
-    - _System Status_: PO updates to `APPROVED`.
+    - Review pending POs. Click **"Setujui"** (Check Icon).
+    - _System Status_: PO updates to `DISETUJUI`.
 4.  **Receive Goods (Barang Masuk)**:
     - When physical items arrive, go to **Manajemen Barang > Barang Masuk**.
     - Click **"Catat Barang Masuk"**.
     - Select the **Supplier** and the related **Approved PO**.
     - Input received quantity (Partial delivery is allowed).
-    - _System Action_: Stock increases automatically. PO status updates to `RECEIVED` (if full) or remains `APPROVED` (if partial).
+    - _System Action_: Stock increases automatically. PO status updates to `DITERIMA` (if full) or remains `DISETUJUI` (if partial).
 
 ### Sequence Diagram (User Interaction)
 
@@ -46,19 +48,21 @@ sequenceDiagram
     %% Step 1: Request Stock
     Gudang->>System: Check "Data Barang" (Stok Menipis)
     Gudang->>System: Create Purchase Order (Select Supplier & Items)
-    System-->>Gudang: PO Created (Status: PENDING)
+    System-->>Gudang: PO Created (Status: DRAFT)
+    Gudang->>System: Click "Ajukan"
+    System-->>Gudang: PO Status -> DIAJUKAN
 
     %% Step 2: Approval
     Admin->>System: View "Konfirmasi PO"
     Admin->>System: Approve PO
-    System-->>Admin: PO Status -> APPROVED
+    System-->>Admin: PO Status -> DISETUJUI
 
     %% Step 3: Receive Goods
     Note right of Gudang: Goods arrive at warehouse
     Gudang->>System: Input "Barang Masuk" (Link to PO)
     System->>System: Validate PO & Items
     System->>System: Increase Stock Level
-    System->>System: Update PO Status (RECEIVED)
+    System->>System: Update PO Status (DITERIMA)
     System-->>Gudang: Success Message
 ```
 

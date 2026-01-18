@@ -45,61 +45,14 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-
-interface Customer {
-  id: string;
-  kode: string;
-  nama: string;
-}
-
-interface Kendaraan {
-  id: string;
-  nomorPolisi: string;
-  merek: string;
-  tipe: string;
-  projectId?: string;
-  project?: Project;
-}
-
-interface Project {
-  id: string;
-  nomor: string;
-  deskripsi: string;
-}
-
-interface Pengerjaan {
-  id: string;
-  jenis: string;
-  deskripsi?: string;
-}
-
-interface KelengkapanAlat {
-  id: string;
-  area: string;
-  nama: string;
-  jumlah?: number;
-  kondisi: string;
-  deskripsi?: string;
-}
-
-interface KendaraanMasuk {
-  id: string;
-  nomor: string;
-  tanggalMasuk: string;
-  showroom: string;
-  customerId: string;
-  customer: Customer;
-  kendaraanId: string;
-  kendaraan: Kendaraan;
-  pengerjaan: Pengerjaan[];
-  kelengkapan: KelengkapanAlat[];
-  createdAt: string;
-}
-
-const mockProjects: Project[] = [
-  { id: "1", nomor: "SPK-2024-001", deskripsi: "Wing Box Hydraulic - 5 Unit" },
-  { id: "2", nomor: "SPK-2024-002", deskripsi: "Box Besi Standart - 3 Unit" },
-];
+import { useCustomer } from "@/hooks/use-customer";
+import { useProject } from "@/hooks/use-project";
+import {
+  useKendaraanMasuk,
+  useCreateKendaraanMasuk,
+  useDeleteKendaraanMasuk,
+} from "@/hooks/use-kendaraan-masuk";
+import { useMerekKendaraan, useTipeKendaraan } from "@/hooks/use-master";
 
 const pengerjaanOptions = [
   "Wing Box",
@@ -261,94 +214,21 @@ const kelengkapanTemplate = [
 ];
 
 export default function KendaraanMasukPage() {
-  const [customerList] = useState<Customer[]>([
-    { id: "1", kode: "CUS001", nama: "PT. Maju Bersama" },
-    { id: "2", kode: "CUS002", nama: "CV. Jaya Transport" },
-    { id: "3", kode: "CUS003", nama: "PT. Logistik Indonesia" },
-  ]);
-
-  const [kendaraanMasukList, setKendaraanMasukList] = useState<
-    KendaraanMasuk[]
-  >([
-    {
-      id: "1",
-      nomor: "KM-2024-001",
-      tanggalMasuk: "2024-01-15",
-      showroom: "Showroom Utama",
-      customerId: "1",
-      customer: { id: "1", kode: "CUS001", nama: "PT. Maju Bersama" },
-      kendaraanId: "1",
-      kendaraan: {
-        id: "1",
-        nomorPolisi: "B 1234 ABC",
-        merek: "Hino",
-        tipe: "Ranger",
-      },
-      pengerjaan: [
-        {
-          id: "1",
-          jenis: "Wing Box",
-          deskripsi: "Ukuran standar dengan pintu samping",
-        },
-        { id: "2", jenis: "Logo", deskripsi: "Logo perusahaan di samping" },
-      ],
-      kelengkapan: kelengkapanTemplate.slice(0, 10).map((item, index) => ({
-        ...item,
-        id: `k1-${index}`,
-        deskripsi: "",
-      })),
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      nomor: "KM-2024-002",
-      tanggalMasuk: "2024-01-16",
-      showroom: "Showroom Cabang",
-      customerId: "2",
-      customer: { id: "2", kode: "CUS002", nama: "CV. Jaya Transport" },
-      kendaraanId: "2",
-      kendaraan: {
-        id: "2",
-        nomorPolisi: "B 5678 DEF",
-        merek: "Isuzu",
-        tipe: "Dutro",
-      },
-      pengerjaan: [
-        {
-          id: "3",
-          jenis: "Box Besi Standart",
-          deskripsi: "Box besi tanpa pintu samping",
-        },
-        {
-          id: "4",
-          jenis: "Repaint Kabin",
-          deskripsi: "Cat ulang kabin warna biru",
-        },
-      ],
-      kelengkapan: kelengkapanTemplate.slice(0, 15).map((item, index) => ({
-        ...item,
-        id: `k2-${index}`,
-        deskripsi: "",
-      })),
-      createdAt: "2024-01-16",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  const [editingKendaraanMasuk, setEditingKendaraanMasuk] =
-    useState<KendaraanMasuk | null>(null);
-  const [viewingKendaraanMasuk, setViewingKendaraanMasuk] =
-    useState<KendaraanMasuk | null>(null);
+  const [viewingKendaraanMasuk, setViewingKendaraanMasuk] = useState<
+    any | null
+  >(null);
+
   const [formData, setFormData] = useState({
     tanggalMasuk: "",
     showroom: "",
     customerId: "",
     projectId: "",
     nomorPolisi: "",
-    merek: "",
-    tipe: "",
+    merekId: "",
+    tipeId: "",
     selectedPengerjaan: [] as string[],
     kelengkapan: kelengkapanTemplate.map((item, index) => ({
       ...item,
@@ -356,6 +236,17 @@ export default function KendaraanMasukPage() {
       deskripsi: "",
     })),
   });
+
+  // Queries
+  const { data: kendaraanMasukList = [] } = useKendaraanMasuk(searchTerm);
+  const { data: customerList = [] } = useCustomer();
+  const { data: projectList = [] } = useProject();
+  const { data: merekList = [] } = useMerekKendaraan();
+  const { data: tipeList = [] } = useTipeKendaraan(formData.merekId);
+
+  // Mutations
+  const createKendaraanMasuk = useCreateKendaraanMasuk();
+  const deleteKendaraanMasuk = useDeleteKendaraanMasuk();
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -369,55 +260,38 @@ export default function KendaraanMasukPage() {
     }));
   }, []);
 
-  const filteredKendaraanMasuk = kendaraanMasukList.filter(
-    (km) =>
-      km.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      km.kendaraan.nomorPolisi
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      km.customer.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      km.showroom.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const selectedCustomer = customerList.find(
-      (c) => c.id === formData.customerId
-    );
-    if (!selectedCustomer) return;
-
-    const newKendaraanMasuk: KendaraanMasuk = {
-      id: Date.now().toString(),
-      nomor: `KM-2024-${String(kendaraanMasukList.length + 1).padStart(
-        3,
-        "0"
-      )}`,
-      tanggalMasuk: formData.tanggalMasuk,
-      showroom: formData.showroom,
-      customerId: formData.customerId,
-      customer: selectedCustomer,
-      kendaraanId: Date.now().toString(),
-      kendaraan: {
-        id: Date.now().toString(),
+    try {
+      const payload = {
+        tanggalMasuk: formData.tanggalMasuk,
+        showroom: formData.showroom,
+        customerId: formData.customerId,
         nomorPolisi: formData.nomorPolisi,
-        merek: formData.merek,
-        tipe: formData.tipe,
-        projectId: formData.projectId,
-        project: mockProjects.find((p) => p.id === formData.projectId),
-      },
-      pengerjaan: formData.selectedPengerjaan.map((jenis, index) => ({
-        id: (index + 1).toString(),
-        jenis,
-        deskripsi: "",
-      })),
-      kelengkapan: formData.kelengkapan,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
+        merekId: formData.merekId,
+        tipeId: formData.tipeId,
+        projectId: formData.projectId || undefined,
+        pengerjaan: formData.selectedPengerjaan.map((jenis) => ({
+          jenis,
+          deskripsi: "",
+        })),
+        kelengkapan: formData.kelengkapan.map((k) => ({
+          area: k.area,
+          nama: k.nama,
+          jumlah: k.jumlah,
+          kondisi: k.kondisi,
+          deskripsi: k.deskripsi || "",
+        })),
+      };
 
-    setKendaraanMasukList([...kendaraanMasukList, newKendaraanMasuk]);
-    resetForm();
-    setIsDialogOpen(false);
+      await createKendaraanMasuk.mutateAsync(payload);
+      resetForm();
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to create kendaraan masuk", error);
+      alert("Gagal menyimpan data kendaraan masuk");
+    }
   };
 
   const resetForm = () => {
@@ -427,8 +301,8 @@ export default function KendaraanMasukPage() {
       customerId: "",
       projectId: "",
       nomorPolisi: "",
-      merek: "",
-      tipe: "",
+      merekId: "",
+      tipeId: "",
       selectedPengerjaan: [],
       kelengkapan: kelengkapanTemplate.map((item) => ({
         ...item,
@@ -438,14 +312,19 @@ export default function KendaraanMasukPage() {
     });
   };
 
-  const handleView = (kendaraanMasuk: KendaraanMasuk) => {
+  const handleView = (kendaraanMasuk: any) => {
     setViewingKendaraanMasuk(kendaraanMasuk);
     setIsDetailDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
-      setKendaraanMasukList((prev) => prev.filter((km) => km.id !== id));
+      try {
+        await deleteKendaraanMasuk.mutateAsync(id);
+      } catch (error) {
+        console.error("Failed to delete", error);
+        alert("Gagal menghapus data");
+      }
     }
   };
 
@@ -591,7 +470,7 @@ export default function KendaraanMasukPage() {
                             <SelectValue placeholder="Pilih customer" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                            {customerList.map((customer) => (
+                            {customerList.map((customer: any) => (
                               <SelectItem
                                 key={customer.id}
                                 value={customer.id}
@@ -623,9 +502,10 @@ export default function KendaraanMasukPage() {
                             <SelectValue placeholder="Pilih Project / SPK (Opsional)" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                            {mockProjects.map((p) => (
+                            {projectList.map((p: any) => (
                               <SelectItem key={p.id} value={p.id}>
-                                {p.nomor} - {p.deskripsi}
+                                {p.nomor} -{" "}
+                                {p.namaProject || p.deskripsi || "No Desc"}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -659,19 +539,27 @@ export default function KendaraanMasukPage() {
                         >
                           Merek
                         </Label>
-                        <Input
-                          id="merek"
-                          value={formData.merek}
-                          onChange={(e) =>
+                        <Select
+                          value={formData.merekId}
+                          onValueChange={(value) =>
                             setFormData((prev) => ({
                               ...prev,
-                              merek: e.target.value,
+                              merekId: value,
+                              tipeId: "", // Reset tipe when merek changes
                             }))
                           }
-                          placeholder="Contoh: Hino, Isuzu"
-                          className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                          required
-                        />
+                        >
+                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                            <SelectValue placeholder="Pilih Merek" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                            {merekList.map((m: any) => (
+                              <SelectItem key={m.id} value={m.id}>
+                                {m.nama}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="grid items-center gap-2">
                         <Label
@@ -680,19 +568,27 @@ export default function KendaraanMasukPage() {
                         >
                           Tipe Kendaraan
                         </Label>
-                        <Input
-                          id="tipe"
-                          value={formData.tipe}
-                          onChange={(e) =>
+                        <Select
+                          value={formData.tipeId}
+                          onValueChange={(value) =>
                             setFormData((prev) => ({
                               ...prev,
-                              tipe: e.target.value,
+                              tipeId: value,
                             }))
                           }
-                          placeholder="Contoh: Ranger, Dutro"
-                          className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                          required
-                        />
+                          disabled={!formData.merekId}
+                        >
+                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                            <SelectValue placeholder="Pilih Tipe" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                            {tipeList.map((t: any) => (
+                              <SelectItem key={t.id} value={t.id}>
+                                {t.nama}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
@@ -712,7 +608,7 @@ export default function KendaraanMasukPage() {
                           <Checkbox
                             id={jenis}
                             checked={formData.selectedPengerjaan.includes(
-                              jenis
+                              jenis,
                             )}
                             onCheckedChange={() => togglePengerjaan(jenis)}
                             className="border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded"
@@ -747,7 +643,7 @@ export default function KendaraanMasukPage() {
                             <div className="space-y-3">
                               {formData.kelengkapan
                                 .filter((item) => item.area === area)
-                                .map((item, index) => (
+                                .map((item) => (
                                   <div
                                     key={item.id}
                                     className="grid grid-cols-5 gap-3 items-center text-sm"
@@ -763,7 +659,7 @@ export default function KendaraanMasukPage() {
                                           updateKelengkapan(
                                             formData.kelengkapan.indexOf(item),
                                             "jumlah",
-                                            parseInt(e.target.value) || 0
+                                            parseInt(e.target.value) || 0,
                                           )
                                         }
                                         className="h-9 rounded-lg border-slate-200 focus-visible:ring-blue-600"
@@ -776,7 +672,7 @@ export default function KendaraanMasukPage() {
                                         updateKelengkapan(
                                           formData.kelengkapan.indexOf(item),
                                           "kondisi",
-                                          e.target.value
+                                          e.target.value,
                                         )
                                       }
                                       className="h-9 rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -794,7 +690,7 @@ export default function KendaraanMasukPage() {
                                         updateKelengkapan(
                                           formData.kelengkapan.indexOf(item),
                                           "deskripsi",
-                                          e.target.value
+                                          e.target.value,
                                         )
                                       }
                                       className="h-9 rounded-lg border-slate-200 focus-visible:ring-blue-600"
@@ -803,7 +699,7 @@ export default function KendaraanMasukPage() {
                                 ))}
                             </div>
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   </div>
@@ -857,9 +753,10 @@ export default function KendaraanMasukPage() {
                   <p className="text-2xl font-bold text-slate-900 mt-1">
                     {
                       kendaraanMasukList.filter(
-                        (km) =>
-                          km.tanggalMasuk ===
-                          new Date().toISOString().split("T")[0]
+                        (km: any) =>
+                          km.tanggalMasuk &&
+                          km.tanggalMasuk.split("T")[0] ===
+                            new Date().toISOString().split("T")[0],
                       ).length
                     }
                   </p>
@@ -880,8 +777,9 @@ export default function KendaraanMasukPage() {
                   </p>
                   <p className="text-2xl font-bold text-slate-900 mt-1">
                     {kendaraanMasukList.reduce(
-                      (total, km) => total + km.pengerjaan.length,
-                      0
+                      (total: number, km: any) =>
+                        total + (km.pengerjaan ? km.pengerjaan.length : 0),
+                      0,
                     )}
                   </p>
                 </div>
@@ -938,8 +836,8 @@ export default function KendaraanMasukPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredKendaraanMasuk.length > 0 ? (
-                  filteredKendaraanMasuk.map((kendaraanMasuk) => (
+                {kendaraanMasukList.length > 0 ? (
+                  kendaraanMasukList.map((kendaraanMasuk: any) => (
                     <TableRow
                       key={kendaraanMasuk.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
@@ -953,7 +851,11 @@ export default function KendaraanMasukPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="px-6 text-slate-600">
-                        {kendaraanMasuk.tanggalMasuk}
+                        {kendaraanMasuk.tanggalMasuk
+                          ? new Date(
+                              kendaraanMasuk.tanggalMasuk,
+                            ).toLocaleDateString()
+                          : "-"}
                       </TableCell>
                       <TableCell className="px-6 text-slate-600">
                         {kendaraanMasuk.showroom}
@@ -961,43 +863,51 @@ export default function KendaraanMasukPage() {
                       <TableCell className="px-6">
                         <div>
                           <p className="font-medium text-slate-900">
-                            {kendaraanMasuk.kendaraan.nomorPolisi}
+                            {kendaraanMasuk.kendaraan?.nomorPolisi || "-"}
                           </p>
                           <p className="text-sm text-slate-500">
-                            {kendaraanMasuk.kendaraan.merek}{" "}
-                            {kendaraanMasuk.kendaraan.tipe}
+                            {kendaraanMasuk.kendaraan?.merekKendaraan?.nama ||
+                              kendaraanMasuk.kendaraan?.merek ||
+                              ""}{" "}
+                            {kendaraanMasuk.kendaraan?.tipeKendaraan?.nama ||
+                              kendaraanMasuk.kendaraan?.tipe ||
+                              ""}
                           </p>
                         </div>
                       </TableCell>
                       <TableCell className="px-6">
                         <div>
                           <p className="font-medium text-slate-900">
-                            {kendaraanMasuk.customer.nama}
+                            {kendaraanMasuk.customer?.nama || "-"}
                           </p>
                           <p className="text-sm text-slate-500">
-                            {kendaraanMasuk.customer.kode}
+                            {kendaraanMasuk.customer?.kode || ""}
                           </p>
                         </div>
                       </TableCell>
                       <TableCell className="px-6">
                         <div className="flex flex-wrap gap-1">
-                          {kendaraanMasuk.pengerjaan.slice(0, 2).map((p) => (
-                            <Badge
-                              key={p.id}
-                              variant="secondary"
-                              className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 text-xs font-normal"
-                            >
-                              {p.jenis}
-                            </Badge>
-                          ))}
-                          {kendaraanMasuk.pengerjaan.length > 2 && (
-                            <Badge
-                              variant="outline"
-                              className="text-slate-500 text-xs border-slate-200"
-                            >
-                              +{kendaraanMasuk.pengerjaan.length - 2} lagi
-                            </Badge>
-                          )}
+                          {kendaraanMasuk.pengerjaan &&
+                            kendaraanMasuk.pengerjaan
+                              .slice(0, 2)
+                              .map((p: any) => (
+                                <Badge
+                                  key={p.id}
+                                  variant="secondary"
+                                  className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 text-xs font-normal"
+                                >
+                                  {p.jenis}
+                                </Badge>
+                              ))}
+                          {kendaraanMasuk.pengerjaan &&
+                            kendaraanMasuk.pengerjaan.length > 2 && (
+                              <Badge
+                                variant="outline"
+                                className="text-slate-500 text-xs border-slate-200"
+                              >
+                                +{kendaraanMasuk.pengerjaan.length - 2} lagi
+                              </Badge>
+                            )}
                         </div>
                       </TableCell>
                       <TableCell className="px-6 text-center">
@@ -1061,7 +971,11 @@ export default function KendaraanMasukPage() {
                       Tanggal Masuk
                     </Label>
                     <p className="font-semibold text-slate-700">
-                      {viewingKendaraanMasuk.tanggalMasuk}
+                      {viewingKendaraanMasuk.tanggalMasuk
+                        ? new Date(
+                            viewingKendaraanMasuk.tanggalMasuk,
+                          ).toLocaleDateString()
+                        : "-"}
                     </p>
                   </div>
                   <div className="space-y-1">
@@ -1077,10 +991,10 @@ export default function KendaraanMasukPage() {
                       Customer
                     </Label>
                     <p className="font-semibold text-slate-900">
-                      {viewingKendaraanMasuk.customer.nama}
+                      {viewingKendaraanMasuk.customer?.nama}
                     </p>
                     <p className="text-sm text-slate-500">
-                      {viewingKendaraanMasuk.customer.kode}
+                      {viewingKendaraanMasuk.customer?.kode}
                     </p>
                   </div>
                   <div className="space-y-1">
@@ -1088,7 +1002,7 @@ export default function KendaraanMasukPage() {
                       Nomor Polisi
                     </Label>
                     <p className="font-semibold text-slate-900">
-                      {viewingKendaraanMasuk.kendaraan.nomorPolisi}
+                      {viewingKendaraanMasuk.kendaraan?.nomorPolisi}
                     </p>
                   </div>
                   <div className="space-y-1">
@@ -1096,8 +1010,11 @@ export default function KendaraanMasukPage() {
                       Kendaraan
                     </Label>
                     <p className="font-semibold text-slate-700">
-                      {viewingKendaraanMasuk.kendaraan.merek} -{" "}
-                      {viewingKendaraanMasuk.kendaraan.tipe}
+                      {viewingKendaraanMasuk.kendaraan?.merekKendaraan?.nama ||
+                        viewingKendaraanMasuk.kendaraan?.merek}{" "}
+                      -{" "}
+                      {viewingKendaraanMasuk.kendaraan?.tipeKendaraan?.nama ||
+                        viewingKendaraanMasuk.kendaraan?.tipe}
                     </p>
                   </div>
                 </div>
@@ -1107,19 +1024,22 @@ export default function KendaraanMasukPage() {
                     Daftar Pengerjaan
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {viewingKendaraanMasuk.pengerjaan.map((p) => (
-                      <div
-                        key={p.id}
-                        className="p-3 bg-slate-50 rounded-xl border border-slate-100"
-                      >
-                        <p className="font-medium text-slate-800">{p.jenis}</p>
-                        {p.deskripsi && (
-                          <p className="text-sm text-slate-500 mt-1">
-                            {p.deskripsi}
+                    {viewingKendaraanMasuk.pengerjaan &&
+                      viewingKendaraanMasuk.pengerjaan.map((p: any) => (
+                        <div
+                          key={p.id}
+                          className="p-3 bg-slate-50 rounded-xl border border-slate-100"
+                        >
+                          <p className="font-medium text-slate-800">
+                            {p.jenis}
                           </p>
-                        )}
-                      </div>
-                    ))}
+                          {p.deskripsi && (
+                            <p className="text-sm text-slate-500 mt-1">
+                              {p.deskripsi}
+                            </p>
+                          )}
+                        </div>
+                      ))}
                   </div>
                 </div>
 
@@ -1140,44 +1060,45 @@ export default function KendaraanMasukPage() {
                             </h5>
                           </div>
                           <div className="p-4 space-y-3 bg-white">
-                            {viewingKendaraanMasuk.kelengkapan
-                              .filter((item) => item.area === area)
-                              .map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors"
-                                >
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-slate-700 text-sm">
-                                        {item.nama}
-                                      </span>
-                                      {item.jumlah !== undefined && (
-                                        <Badge
-                                          variant="secondary"
-                                          className="h-5 px-1.5 text-[10px] bg-slate-100 text-slate-600 border-slate-200"
+                            {viewingKendaraanMasuk.kelengkapan &&
+                              viewingKendaraanMasuk.kelengkapan
+                                .filter((item: any) => item.area === area)
+                                .map((item: any) => (
+                                  <div
+                                    key={item.id}
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors"
+                                  >
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-slate-700 text-sm">
+                                          {item.nama}
+                                        </span>
+                                        {item.jumlah !== undefined && (
+                                          <Badge
+                                            variant="secondary"
+                                            className="h-5 px-1.5 text-[10px] bg-slate-100 text-slate-600 border-slate-200"
+                                          >
+                                            Qty: {item.jumlah}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      {getKondisiBadge(item.kondisi)}
+                                      {item.deskripsi && (
+                                        <span
+                                          className="text-slate-500 text-xs italic max-w-[150px] truncate"
+                                          title={item.deskripsi}
                                         >
-                                          Qty: {item.jumlah}
-                                        </Badge>
+                                          "{item.deskripsi}"
+                                        </span>
                                       )}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-3">
-                                    {getKondisiBadge(item.kondisi)}
-                                    {item.deskripsi && (
-                                      <span
-                                        className="text-slate-500 text-xs italic max-w-[150px] truncate"
-                                        title={item.deskripsi}
-                                      >
-                                        "{item.deskripsi}"
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
+                                ))}
                           </div>
                         </div>
-                      )
+                      ),
                     )}
                   </div>
                 </div>

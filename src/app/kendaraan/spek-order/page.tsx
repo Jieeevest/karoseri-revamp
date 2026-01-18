@@ -33,321 +33,89 @@ import {
 } from "@/components/ui/select";
 import {
   Plus,
-  Edit,
   Trash2,
   Search,
-  Wrench,
   Eye,
+  Wallet,
   Receipt,
   CheckCircle,
-  Wallet,
+  Clock,
+  Briefcase,
+  DollarSign,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-
-interface Karyawan {
-  id: string;
-  nik: string;
-  nama: string;
-  jabatan: string;
-}
-
-interface Kendaraan {
-  id: string;
-  nomorPolisi: string;
-  merek: string;
-  tipe: string;
-}
-
-interface PembayaranSpek {
-  id: string;
-  jumlah: number;
-  metode: "TRANSFER" | "CASH" | "GIRO";
-  bukti?: string;
-  createdAt: string;
-}
-
-interface SpekOrder {
-  id: string;
-  nomor: string;
-  kendaraanId: string;
-  kendaraan: Kendaraan;
-  karyawanId: string;
-  karyawan: Karyawan;
-  jenis: "TUKANG_RAKIT" | "TUKANG_CAT" | "TUKANG_AKSESORIS";
-  deskripsi: string;
-  upah: number;
-  status: "BELUM_DIBAYAR" | "SUDAH_DIBAYAR";
-  createdAt: string;
-  pembayaran: PembayaranSpek[];
-}
+import {
+  useSpekOrder,
+  useCreateSpekOrder,
+  useDeleteSpekOrder,
+  useCreatePayment,
+} from "@/hooks/use-spek-order";
+import { useKendaraan } from "@/hooks/use-kendaraan";
+import { useKaryawan } from "@/hooks/use-karyawan";
 
 export default function SpekOrderPage() {
-  const [karyawanList] = useState<Karyawan[]>([
-    {
-      id: "1",
-      nik: "1234567890123456",
-      nama: "Ahmad Fauzi",
-      jabatan: "Tukang Rakit",
-    },
-    {
-      id: "2",
-      nik: "2345678901234567",
-      nama: "Budi Santoso",
-      jabatan: "Tukang Cat",
-    },
-    {
-      id: "3",
-      nik: "3456789012345678",
-      nama: "Chandra Wijaya",
-      jabatan: "Tukang Aksesoris",
-    },
-    {
-      id: "4",
-      nik: "4567890123456789",
-      nama: "Dedi Kurniawan",
-      jabatan: "Tukang Rakit",
-    },
-  ]);
-
-  const [kendaraanList] = useState<Kendaraan[]>([
-    { id: "1", nomorPolisi: "B 1234 ABC", merek: "Hino", tipe: "Ranger" },
-    { id: "2", nomorPolisi: "B 5678 DEF", merek: "Isuzu", tipe: "Dutro" },
-    { id: "3", nomorPolisi: "B 9012 GHI", merek: "Isuzu", tipe: "Elf" },
-  ]);
-
-  const [spekOrderList, setSpekOrderList] = useState<SpekOrder[]>([
-    {
-      id: "1",
-      nomor: "SO-2024-001",
-      kendaraanId: "1",
-      kendaraan: {
-        id: "1",
-        nomorPolisi: "B 1234 ABC",
-        merek: "Hino",
-        tipe: "Ranger",
-      },
-      karyawanId: "1",
-      karyawan: {
-        id: "1",
-        nik: "1234567890123456",
-        nama: "Ahmad Fauzi",
-        jabatan: "Tukang Rakit",
-      },
-      jenis: "TUKANG_RAKIT",
-      deskripsi:
-        "Pembuatan wing box ukuran standar dengan pintu samping hidrolik",
-      upah: 3500000,
-      status: "BELUM_DIBAYAR",
-      createdAt: "2024-01-15",
-      pembayaran: [],
-    },
-    {
-      id: "2",
-      nomor: "SO-2024-002",
-      kendaraanId: "2",
-      kendaraan: {
-        id: "2",
-        nomorPolisi: "B 5678 DEF",
-        merek: "Isuzu",
-        tipe: "Dutro",
-      },
-      karyawanId: "2",
-      karyawan: {
-        id: "2",
-        nik: "2345678901234567",
-        nama: "Budi Santoso",
-        jabatan: "Tukang Cat",
-      },
-      jenis: "TUKANG_CAT",
-      deskripsi: "Cat ulang kabin dan pembuatan logo perusahaan",
-      upah: 2500000,
-      status: "SUDAH_DIBAYAR",
-      createdAt: "2024-01-16",
-      pembayaran: [
-        {
-          id: "1",
-          jumlah: 2500000,
-          metode: "TRANSFER",
-          bukti: "bukti_transfer_001.jpg",
-          createdAt: "2024-01-17",
-        },
-      ],
-    },
-    {
-      id: "3",
-      nomor: "SO-2024-003",
-      kendaraanId: "3",
-      kendaraan: {
-        id: "3",
-        nomorPolisi: "B 9012 GHI",
-        merek: "Isuzu",
-        tipe: "Elf",
-      },
-      karyawanId: "3",
-      karyawan: {
-        id: "3",
-        nik: "3456789012345678",
-        nama: "Chandra Wijaya",
-        jabatan: "Tukang Aksesoris",
-      },
-      jenis: "TUKANG_AKSESORIS",
-      deskripsi: "Pemasangan topi kabin fiber dan aksesoris interior",
-      upah: 1500000,
-      status: "BELUM_DIBAYAR",
-      createdAt: "2024-01-18",
-      pembayaran: [],
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [editingSpekOrder, setEditingSpekOrder] = useState<SpekOrder | null>(
-    null
-  );
-  const [viewingSpekOrder, setViewingSpekOrder] = useState<SpekOrder | null>(
-    null
-  );
-  const [payingSpekOrder, setPayingSpekOrder] = useState<SpekOrder | null>(
-    null
-  );
+
+  const [viewingSpekOrder, setViewingSpekOrder] = useState<any | null>(null);
+  const [payingSpekOrder, setPayingSpekOrder] = useState<any | null>(null);
+
   const [formData, setFormData] = useState({
     kendaraanId: "",
     karyawanId: "",
-    jenis: "" as "TUKANG_RAKIT" | "TUKANG_CAT" | "TUKANG_AKSESORIS" | "",
+    jenis: "",
     deskripsi: "",
     upah: 0,
   });
+
   const [paymentFormData, setPaymentFormData] = useState({
     jumlah: 0,
-    metode: "TRANSFER" as "TRANSFER" | "CASH" | "GIRO",
+    metode: "TRANSFER",
     bukti: "",
   });
 
-  const filteredSpekOrder = spekOrderList.filter(
-    (spek) =>
-      spek.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      spek.kendaraan.nomorPolisi
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      spek.karyawan.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      spek.deskripsi.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Queries
+  const { data: spekOrderList = [] } = useSpekOrder(searchTerm);
+  const { data: allKendaraanData } = useKendaraan();
+  const kendaraanList = (allKendaraanData as any[]) || [];
+  const { data: karyawanList = [] } = useKaryawan();
 
-  const getJenisSpekBadge = (jenis: string) => {
-    const jenisConfig = {
-      TUKANG_RAKIT: {
-        color: "bg-blue-100 text-blue-800",
-        label: "Tukang Rakit",
-      },
-      TUKANG_CAT: { color: "bg-green-100 text-green-800", label: "Tukang Cat" },
-      TUKANG_AKSESORIS: {
-        color: "bg-purple-100 text-purple-800",
-        label: "Tukang Aksesoris",
-      },
-    };
+  // Mutations
+  const createSpekOrder = useCreateSpekOrder();
+  const deleteSpekOrder = useDeleteSpekOrder();
+  const createPayment = useCreatePayment();
 
-    const config =
-      jenisConfig[jenis as keyof typeof jenisConfig] ||
-      jenisConfig.TUKANG_RAKIT;
-    return (
-      <Badge variant="outline" className={cn("font-medium", config.color)}>
-        {config.label}
-      </Badge>
-    );
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      BELUM_DIBAYAR: {
-        color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-        label: "Belum Dibayar",
-      },
-      SUDAH_DIBAYAR: {
-        color: "bg-green-100 text-green-800 border-green-200",
-        label: "Sudah Dibayar",
-      },
-    };
-
-    const config =
-      statusConfig[status as keyof typeof statusConfig] ||
-      statusConfig.BELUM_DIBAYAR;
-    return (
-      <Badge variant="outline" className={cn("font-medium", config.color)}>
-        {config.label}
-      </Badge>
-    );
-  };
-
-  const getMetodeBadge = (metode: string) => {
-    const metodeConfig = {
-      TRANSFER: {
-        color: "bg-blue-100 text-blue-800 border-blue-200",
-        label: "Transfer",
-      },
-      CASH: {
-        color: "bg-green-100 text-green-800 border-green-200",
-        label: "Cash",
-      },
-      GIRO: {
-        color: "bg-orange-100 text-orange-800 border-orange-200",
-        label: "Giro",
-      },
-    };
-
-    const config =
-      metodeConfig[metode as keyof typeof metodeConfig] ||
-      metodeConfig.TRANSFER;
-    return (
-      <Badge variant="outline" className={cn("font-medium", config.color)}>
-        {config.label}
-      </Badge>
-    );
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await createSpekOrder.mutateAsync(formData);
+      resetForm();
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to create spek order", error);
+      alert("Gagal menyimpan data");
+    }
+  };
 
-    const selectedKaryawan = karyawanList.find(
-      (k) => k.id === formData.karyawanId
-    );
-    const selectedKendaraan = kendaraanList.find(
-      (k) => k.id === formData.kendaraanId
-    );
+  const handlePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payingSpekOrder) return;
 
-    if (!selectedKaryawan || !selectedKendaraan) return;
-
-    const newSpekOrder: SpekOrder = {
-      id: Date.now().toString(),
-      nomor: `SO-2024-${String(spekOrderList.length + 1).padStart(3, "0")}`,
-      kendaraanId: formData.kendaraanId,
-      kendaraan: selectedKendaraan,
-      karyawanId: formData.karyawanId,
-      karyawan: selectedKaryawan,
-      jenis: formData.jenis as
-        | "TUKANG_RAKIT"
-        | "TUKANG_CAT"
-        | "TUKANG_AKSESORIS",
-      deskripsi: formData.deskripsi,
-      upah: formData.upah,
-      status: "BELUM_DIBAYAR",
-      createdAt: new Date().toISOString().split("T")[0],
-      pembayaran: [],
-    };
-
-    setSpekOrderList([...spekOrderList, newSpekOrder]);
-    resetForm();
-    setIsDialogOpen(false);
+    try {
+      await createPayment.mutateAsync({
+        spekOrderId: payingSpekOrder.id,
+        ...paymentFormData,
+      });
+      setPayingSpekOrder(null);
+      setIsPaymentDialogOpen(false);
+      setPaymentFormData({ jumlah: 0, metode: "TRANSFER", bukti: "" });
+    } catch (error) {
+      console.error("Failed to create payment", error);
+      alert("Gagal menyimpan pembayaran");
+    }
   };
 
   const resetForm = () => {
@@ -360,82 +128,117 @@ export default function SpekOrderPage() {
     });
   };
 
-  const handlePayment = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!payingSpekOrder) return;
-
-    const newPembayaran: PembayaranSpek = {
-      id: Date.now().toString(),
-      jumlah: paymentFormData.jumlah,
-      metode: paymentFormData.metode,
-      bukti: paymentFormData.bukti,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-
-    setSpekOrderList((prev) =>
-      prev.map((spek) =>
-        spek.id === payingSpekOrder.id
-          ? {
-              ...spek,
-              status: "SUDAH_DIBAYAR" as const,
-              pembayaran: [...spek.pembayaran, newPembayaran],
-            }
-          : spek
-      )
-    );
-
-    setPaymentFormData({ jumlah: 0, metode: "TRANSFER", bukti: "" });
-    setPayingSpekOrder(null);
-    setIsPaymentDialogOpen(false);
-  };
-
-  const handleView = (spekOrder: SpekOrder) => {
+  const handleView = (spekOrder: any) => {
     setViewingSpekOrder(spekOrder);
     setIsDetailDialogOpen(true);
   };
 
-  const handlePaymentDialog = (spekOrder: SpekOrder) => {
+  const handlePaymentDialog = (spekOrder: any) => {
     setPayingSpekOrder(spekOrder);
     setPaymentFormData({
-      jumlah: spekOrder.upah,
+      jumlah: spekOrder.upah, // Default to full amount
       metode: "TRANSFER",
       bukti: "",
     });
     setIsPaymentDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus spek order ini?")) {
-      setSpekOrderList((prev) => prev.filter((s) => s.id !== id));
+  const handleDelete = async (id: string) => {
+    if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+      try {
+        await deleteSpekOrder.mutateAsync(id);
+      } catch (error) {
+        console.error("Failed to delete", error);
+        alert("Gagal menghapus data");
+      }
     }
   };
 
-  const openAddDialog = () => {
-    resetForm();
-    setIsDialogOpen(true);
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(value);
   };
 
-  const getKaryawanByJenis = (jenis: string) => {
-    const jabatanMap = {
-      TUKANG_RAKIT: "Tukang Rakit",
-      TUKANG_CAT: "Tukang Cat",
-      TUKANG_AKSESORIS: "Tukang Aksesoris",
-    };
-
-    const jabatan = jabatanMap[jenis as keyof typeof jabatanMap];
-    return karyawanList.filter((k) => k.jabatan === jabatan);
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "SUDAH_DIBAYAR":
+        return (
+          <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Sudah Dibayar
+          </Badge>
+        );
+      case "BELUM_DIBAYAR":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200">
+            <Clock className="mr-1 h-3 w-3" />
+            Belum Dibayar
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
   };
 
-  const getStatsByJenis = () => {
-    const stats: { [key: string]: number } = {};
-    spekOrderList.forEach((s) => {
-      stats[s.jenis] = (stats[s.jenis] || 0) + 1;
-    });
-    return stats;
+  const getMetodeBadge = (metode: string) => {
+    switch (metode) {
+      case "TRANSFER":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200"
+          >
+            Transfer
+          </Badge>
+        );
+      case "CASH":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
+            Cash
+          </Badge>
+        );
+      case "GIRO":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-purple-50 text-purple-700 border-purple-200"
+          >
+            Giro
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{metode}</Badge>;
+    }
   };
 
-  const jenisStats = getStatsByJenis();
+  const getJenisSpekBadge = (jenis: string) => {
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-slate-100 text-slate-700 font-normal"
+      >
+        {jenis}
+      </Badge>
+    );
+  };
+
+  // Stats
+  const totalUpah = spekOrderList.reduce(
+    (acc: number, curr: any) => acc + (curr.upah || 0),
+    0,
+  );
+  const paidCount = spekOrderList.filter(
+    (item: any) => item.status === "SUDAH_DIBAYAR",
+  ).length;
+  const unpaidCount = spekOrderList.filter(
+    (item: any) => item.status === "BELUM_DIBAYAR",
+  ).length;
 
   return (
     <DashboardLayout>
@@ -443,30 +246,30 @@ export default function SpekOrderPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Data Spek Order
+              Spek Order & Upah Borongan
             </h1>
             <p className="text-sm text-slate-500">
-              Manajemen spek order dan pembayaran upah karyawan
+              Manajemen pekerjaan borongan dan pembayaran upah karyawan
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button
-                onClick={openAddDialog}
+                onClick={resetForm}
                 className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Buat Spek Order
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] rounded-xl border-slate-100 shadow-2xl">
+            <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto rounded-xl border-slate-100 shadow-2xl">
               <form onSubmit={handleSubmit}>
-                <DialogHeader>
+                <DialogHeader className="border-b border-slate-100 pb-4">
                   <DialogTitle className="text-xl font-bold text-slate-900">
-                    Buat Spek Order Baru
+                    Form Spek Order Baru
                   </DialogTitle>
                   <DialogDescription className="text-slate-500">
-                    Buat spek order untuk pengerjaan kendaraan
+                    Buat surat perintah kerja borongan untuk karyawan
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-6 py-6">
@@ -491,14 +294,10 @@ export default function SpekOrderPage() {
                           <SelectValue placeholder="Pilih kendaraan" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          {kendaraanList.map((kendaraan) => (
-                            <SelectItem
-                              key={kendaraan.id}
-                              value={kendaraan.id}
-                              className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                            >
-                              {kendaraan.nomorPolisi} - {kendaraan.merek}{" "}
-                              {kendaraan.tipe}
+                          {kendaraanList.map((k: any) => (
+                            <SelectItem key={k.id} value={k.id}>
+                              {k.nomorPolisi} -{" "}
+                              {k.merekKendaraan?.nama || k.merek}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -506,74 +305,70 @@ export default function SpekOrderPage() {
                     </div>
                     <div className="grid items-center gap-2">
                       <Label
-                        htmlFor="jenis"
+                        htmlFor="karyawanId"
                         className="text-slate-700 font-medium"
                       >
-                        Jenis Pekerjaan
+                        Karyawan / Tim
                       </Label>
                       <Select
-                        value={formData.jenis}
+                        value={formData.karyawanId}
                         onValueChange={(value) =>
                           setFormData((prev) => ({
                             ...prev,
-                            jenis: value as any,
-                            karyawanId: "",
+                            karyawanId: value,
                           }))
                         }
                       >
                         <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                          <SelectValue placeholder="Pilih jenis" />
+                          <SelectValue placeholder="Pilih karyawan" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          <SelectItem value="TUKANG_RAKIT">
-                            Tukang Rakit
-                          </SelectItem>
-                          <SelectItem value="TUKANG_CAT">Tukang Cat</SelectItem>
-                          <SelectItem value="TUKANG_AKSESORIS">
-                            Tukang Aksesoris
-                          </SelectItem>
+                          {karyawanList.map((k: any) => (
+                            <SelectItem key={k.id} value={k.id}>
+                              {k.nama} ({k.jabatan})
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
 
-                  <div className="grid items-center gap-2">
+                  <div className="space-y-2">
                     <Label
-                      htmlFor="karyawanId"
+                      htmlFor="jenis"
                       className="text-slate-700 font-medium"
                     >
-                      Karyawan
+                      Jenis Pekerjaan
                     </Label>
                     <Select
-                      value={formData.karyawanId}
+                      value={formData.jenis}
                       onValueChange={(value) =>
-                        setFormData((prev) => ({ ...prev, karyawanId: value }))
+                        setFormData((prev) => ({ ...prev, jenis: value }))
                       }
-                      disabled={!formData.jenis}
                     >
-                      <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0 disabled:opacity-50">
-                        <SelectValue placeholder="Pilih karyawan" />
+                      <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                        <SelectValue placeholder="Pilih jenis pekerjaan" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                        {getKaryawanByJenis(formData.jenis).map((karyawan) => (
-                          <SelectItem
-                            key={karyawan.id}
-                            value={karyawan.id}
-                            className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                          >
-                            {karyawan.nama} ({karyawan.jabatan})
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="LAS_BODY">Las Body</SelectItem>
+                        <SelectItem value="CAT_FINISHING">
+                          Cat & Finishing
+                        </SelectItem>
+                        <SelectItem value="INSTALASI_LISTRIK">
+                          Instalasi Listrik
+                        </SelectItem>
+                        <SelectItem value="INTERIOR">Interior</SelectItem>
+                        <SelectItem value="LAINNYA">Lainnya</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="grid items-center gap-2">
+                  <div className="space-y-2">
                     <Label
                       htmlFor="deskripsi"
                       className="text-slate-700 font-medium"
                     >
-                      Deskripsi Pekerjaan
+                      Deskripsi Detail
                     </Label>
                     <Textarea
                       id="deskripsi"
@@ -584,43 +379,55 @@ export default function SpekOrderPage() {
                           deskripsi: e.target.value,
                         }))
                       }
-                      placeholder="Deskripsi detail pekerjaan yang akan dilakukan"
+                      placeholder="Jelaskan detail pekerjaan yang harus dilakukan"
                       rows={3}
                       className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 resize-none"
-                      required
                     />
                   </div>
 
-                  <div className="grid items-center gap-2">
+                  <div className="space-y-2">
                     <Label
                       htmlFor="upah"
                       className="text-slate-700 font-medium"
                     >
-                      Upah (Rp)
+                      Nominal Upah Borongan
                     </Label>
-                    <Input
-                      id="upah"
-                      type="number"
-                      value={formData.upah}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          upah: parseInt(e.target.value) || 0,
-                        }))
-                      }
-                      placeholder="0"
-                      min="0"
-                      className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                      required
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">
+                        Rp
+                      </span>
+                      <Input
+                        id="upah"
+                        type="number"
+                        value={formData.upah}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            upah: parseInt(e.target.value) || 0,
+                          }))
+                        }
+                        className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 font-semibold text-slate-900"
+                        placeholder="0"
+                        min="0"
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="gap-2 pt-4 border-t border-slate-100">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                    className="rounded-xl cursor-pointer"
+                  >
+                    Batal
+                  </Button>
                   <Button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md cursor-pointer"
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
                   >
-                    Simpan Spek Order
+                    Simpan Data
                   </Button>
                 </DialogFooter>
               </form>
@@ -629,76 +436,75 @@ export default function SpekOrderPage() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">
-                    Total Spek Order
+                    Total Upah Terbayar
                   </p>
                   <p className="text-2xl font-bold text-slate-900 mt-1">
-                    {spekOrderList.length}
+                    {/* Simplified calculation: sum of paid items OR sum of actual payments */}
+                    {/* Assuming full payment for SUDAH_DIBAYAR for simplicity */}
+                    {formatCurrency(
+                      spekOrderList
+                        .filter((s: any) => s.status === "SUDAH_DIBAYAR")
+                        .reduce(
+                          (acc: number, curr: any) => acc + (curr.upah || 0),
+                          0,
+                        ),
+                    )}
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
-                  <Wrench className="h-6 w-6 text-blue-600" />
+                  <Wallet className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {Object.entries(jenisStats).map(([jenis, count]) => {
-            const jenisConfig = {
-              TUKANG_RAKIT: {
-                color: "bg-blue-50 text-blue-600 border-blue-100",
-                label: "Tukang Rakit",
-              },
-              TUKANG_CAT: {
-                color: "bg-green-50 text-green-600 border-green-100",
-                label: "Tukang Cat",
-              },
-              TUKANG_AKSESORIS: {
-                color: "bg-purple-50 text-purple-600 border-purple-100",
-                label: "Tukang Aksesoris",
-              },
-            };
+          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Sudah Dibayar
+                  </p>
+                  <p className="text-2xl font-bold text-green-600 mt-1">
+                    {paidCount}{" "}
+                    <span className="text-sm font-normal text-slate-400">
+                      Order
+                    </span>
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-green-50 border border-green-100">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            const config =
-              jenisConfig[jenis as keyof typeof jenisConfig] ||
-              jenisConfig.TUKANG_RAKIT;
-
-            return (
-              <Card
-                key={jenis}
-                className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow"
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">
-                        {config.label}
-                      </p>
-                      <p className="text-2xl font-bold text-slate-900 mt-1">
-                        {count}
-                      </p>
-                    </div>
-                    <div
-                      className={`p-3 rounded-xl border ${
-                        config.color
-                          .replace("text-", "border-")
-                          .split(" ")[2] || "border-slate-100"
-                      } ${config.color.split(" ")[0]}`}
-                    >
-                      <Wrench
-                        className={`h-6 w-6 ${config.color.split(" ")[1]}`}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Belum Dibayar
+                  </p>
+                  <p className="text-2xl font-bold text-yellow-600 mt-1">
+                    {unpaidCount}{" "}
+                    <span className="text-sm font-normal text-slate-400">
+                      Order
+                    </span>
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-yellow-50 border border-yellow-100">
+                  <Clock className="h-6 w-6 text-yellow-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
@@ -732,7 +538,7 @@ export default function SpekOrderPage() {
                     Karyawan
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    Jenis
+                    Pekerjaan
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Upah
@@ -746,8 +552,8 @@ export default function SpekOrderPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSpekOrder.length > 0 ? (
-                  filteredSpekOrder.map((spekOrder) => (
+                {spekOrderList.length > 0 ? (
+                  spekOrderList.map((spekOrder: any) => (
                     <TableRow
                       key={spekOrder.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
@@ -763,28 +569,35 @@ export default function SpekOrderPage() {
                       <TableCell className="px-6">
                         <div>
                           <p className="font-medium text-slate-900">
-                            {spekOrder.kendaraan.nomorPolisi}
+                            {spekOrder.kendaraan?.nomorPolisi || "-"}
                           </p>
                           <p className="text-sm text-slate-500">
-                            {spekOrder.kendaraan.merek}{" "}
-                            {spekOrder.kendaraan.tipe}
+                            {spekOrder.kendaraan?.merekKendaraan?.nama ||
+                              spekOrder.kendaraan?.merek}{" "}
+                            {spekOrder.kendaraan?.tipeKendaraan?.nama ||
+                              spekOrder.kendaraan?.tipe}
                           </p>
                         </div>
                       </TableCell>
                       <TableCell className="px-6">
                         <div>
                           <p className="font-medium text-slate-900">
-                            {spekOrder.karyawan.nama}
+                            {spekOrder.karyawan?.nama}
                           </p>
                           <p className="text-sm text-slate-500">
-                            {spekOrder.karyawan.jabatan}
+                            {spekOrder.karyawan?.jabatan}
                           </p>
                         </div>
                       </TableCell>
                       <TableCell className="px-6">
-                        {getJenisSpekBadge(spekOrder.jenis)}
+                        <div>
+                          {getJenisSpekBadge(spekOrder.jenis)}
+                          <p className="text-sm text-slate-500 mt-1 line-clamp-1 max-w-[150px]">
+                            {spekOrder.deskripsi}
+                          </p>
+                        </div>
                       </TableCell>
-                      <TableCell className="px-6 font-medium text-slate-700">
+                      <TableCell className="px-6 font-medium text-slate-900">
                         {formatCurrency(spekOrder.upah)}
                       </TableCell>
                       <TableCell className="px-6">
@@ -797,7 +610,6 @@ export default function SpekOrderPage() {
                             size="icon"
                             onClick={() => handleView(spekOrder)}
                             className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
-                            title="Lihat Detail"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -870,11 +682,15 @@ export default function SpekOrderPage() {
                       Kendaraan
                     </Label>
                     <p className="font-semibold text-slate-900">
-                      {viewingSpekOrder.kendaraan.nomorPolisi}
+                      {viewingSpekOrder.kendaraan?.nomorPolisi || "-"}
                     </p>
                     <p className="text-sm text-slate-500">
-                      {viewingSpekOrder.kendaraan.merek}{" "}
-                      {viewingSpekOrder.kendaraan.tipe}
+                      {viewingSpekOrder.kendaraan?.merekKendaraan?.nama ||
+                        viewingSpekOrder.kendaraan?.merek ||
+                        ""}{" "}
+                      {viewingSpekOrder.kendaraan?.tipeKendaraan?.nama ||
+                        viewingSpekOrder.kendaraan?.tipe ||
+                        ""}
                     </p>
                   </div>
                   <div className="space-y-1">
@@ -882,10 +698,10 @@ export default function SpekOrderPage() {
                       Karyawan
                     </Label>
                     <p className="font-semibold text-slate-900">
-                      {viewingSpekOrder.karyawan.nama}
+                      {viewingSpekOrder.karyawan?.nama}
                     </p>
                     <p className="text-sm text-slate-500">
-                      {viewingSpekOrder.karyawan.jabatan}
+                      {viewingSpekOrder.karyawan?.jabatan}
                     </p>
                   </div>
                   <div className="space-y-1">
@@ -914,44 +730,50 @@ export default function SpekOrderPage() {
                   </div>
                 </div>
 
-                {viewingSpekOrder.pembayaran.length > 0 && (
-                  <div className="border-t border-slate-100 pt-4">
-                    <Label className="text-sm font-semibold text-slate-900 mb-3 block">
-                      Riwayat Pembayaran
-                    </Label>
-                    <div className="space-y-3">
-                      {viewingSpekOrder.pembayaran.map((pembayaran) => (
-                        <div
-                          key={pembayaran.id}
-                          className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm flex justify-between items-center"
-                        >
-                          <div>
-                            <p className="font-bold text-slate-900">
-                              {formatCurrency(pembayaran.jumlah)}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              {getMetodeBadge(pembayaran.metode)}
-                              <span className="text-xs text-slate-400">
-                                • {pembayaran.createdAt}
-                              </span>
+                {viewingSpekOrder.pembayaran &&
+                  viewingSpekOrder.pembayaran.length > 0 && (
+                    <div className="border-t border-slate-100 pt-4">
+                      <Label className="text-sm font-semibold text-slate-900 mb-3 block">
+                        Riwayat Pembayaran
+                      </Label>
+                      <div className="space-y-3">
+                        {viewingSpekOrder.pembayaran.map((pembayaran: any) => (
+                          <div
+                            key={pembayaran.id}
+                            className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm flex justify-between items-center"
+                          >
+                            <div>
+                              <p className="font-bold text-slate-900">
+                                {formatCurrency(pembayaran.jumlah)}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                {getMetodeBadge(pembayaran.metode)}
+                                <span className="text-xs text-slate-400">
+                                  •{" "}
+                                  {pembayaran.createdAt
+                                    ? new Date(
+                                        pembayaran.createdAt,
+                                      ).toLocaleDateString()
+                                    : "-"}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              {pembayaran.bukti && (
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-blue-50 text-blue-700 border-blue-100"
+                                >
+                                  <Wallet className="w-3 h-3 mr-1" />
+                                  Bukti Ada
+                                </Badge>
+                              )}
                             </div>
                           </div>
-                          <div className="text-right">
-                            {pembayaran.bukti && (
-                              <Badge
-                                variant="secondary"
-                                className="bg-blue-50 text-blue-700 border-blue-100"
-                              >
-                                <Wallet className="w-3 h-3 mr-1" />
-                                Bukti Ada
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             )}
           </DialogContent>
@@ -980,11 +802,15 @@ export default function SpekOrderPage() {
                         {payingSpekOrder.nomor}
                       </span>
                       <span className="text-xs text-slate-500">
-                        {payingSpekOrder.createdAt}
+                        {payingSpekOrder.createdAt
+                          ? new Date(
+                              payingSpekOrder.createdAt,
+                            ).toLocaleDateString()
+                          : "-"}
                       </span>
                     </div>
                     <p className="font-medium text-slate-900">
-                      {payingSpekOrder.karyawan.nama}
+                      {payingSpekOrder.karyawan?.nama}
                     </p>
                     <p className="text-2xl font-bold text-blue-600 mt-2">
                       {formatCurrency(payingSpekOrder.upah)}

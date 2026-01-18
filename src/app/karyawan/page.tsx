@@ -43,6 +43,12 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import {
+  useKaryawan,
+  useCreateKaryawan,
+  useUpdateKaryawan,
+  useDeleteKaryawan,
+} from "@/hooks/use-karyawan";
 
 interface Karyawan {
   id: string;
@@ -55,55 +61,12 @@ interface Karyawan {
 }
 
 export default function KaryawanPage() {
-  const [karyawanList, setKaryawanList] = useState<Karyawan[]>([
-    {
-      id: "1",
-      nik: "1234567890123456",
-      nama: "Ahmad Fauzi",
-      jabatan: "Tukang Rakit",
-      telepon: "0812-3456-7890",
-      alamat: "Jl. Merdeka No. 123, Jakarta",
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      nik: "2345678901234567",
-      nama: "Budi Santoso",
-      jabatan: "Tukang Cat",
-      telepon: "0813-5678-9012",
-      alamat: "Jl. Sudirman No. 456, Jakarta",
-      createdAt: "2024-01-16",
-    },
-    {
-      id: "3",
-      nik: "3456789012345678",
-      nama: "Chandra Wijaya",
-      jabatan: "Tukang Aksesoris",
-      telepon: "0821-6789-0123",
-      alamat: "Jl. Gatot Subroto No. 789, Jakarta",
-      createdAt: "2024-01-17",
-    },
-    {
-      id: "4",
-      nik: "4567890123456789",
-      nama: "Dedi Kurniawan",
-      jabatan: "Tukang Rakit",
-      telepon: "0822-7890-1234",
-      alamat: "Jl. Thamrin No. 321, Jakarta",
-      createdAt: "2024-01-18",
-    },
-    {
-      id: "5",
-      nik: "5678901234567890",
-      nama: "Eko Prasetyo",
-      jabatan: "Supervisor",
-      telepon: "0812-8901-2345",
-      alamat: "Jl. Rasuna Said No. 654, Jakarta",
-      createdAt: "2024-01-19",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: karyawanList = [], refetch } = useKaryawan(searchTerm);
+  const createKaryawan = useCreateKaryawan();
+  const updateKaryawan = useUpdateKaryawan();
+  const deleteKaryawan = useDeleteKaryawan();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingKaryawan, setEditingKaryawan] = useState<Karyawan | null>(null);
   const [formData, setFormData] = useState({
@@ -124,36 +87,31 @@ export default function KaryawanPage() {
     "Driver",
   ];
 
-  const filteredKaryawan = karyawanList.filter(
-    (karyawan) =>
-      karyawan.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      karyawan.nik.includes(searchTerm) ||
-      karyawan.jabatan.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      karyawan.telepon?.includes(searchTerm) ||
-      karyawan.alamat?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  /* Filtering done via hook */
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingKaryawan) {
-      setKaryawanList((prev) =>
-        prev.map((k) =>
-          k.id === editingKaryawan.id ? { ...k, ...formData } : k
-        )
-      );
-    } else {
-      const newKaryawan: Karyawan = {
-        id: Date.now().toString(),
-        ...formData,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setKaryawanList((prev) => [...prev, newKaryawan]);
-    }
+    try {
+      if (editingKaryawan) {
+        await updateKaryawan.mutateAsync({
+          id: editingKaryawan.id,
+          ...formData,
+        });
+      } else {
+        await createKaryawan.mutateAsync({
+          ...formData,
+        });
+      }
 
-    setFormData({ nik: "", nama: "", jabatan: "", telepon: "", alamat: "" });
-    setEditingKaryawan(null);
-    setIsDialogOpen(false);
+      setFormData({ nik: "", nama: "", jabatan: "", telepon: "", alamat: "" });
+      setEditingKaryawan(null);
+      setIsDialogOpen(false);
+      refetch();
+    } catch (error) {
+      console.error("Failed to save karyawan", error);
+      alert("Gagal menyimpan data karyawan");
+    }
   };
 
   const handleEdit = (karyawan: Karyawan) => {
@@ -168,9 +126,15 @@ export default function KaryawanPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus data karyawan ini?")) {
-      setKaryawanList((prev) => prev.filter((k) => k.id !== id));
+      try {
+        await deleteKaryawan.mutateAsync(id);
+        refetch();
+      } catch (error) {
+        console.error("Failed to delete karyawan", error);
+        alert("Gagal menghapus karyawan");
+      }
     }
   };
 
@@ -472,8 +436,8 @@ export default function KaryawanPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredKaryawan.length > 0 ? (
-                  filteredKaryawan.map((karyawan) => (
+                {karyawanList.length > 0 ? (
+                  karyawanList.map((karyawan) => (
                     <TableRow
                       key={karyawan.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
