@@ -26,79 +26,57 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Edit, Trash2, Search } from "lucide-react";
 import { useState } from "react";
-
-interface KategoriBarang {
-  id: number;
-  nama: string;
-  deskripsi?: string;
-  createdAt: string;
-}
+import {
+  KategoriBarang,
+  useKategoriBarang,
+  useCreateKategoriBarang,
+  useUpdateKategoriBarang,
+  useDeleteKategoriBarang,
+} from "@/hooks/use-master";
 
 export default function KategoriBarangPage() {
-  const [kategoriList, setKategoriList] = useState<KategoriBarang[]>([
-    {
-      id: 1,
-      nama: "Cat",
-      deskripsi: "Berbagai jenis cat untuk kendaraan",
-      createdAt: "2024-01-15",
-    },
-    {
-      id: 2,
-      nama: "Besi",
-      deskripsi: "Material besi untuk rangka kendaraan",
-      createdAt: "2024-01-16",
-    },
-    {
-      id: 3,
-      nama: "Aksesoris",
-      deskripsi: "Aksesoris tambahan kendaraan",
-      createdAt: "2024-01-17",
-    },
-    {
-      id: 4,
-      nama: "Paku & Sekrup",
-      deskripsi: "Material pengikat",
-      createdAt: "2024-01-18",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingKategori, setEditingKategori] = useState<KategoriBarang | null>(
-    null
+    null,
   );
   const [formData, setFormData] = useState({
     nama: "",
     deskripsi: "",
   });
 
+  // Hooks
+  const { data: kategoriList = [], isLoading } = useKategoriBarang();
+  const createKategori = useCreateKategoriBarang();
+  const updateKategori = useUpdateKategoriBarang();
+  const deleteKategori = useDeleteKategoriBarang();
+
   const filteredKategori = kategoriList.filter(
     (kategori) =>
       kategori.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      kategori.deskripsi?.toLowerCase().includes(searchTerm.toLowerCase())
+      kategori.deskripsi?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingKategori) {
-      setKategoriList((prev) =>
-        prev.map((k) =>
-          k.id === editingKategori.id ? { ...k, ...formData } : k
-        )
-      );
-    } else {
-      const newKategori: KategoriBarang = {
-        id: Math.max(...kategoriList.map((k) => k.id)) + 1,
-        ...formData,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setKategoriList((prev) => [...prev, newKategori]);
-    }
+    try {
+      if (editingKategori) {
+        await updateKategori.mutateAsync({
+          id: editingKategori.id,
+          ...formData,
+        });
+      } else {
+        await createKategori.mutateAsync(formData);
+      }
 
-    setFormData({ nama: "", deskripsi: "" });
-    setEditingKategori(null);
-    setIsDialogOpen(false);
+      setFormData({ nama: "", deskripsi: "" });
+      setEditingKategori(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to save kategori", error);
+      alert("Gagal menyimpan kategori barang");
+    }
   };
 
   const handleEdit = (kategori: KategoriBarang) => {
@@ -110,9 +88,14 @@ export default function KategoriBarangPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (confirm("Apakah Anda yakin ingin menghapus kategori ini?")) {
-      setKategoriList((prev) => prev.filter((k) => k.id !== id));
+      try {
+        await deleteKategori.mutateAsync(id);
+      } catch (error) {
+        console.error("Failed to delete kategori", error);
+        alert("Gagal menghapus kategori barang (mungkin sedang digunakan)");
+      }
     }
   };
 
@@ -284,7 +267,9 @@ export default function KategoriBarangPage() {
                         )}
                       </TableCell>
                       <TableCell className="px-6 text-slate-500 text-sm">
-                        {kategori.createdAt}
+                        {kategori.createdAt
+                          ? new Date(kategori.createdAt).toLocaleDateString()
+                          : "-"}
                       </TableCell>
                       <TableCell className="px-6 text-center">
                         <div className="flex justify-center gap-2 transition-opacity">
@@ -314,7 +299,7 @@ export default function KategoriBarangPage() {
                       colSpan={5}
                       className="h-24 text-center text-slate-500"
                     >
-                      Data tidak ditemukan.
+                      {isLoading ? "Memuat data..." : "Data tidak ditemukan."}
                     </TableCell>
                   </TableRow>
                 )}

@@ -13,6 +13,13 @@ export interface TipeKendaraan {
   merekKendaraan?: MerekKendaraan;
 }
 
+export interface KategoriBarang {
+  id: number;
+  nama: string;
+  deskripsi?: string;
+  createdAt: string;
+}
+
 export function useMerekKendaraan() {
   return useQuery({
     queryKey: ["merek-kendaraan"],
@@ -34,10 +41,59 @@ export function useTipeKendaraan(merekId?: string) {
       );
       return data.data as TipeKendaraan[];
     },
-    // If we only want to fetch when merekId is present, we can enable it specifically.
-    // But sometimes we might want all types. For form selection, usually it depends on merekId.
-    // Let's keep it flexible, but usually UI won't call this without context unless fetching all.
   });
 }
 
-// ... Create/Delete hooks if needed for Master Pages, but for now we focus on usage in Kendaraan page.
+// Kategori Barang Hooks
+
+export function useKategoriBarang() {
+  return useQuery({
+    queryKey: ["kategori-barang"],
+    queryFn: async () => {
+      const { data } = await axios.get("/api/master/kategori-barang");
+      return data.data as KategoriBarang[];
+    },
+  });
+}
+
+export function useCreateKategoriBarang() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { nama: string; deskripsi?: string }) => {
+      const { data } = await axios.post("/api/master/kategori-barang", payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kategori-barang"] });
+    },
+  });
+}
+
+export function useUpdateKategoriBarang() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      id: number;
+      nama: string;
+      deskripsi?: string;
+    }) => {
+      const { data } = await axios.put("/api/master/kategori-barang", payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kategori-barang"] });
+    },
+  });
+}
+
+export function useDeleteKategoriBarang() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await axios.delete(`/api/master/kategori-barang?id=${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kategori-barang"] });
+    },
+  });
+}
