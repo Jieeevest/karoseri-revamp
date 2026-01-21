@@ -33,6 +33,7 @@ import {
   useUpdateKategoriBarang,
   useDeleteKategoriBarang,
 } from "@/hooks/use-master";
+import { useToast } from "@/hooks/use-toast";
 
 export default function KategoriBarangPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,6 +51,7 @@ export default function KategoriBarangPage() {
   const createKategori = useCreateKategoriBarang();
   const updateKategori = useUpdateKategoriBarang();
   const deleteKategori = useDeleteKategoriBarang();
+  const { toast } = useToast();
 
   const filteredKategori = kategoriList.filter(
     (kategori) =>
@@ -73,9 +75,23 @@ export default function KategoriBarangPage() {
       setFormData({ nama: "", deskripsi: "" });
       setEditingKategori(null);
       setIsDialogOpen(false);
-    } catch (error) {
+
+      toast({
+        title: editingKategori ? "Kategori diperbarui" : "Kategori ditambahkan",
+        description: editingKategori
+          ? "Data kategori berhasil diperbarui."
+          : "Kategori baru berhasil ditambahkan.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
+    } catch (error: any) {
       console.error("Failed to save kategori", error);
-      alert("Gagal menyimpan kategori barang");
+      toast({
+        title: "Gagal menyimpan",
+        description:
+          error.response?.data?.message ||
+          "Terjadi kesalahan saat menyimpan kategori.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -92,9 +108,20 @@ export default function KategoriBarangPage() {
     if (confirm("Apakah Anda yakin ingin menghapus kategori ini?")) {
       try {
         await deleteKategori.mutateAsync(id);
-      } catch (error) {
+        toast({
+          title: "Kategori dihapus",
+          description: "Data kategori berhasil dihapus.",
+          className: "bg-green-50 border-green-200 text-green-800",
+        });
+      } catch (error: any) {
         console.error("Failed to delete kategori", error);
-        alert("Gagal menghapus kategori barang (mungkin sedang digunakan)");
+        toast({
+          title: "Gagal menghapus",
+          description:
+            error.response?.data?.message ||
+            "Gagal menghapus kategori (mungkin sedang digunakan).",
+          variant: "destructive",
+        });
       }
     }
   };
