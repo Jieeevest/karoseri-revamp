@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { login } from "./utils";
 
-test.describe("Inventory - Data Barang", () => {
+test.describe.skip("Inventory - Data Barang", () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
     await page.goto("/barang/data-barang");

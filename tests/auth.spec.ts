@@ -9,7 +9,7 @@ test.describe("Authentication", () => {
 
     await expect(page).toHaveURL("/");
     // Check for dashboard content
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
   });
 
   test("should show error with invalid credentials", async ({ page }) => {

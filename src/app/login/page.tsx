@@ -150,7 +150,7 @@ export default function LoginPage() {
           </form>
 
           {/* Dev Mode Credentials Hint */}
-          {process.env.NODE_ENV === "development" && (
+          {/* {process.env.NODE_ENV === "development" && (
             <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
               <h3 className="text-sm font-semibold text-yellow-800 mb-2">
                 Development Credentials
@@ -165,7 +165,7 @@ export default function LoginPage() {
                 </p>
               </div>
             </div>
-          )}
+          )} */}
 
           <div className="text-center pt-4">
             <p className="text-xs text-slate-400">

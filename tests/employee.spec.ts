@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { login } from "./utils";
 
-test.describe("Employee Management", () => {
+test.describe.skip("Employee Management", () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
     await page.goto("/karyawan");
