@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 interface Barang {
   id: string;
@@ -251,6 +252,10 @@ export default function BarangMasukPage() {
     kondisi: "Baik",
   });
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingBarangMasuk, setDeletingBarangMasuk] =
+    useState<BarangMasuk | null>(null);
+
   const filteredBarangMasuk = barangMasukList.filter(
     (bm) =>
       bm.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -316,10 +321,19 @@ export default function BarangMasukPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus data barang masuk ini?")) {
-      setBarangMasukList((prev) => prev.filter((bm) => bm.id !== id));
-    }
+  const handleDeleteClick = (barangMasuk: BarangMasuk) => {
+    setDeletingBarangMasuk(barangMasuk);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingBarangMasuk) return;
+
+    setBarangMasukList((prev) =>
+      prev.filter((bm) => bm.id !== deletingBarangMasuk.id)
+    );
+    setIsDeleteModalOpen(false);
+    setDeletingBarangMasuk(null);
   };
 
   const openAddDialog = () => {
@@ -808,7 +822,7 @@ export default function BarangMasukPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(barangMasuk.id)}
+                            onClick={() => handleDeleteClick(barangMasuk)}
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -832,6 +846,19 @@ export default function BarangMasukPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingBarangMasuk(null);
+        }}
+        onConfirm={async () => handleDeleteConfirm()}
+        itemName={deletingBarangMasuk?.nomor}
+        title="Hapus Barang Masuk"
+        description="Apakah Anda yakin ingin menghapus data barang masuk ini?"
+      />
     </DashboardLayout>
   );
+}
 }

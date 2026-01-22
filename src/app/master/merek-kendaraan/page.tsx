@@ -25,6 +25,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Plus, Edit, Trash2, Search, Car } from "lucide-react";
 import { useState } from "react";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 interface MerekKendaraan {
   id: string;
@@ -51,8 +52,13 @@ export default function MerekKendaraanPage() {
     nama: "",
   });
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingMerek, setDeletingMerek] = useState<MerekKendaraan | null>(
+    null,
+  );
+
   const filteredMerek = merekList.filter((merek) =>
-    merek.nama.toLowerCase().includes(searchTerm.toLowerCase())
+    merek.nama.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -60,7 +66,7 @@ export default function MerekKendaraanPage() {
 
     if (editingMerek) {
       setMerekList((prev) =>
-        prev.map((m) => (m.id === editingMerek.id ? { ...m, ...formData } : m))
+        prev.map((m) => (m.id === editingMerek.id ? { ...m, ...formData } : m)),
       );
     } else {
       const newMerek: MerekKendaraan = {
@@ -84,10 +90,16 @@ export default function MerekKendaraanPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus merek ini?")) {
-      setMerekList((prev) => prev.filter((m) => m.id !== id));
-    }
+  const handleDeleteClick = (merek: MerekKendaraan) => {
+    setDeletingMerek(merek);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingMerek) return;
+    setMerekList((prev) => prev.filter((m) => m.id !== deletingMerek.id));
+    setIsDeleteModalOpen(false);
+    setDeletingMerek(null);
   };
 
   const openAddDialog = () => {
@@ -246,7 +258,7 @@ export default function MerekKendaraanPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(merek.id)}
+                            onClick={() => handleDeleteClick(merek)}
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -270,6 +282,18 @@ export default function MerekKendaraanPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingMerek(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingMerek?.nama}
+        title="Hapus Merek Kendaraan"
+        description="Apakah Anda yakin ingin menghapus merek kendaraan ini? Tindakan ini tidak dapat dibatalkan."
+      />
     </DashboardLayout>
   );
 }

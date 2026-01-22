@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 interface Barang {
   id: string;
@@ -224,13 +225,19 @@ export default function BarangKeluarPage() {
     deskripsi: "",
   });
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingBarangKeluar, setDeletingBarangKeluar] =
+    useState<BarangKeluar | null>(null);
+
   const filteredBarangKeluar = barangKeluarList.filter(
     (bk) =>
       bk.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bk.jenis.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bk.barang.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bk.karyawan.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bk.kendaraan?.nomorPolisi.toLowerCase().includes(searchTerm.toLowerCase())
+      bk.kendaraan?.nomorPolisi
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -238,7 +245,7 @@ export default function BarangKeluarPage() {
 
     const selectedBarang = barangList.find((b) => b.id === formData.barangId);
     const selectedKaryawan = karyawanList.find(
-      (k) => k.id === formData.karyawanId
+      (k) => k.id === formData.karyawanId,
     );
 
     const selectedKendaraan =
@@ -254,7 +261,7 @@ export default function BarangKeluarPage() {
 
     if (formData.jumlah > selectedBarang.stok) {
       alert(
-        `Jumlah melebihi stok tersedia! Stok tersedia: ${selectedBarang.stok} ${selectedBarang.satuan}`
+        `Jumlah melebihi stok tersedia! Stok tersedia: ${selectedBarang.stok} ${selectedBarang.satuan}`,
       );
       return;
     }
@@ -308,10 +315,18 @@ export default function BarangKeluarPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus data barang keluar ini?")) {
-      setBarangKeluarList((prev) => prev.filter((bk) => bk.id !== id));
-    }
+  const handleDeleteClick = (barangKeluar: BarangKeluar) => {
+    setDeletingBarangKeluar(barangKeluar);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingBarangKeluar) return;
+    setBarangKeluarList((prev) =>
+      prev.filter((bk) => bk.id !== deletingBarangKeluar.id),
+    );
+    setIsDeleteModalOpen(false);
+    setDeletingBarangKeluar(null);
   };
 
   const openAddDialog = () => {
@@ -842,7 +857,7 @@ export default function BarangKeluarPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(barangKeluar.id)}
+                            onClick={() => handleDeleteClick(barangKeluar)}
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -854,7 +869,7 @@ export default function BarangKeluarPage() {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={9}
                       className="px-6 h-24 text-center text-slate-500"
                     >
                       Data tidak ditemukan.
@@ -866,6 +881,18 @@ export default function BarangKeluarPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingBarangKeluar(null);
+        }}
+        onConfirm={async () => handleDeleteConfirm()}
+        itemName={deletingBarangKeluar?.nomor}
+        title="Hapus Barang Keluar"
+        description="Apakah Anda yakin ingin menghapus data barang keluar ini?"
+      />
     </DashboardLayout>
   );
 }

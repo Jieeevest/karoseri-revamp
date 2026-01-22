@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import {
   Plus,
   Edit,
@@ -97,12 +98,17 @@ export default function SupplierPage() {
     email: "",
   });
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(
+    null,
+  );
+
   const filteredSupplier = supplierList.filter(
     (supplier) =>
       supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       supplier.kode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.alamat?.toLowerCase().includes(searchTerm.toLowerCase())
+      supplier.alamat?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -111,8 +117,8 @@ export default function SupplierPage() {
     if (editingSupplier) {
       setSupplierList((prev) =>
         prev.map((s) =>
-          s.id === editingSupplier.id ? { ...s, ...formData } : s
-        )
+          s.id === editingSupplier.id ? { ...s, ...formData } : s,
+        ),
       );
     } else {
       const newSupplier: Supplier = {
@@ -140,10 +146,17 @@ export default function SupplierPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus supplier ini?")) {
-      setSupplierList((prev) => prev.filter((s) => s.id !== id));
-    }
+  const handleDeleteClick = (supplier: Supplier) => {
+    setDeletingSupplier(supplier);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingSupplier) return;
+
+    setSupplierList((prev) => prev.filter((s) => s.id !== deletingSupplier.id));
+    setIsDeleteModalOpen(false);
+    setDeletingSupplier(null);
   };
 
   const openAddDialog = () => {
@@ -423,7 +436,7 @@ export default function SupplierPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(supplier.id)}
+                            onClick={() => handleDeleteClick(supplier)}
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -447,6 +460,16 @@ export default function SupplierPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingSupplier(null);
+        }}
+        onConfirm={async () => handleDeleteConfirm()}
+        itemName={deletingSupplier?.nama}
+      />
     </DashboardLayout>
   );
 }

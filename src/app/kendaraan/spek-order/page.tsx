@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import {
   useSpekOrder,
   useCreateSpekOrder,
@@ -62,6 +63,9 @@ export default function SpekOrderPage() {
 
   const [viewingSpekOrder, setViewingSpekOrder] = useState<any | null>(null);
   const [payingSpekOrder, setPayingSpekOrder] = useState<any | null>(null);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingSpekOrder, setDeletingSpekOrder] = useState<any | null>(null);
 
   const [formData, setFormData] = useState({
     kendaraanId: "",
@@ -143,14 +147,20 @@ export default function SpekOrderPage() {
     setIsPaymentDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
-      try {
-        await deleteSpekOrder.mutateAsync(id);
-      } catch (error) {
-        console.error("Failed to delete", error);
-        alert("Gagal menghapus data");
-      }
+  const handleDeleteClick = (spekOrder: any) => {
+    setDeletingSpekOrder(spekOrder);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingSpekOrder) return;
+    try {
+      await deleteSpekOrder.mutateAsync(deletingSpekOrder.id);
+      setIsDeleteModalOpen(false);
+      setDeletingSpekOrder(null);
+    } catch (error) {
+      console.error("Failed to delete", error);
+      alert("Gagal menghapus data");
     }
   };
 
@@ -627,7 +637,7 @@ export default function SpekOrderPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(spekOrder.id)}
+                            onClick={() => handleDeleteClick(spekOrder)}
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
                             title="Hapus"
                           >
@@ -912,6 +922,18 @@ export default function SpekOrderPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingSpekOrder(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingSpekOrder?.nomor}
+        title="Hapus Spek Order"
+        description="Apakah Anda yakin ingin menghapus spek order ini? Tindakan ini tidak dapat dibatalkan."
+      />
     </DashboardLayout>
   );
 }

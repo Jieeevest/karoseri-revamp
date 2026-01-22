@@ -25,6 +25,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Plus, Edit, Trash2, Search } from "lucide-react";
 import { useState } from "react";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 interface SatuanBarang {
   id: string;
@@ -49,8 +50,13 @@ export default function SatuanBarangPage() {
     nama: "",
   });
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingSatuan, setDeletingSatuan] = useState<SatuanBarang | null>(
+    null,
+  );
+
   const filteredSatuan = satuanList.filter((satuan) =>
-    satuan.nama.toLowerCase().includes(searchTerm.toLowerCase())
+    satuan.nama.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -58,7 +64,9 @@ export default function SatuanBarangPage() {
 
     if (editingSatuan) {
       setSatuanList((prev) =>
-        prev.map((s) => (s.id === editingSatuan.id ? { ...s, ...formData } : s))
+        prev.map((s) =>
+          s.id === editingSatuan.id ? { ...s, ...formData } : s,
+        ),
       );
     } else {
       const newSatuan: SatuanBarang = {
@@ -82,10 +90,16 @@ export default function SatuanBarangPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus satuan ini?")) {
-      setSatuanList((prev) => prev.filter((s) => s.id !== id));
-    }
+  const handleDeleteClick = (satuan: SatuanBarang) => {
+    setDeletingSatuan(satuan);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingSatuan) return;
+    setSatuanList((prev) => prev.filter((s) => s.id !== deletingSatuan.id));
+    setIsDeleteModalOpen(false);
+    setDeletingSatuan(null);
   };
 
   const openAddDialog = () => {
@@ -241,7 +255,7 @@ export default function SatuanBarangPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(satuan.id)}
+                            onClick={() => handleDeleteClick(satuan)}
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -265,6 +279,18 @@ export default function SatuanBarangPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingSatuan(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingSatuan?.nama}
+        title="Hapus Satuan Barang"
+        description="Apakah Anda yakin ingin menghapus satuan barang ini? Tindakan ini tidak dapat dibatalkan."
+      />
     </DashboardLayout>
   );
 }

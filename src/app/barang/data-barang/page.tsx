@@ -39,6 +39,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import {
 import {
   useBarang,
   useCreateBarang,
@@ -101,6 +103,9 @@ export default function DataBarangPage() {
     stok: 0,
     stokMinimum: 0,
   });
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingBarang, setDeletingBarang] = useState<Barang | null>(null);
 
   const filteredBarang = barangList.filter(
     (barang) =>
@@ -175,15 +180,22 @@ export default function DataBarangPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus barang ini?")) {
-      try {
-        await deleteBarang.mutateAsync(id);
-        refetch();
-      } catch (error) {
-        console.error("Failed to delete barang", error);
-        alert("Gagal menghapus barang");
-      }
+  const handleDeleteClick = (barang: Barang) => {
+    setDeletingBarang(barang);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingBarang) return;
+
+    try {
+      await deleteBarang.mutateAsync(deletingBarang.id);
+      refetch();
+      setIsDeleteModalOpen(false);
+      setDeletingBarang(null);
+    } catch (error) {
+      console.error("Failed to delete barang", error);
+      alert("Gagal menghapus barang");
     }
   };
 
@@ -528,7 +540,7 @@ export default function DataBarangPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDelete(barang.id)}
+                              onClick={() => handleDeleteClick(barang)}
                               className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -553,6 +565,16 @@ export default function DataBarangPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingBarang(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingBarang?.nama}
+      />
     </DashboardLayout>
   );
 }

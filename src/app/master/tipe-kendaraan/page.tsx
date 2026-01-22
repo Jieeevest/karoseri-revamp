@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Search, Car } from "lucide-react";
 import { useState } from "react";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 interface MerekKendaraan {
   id: string;
@@ -108,10 +109,13 @@ export default function TipeKendaraanPage() {
     merekId: "",
   });
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingTipe, setDeletingTipe] = useState<TipeKendaraan | null>(null);
+
   const filteredTipe = tipeList.filter(
     (tipe) =>
       tipe.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tipe.merekKendaraan.nama.toLowerCase().includes(searchTerm.toLowerCase())
+      tipe.merekKendaraan.nama.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -128,8 +132,8 @@ export default function TipeKendaraanPage() {
                   merekList.find((m) => m.id === formData.merekId) ||
                   t.merekKendaraan,
               }
-            : t
-        )
+            : t,
+        ),
       );
     } else {
       const newTipe: TipeKendaraan = {
@@ -158,10 +162,16 @@ export default function TipeKendaraanPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus tipe kendaraan ini?")) {
-      setTipeList((prev) => prev.filter((t) => t.id !== id));
-    }
+  const handleDeleteClick = (tipe: TipeKendaraan) => {
+    setDeletingTipe(tipe);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingTipe) return;
+    setTipeList((prev) => prev.filter((t) => t.id !== deletingTipe.id));
+    setIsDeleteModalOpen(false);
+    setDeletingTipe(null);
   };
 
   const openAddDialog = () => {
@@ -357,7 +367,7 @@ export default function TipeKendaraanPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(tipe.id)}
+                            onClick={() => handleDeleteClick(tipe)}
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -381,6 +391,18 @@ export default function TipeKendaraanPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingTipe(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingTipe?.nama}
+        title="Hapus Tipe Kendaraan"
+        description="Apakah Anda yakin ingin menghapus tipe kendaraan ini? Tindakan ini tidak dapat dibatalkan."
+      />
     </DashboardLayout>
   );
 }

@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import {
   useKendaraanKeluar,
   useCreateKendaraanKeluar,
@@ -66,6 +67,11 @@ export default function KendaraanKeluarPage() {
   const [isQCDialogOpen, setIsQCDialogOpen] = useState(false);
   const [isSuratDialogOpen, setIsSuratDialogOpen] = useState(false);
   const [selectedKendaraan, setSelectedKendaraan] = useState<any | null>(null);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingKendaraanKeluar, setDeletingKendaraanKeluar] = useState<
+    any | null
+  >(null);
 
   const [formData, setFormData] = useState({
     tanggalKeluar: new Date().toISOString().split("T")[0],
@@ -225,9 +231,20 @@ export default function KendaraanKeluarPage() {
     setIsSuratDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
-      await deleteKendaraanKeluar.mutateAsync(id);
+  const handleDeleteClick = (kendaraanKeluar: any) => {
+    setDeletingKendaraanKeluar(kendaraanKeluar);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingKendaraanKeluar) return;
+    try {
+      await deleteKendaraanKeluar.mutateAsync(deletingKendaraanKeluar.id);
+      setIsDeleteModalOpen(false);
+      setDeletingKendaraanKeluar(null);
+    } catch (error) {
+      console.error("Failed to delete", error);
+      alert("Gagal menghapus data");
     }
   };
 
@@ -638,7 +655,7 @@ export default function KendaraanKeluarPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(kendaraanKeluar.id)}
+                            onClick={() => handleDeleteClick(kendaraanKeluar)}
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -937,6 +954,18 @@ export default function KendaraanKeluarPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingKendaraanKeluar(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingKendaraanKeluar?.nomor}
+        title="Hapus Kendaraan Keluar"
+        description="Apakah Anda yakin ingin menghapus data kendaraan keluar ini? Tindakan ini tidak dapat dibatalkan."
+      />
     </DashboardLayout>
   );
 }

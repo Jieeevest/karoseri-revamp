@@ -44,6 +44,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { cn } from "@/lib/utils";
 import { useCustomer } from "@/hooks/use-customer";
 import { useProject } from "@/hooks/use-project";
@@ -221,6 +222,11 @@ export default function KendaraanMasukPage() {
     any | null
   >(null);
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingKendaraanMasuk, setDeletingKendaraanMasuk] = useState<
+    any | null
+  >(null);
+
   const [formData, setFormData] = useState({
     tanggalMasuk: "",
     showroom: "",
@@ -317,14 +323,21 @@ export default function KendaraanMasukPage() {
     setIsDetailDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
-      try {
-        await deleteKendaraanMasuk.mutateAsync(id);
-      } catch (error) {
-        console.error("Failed to delete", error);
-        alert("Gagal menghapus data");
-      }
+  const handleDeleteClick = (kendaraanMasuk: any) => {
+    setDeletingKendaraanMasuk(kendaraanMasuk);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingKendaraanMasuk) return;
+
+    try {
+      await deleteKendaraanMasuk.mutateAsync(deletingKendaraanMasuk.id);
+      setIsDeleteModalOpen(false);
+      setDeletingKendaraanMasuk(null);
+    } catch (error) {
+      console.error("Failed to delete", error);
+      alert("Gagal menghapus data");
     }
   };
 
@@ -923,7 +936,7 @@ export default function KendaraanMasukPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(kendaraanMasuk.id)}
+                            onClick={() => handleDeleteClick(kendaraanMasuk)}
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1107,6 +1120,18 @@ export default function KendaraanMasukPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingKendaraanMasuk(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingKendaraanMasuk?.nomor}
+        title="Hapus Kendaraan Masuk"
+        description="Apakah Anda yakin ingin menghapus data kendaraan masuk ini? Tindakan ini tidak dapat dibatalkan."
+      />
     </DashboardLayout>
   );
 }

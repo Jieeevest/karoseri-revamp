@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { Plus, Edit, Trash2, Search } from "lucide-react";
 import { useState } from "react";
 import {
@@ -45,6 +46,10 @@ export default function KategoriBarangPage() {
     nama: "",
     deskripsi: "",
   });
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingKategori, setDeletingKategori] =
+    useState<KategoriBarang | null>(null);
 
   // Hooks
   const { data: kategoriList = [], isLoading } = useKategoriBarang();
@@ -104,25 +109,32 @@ export default function KategoriBarangPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm("Apakah Anda yakin ingin menghapus kategori ini?")) {
-      try {
-        await deleteKategori.mutateAsync(id);
-        toast({
-          title: "Kategori dihapus",
-          description: "Data kategori berhasil dihapus.",
-          className: "bg-green-50 border-green-200 text-green-800",
-        });
-      } catch (error: any) {
-        console.error("Failed to delete kategori", error);
-        toast({
-          title: "Gagal menghapus",
-          description:
-            error.response?.data?.message ||
-            "Gagal menghapus kategori (mungkin sedang digunakan).",
-          variant: "destructive",
-        });
-      }
+  const handleDeleteClick = (kategori: KategoriBarang) => {
+    setDeletingKategori(kategori);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingKategori) return;
+
+    try {
+      await deleteKategori.mutateAsync(deletingKategori.id);
+      toast({
+        title: "Kategori dihapus",
+        description: "Data kategori berhasil dihapus.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
+      setIsDeleteModalOpen(false);
+      setDeletingKategori(null);
+    } catch (error: any) {
+      console.error("Failed to delete kategori", error);
+      toast({
+        title: "Gagal menghapus",
+        description:
+          error.response?.data?.message ||
+          "Gagal menghapus kategori (mungkin sedang digunakan).",
+        variant: "destructive",
+      });
     }
   };
 
@@ -311,7 +323,7 @@ export default function KategoriBarangPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(kategori.id)}
+                            onClick={() => handleDeleteClick(kategori)}
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -335,6 +347,16 @@ export default function KategoriBarangPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingKategori(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingKategori?.nama}
+      />
     </DashboardLayout>
   );
 }

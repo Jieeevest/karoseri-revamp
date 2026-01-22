@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import {
   Plus,
   Edit,
@@ -59,6 +60,11 @@ export default function CustomerPage() {
     telepon: "",
     email: "",
   });
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(
+    null,
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,15 +102,22 @@ export default function CustomerPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus data customer ini?")) {
-      try {
-        await deleteCustomer.mutateAsync(id);
-        refetch();
-      } catch (error) {
-        console.error("Failed to delete", error);
-        alert("Gagal menghapus customer");
-      }
+  const handleDeleteClick = (customer: Customer) => {
+    setDeletingCustomer(customer);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingCustomer) return;
+
+    try {
+      await deleteCustomer.mutateAsync(deletingCustomer.id);
+      refetch();
+      setIsDeleteModalOpen(false);
+      setDeletingCustomer(null);
+    } catch (error) {
+      console.error("Failed to delete", error);
+      alert("Gagal menghapus customer");
     }
   };
 
@@ -449,7 +462,7 @@ export default function CustomerPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(customer.id)}
+                            onClick={() => handleDeleteClick(customer)}
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -473,6 +486,16 @@ export default function CustomerPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingCustomer(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingCustomer?.nama}
+      />
     </DashboardLayout>
   );
 }

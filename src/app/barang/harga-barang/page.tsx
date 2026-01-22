@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Search, Star, TrendingUp } from "lucide-react";
 import { useState } from "react";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 interface KategoriBarang {
   id: number;
@@ -177,12 +178,17 @@ export default function HargaBarangPage() {
     adalahHargaTerbaik: false,
   });
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingHarga, setDeletingHarga] = useState<HargaBarang | null>(null);
+
   const filteredHarga = hargaList.filter(
     (harga) =>
       harga.barang.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       harga.barang.kode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       harga.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      harga.kategoriBarang.nama.toLowerCase().includes(searchTerm.toLowerCase())
+      harga.kategoriBarang.nama
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -190,7 +196,7 @@ export default function HargaBarangPage() {
 
     const selectedBarang = barangList.find((b) => b.id === formData.barangId);
     const selectedSupplier = supplierList.find(
-      (s) => s.id === formData.supplierId
+      (s) => s.id === formData.supplierId,
     );
 
     if (!selectedBarang || !selectedSupplier) return;
@@ -207,8 +213,8 @@ export default function HargaBarangPage() {
                 kategoriId: selectedBarang.kategoriId,
                 kategoriBarang: selectedBarang.kategoriBarang,
               }
-            : h
-        )
+            : h,
+        ),
       );
     } else {
       const newHarga: HargaBarang = {
@@ -244,10 +250,16 @@ export default function HargaBarangPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus harga ini?")) {
-      setHargaList((prev) => prev.filter((h) => h.id !== id));
-    }
+  const handleDeleteClick = (harga: HargaBarang) => {
+    setDeletingHarga(harga);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingHarga) return;
+    setHargaList((prev) => prev.filter((h) => h.id !== deletingHarga.id));
+    setIsDeleteModalOpen(false);
+    setDeletingHarga(null);
   };
 
   const openAddDialog = () => {
@@ -569,7 +581,7 @@ export default function HargaBarangPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(harga.id)}
+                            onClick={() => handleDeleteClick(harga)}
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -593,6 +605,17 @@ export default function HargaBarangPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingHarga(null);
+        }}
+        onConfirm={async () => handleDeleteConfirm()}
+        itemName={`${deletingHarga?.barang.nama} - ${deletingHarga?.supplier.nama}`}
+        title="Hapus Harga Barang"
+      />
     </DashboardLayout>
   );
 }

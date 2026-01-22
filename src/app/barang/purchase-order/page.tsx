@@ -39,10 +39,12 @@ import {
   Eye,
   Send,
   Check,
+  Check,
   X,
 } from "lucide-react";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 interface Supplier {
   id: string;
@@ -190,6 +192,9 @@ export default function PurchaseOrderPage() {
     tanggal: new Date().toISOString().split("T")[0],
   });
   const [items, setItems] = useState<PurchaseOrderItem[]>([]);
+  
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingPO, setDeletingPO] = useState<PurchaseOrder | null>(null);
 
   const filteredPO = poList.filter(
     (po) =>
@@ -305,10 +310,16 @@ export default function PurchaseOrderPage() {
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus PO ini?")) {
-      setPoList((prev) => prev.filter((po) => po.id !== id));
-    }
+  const handleDeleteClick = (po: PurchaseOrder) => {
+    setDeletingPO(po);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingPO) return;
+    setPoList((prev) => prev.filter((po) => po.id !== deletingPO.id));
+    setIsDeleteModalOpen(false);
+    setDeletingPO(null);
   };
 
   return (
@@ -645,7 +656,7 @@ export default function PurchaseOrderPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(po.id)}
+                            onClick={() => handleDeleteClick(po)}
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -764,7 +775,20 @@ export default function PurchaseOrderPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </Dialog>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingPO(null);
+        }}
+        onConfirm={async () => handleDeleteConfirm()}
+        itemName={deletingPO?.nomor}
+        title="Hapus Purchase Order"
+        description="Apakah Anda yakin ingin menghapus Purchase Order ini? Tindakan ini tidak dapat dibatalkan."
+      />
     </DashboardLayout>
   );
 }

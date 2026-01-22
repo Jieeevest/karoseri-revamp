@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import {
   Select,
   SelectContent,
@@ -77,6 +78,11 @@ export default function KaryawanPage() {
     alamat: "",
   });
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingKaryawan, setDeletingKaryawan] = useState<Karyawan | null>(
+    null,
+  );
+
   const jabatanOptions = [
     "Tukang Rakit",
     "Tukang Cat",
@@ -126,15 +132,22 @@ export default function KaryawanPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus data karyawan ini?")) {
-      try {
-        await deleteKaryawan.mutateAsync(id);
-        refetch();
-      } catch (error) {
-        console.error("Failed to delete karyawan", error);
-        alert("Gagal menghapus karyawan");
-      }
+  const handleDeleteClick = (karyawan: Karyawan) => {
+    setDeletingKaryawan(karyawan);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingKaryawan) return;
+
+    try {
+      await deleteKaryawan.mutateAsync(deletingKaryawan.id);
+      refetch();
+      setIsDeleteModalOpen(false);
+      setDeletingKaryawan(null);
+    } catch (error) {
+      console.error("Failed to delete karyawan", error);
+      alert("Gagal menghapus karyawan");
     }
   };
 
@@ -507,7 +520,7 @@ export default function KaryawanPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(karyawan.id)}
+                            onClick={() => handleDeleteClick(karyawan)}
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -531,6 +544,16 @@ export default function KaryawanPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingKaryawan(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingKaryawan?.nama}
+      />
     </DashboardLayout>
   );
 }
