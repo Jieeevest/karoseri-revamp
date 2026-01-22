@@ -30,20 +30,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Calculator } from "lucide-react";
+import { Plus, Calculator, Edit, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useProject, useCreateProject } from "@/hooks/use-project";
+import {
+  useProject,
+  useCreateProject,
+  useUpdateProject,
+  useDeleteProject,
+  Project,
+} from "@/hooks/use-project";
 import { useCustomer } from "@/hooks/use-customer";
 import { useToast } from "@/hooks/use-toast";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 export default function ProjectPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: projects = [], refetch } = useProject(searchTerm);
   const { data: customers = [] } = useCustomer();
   const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
+  const deleteProject = useDeleteProject();
   const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+
   const [formData, setFormData] = useState({
     customerId: "",
     deskripsi: "",
@@ -79,35 +92,106 @@ export default function ProjectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createProject.mutateAsync({
-        ...formData,
-        status: formData.status as any,
-        totalHarga: formData.quantity * formData.hargaPerUnit,
-      });
-      setIsDialogOpen(false);
-      setFormData({
-        customerId: "",
-        deskripsi: "",
-        quantity: 1,
-        hargaPerUnit: 0,
-        status: "OFFER",
-        specs: { panjang: 0, lebar: 0, tinggi: 0, pintuSamping: 0 },
-      });
-      refetch();
+      if (editingProject) {
+        await updateProject.mutateAsync({
+          id: editingProject.id,
+          ...formData,
+          status: formData.status as any,
+          totalHarga: formData.quantity * formData.hargaPerUnit,
+        });
+        toast({
+          title: "Project Diperbarui",
+          description: "Data project berhasil diperbarui.",
+          className: "bg-green-50 border-green-200 text-green-800",
+        });
+      } else {
+        await createProject.mutateAsync({
+          ...formData,
+          status: formData.status as any,
+          totalHarga: formData.quantity * formData.hargaPerUnit,
+        });
+        toast({
+          title: "Project Dibuat",
+          description: "Data project/penawaran berhasil dibuat.",
+          className: "bg-green-50 border-green-200 text-green-800",
+        });
+      }
 
-      toast({
-        title: "Project dibuat",
-        description: "Data project/penawaran berhasil dibuat.",
-        className: "bg-green-50 border-green-200 text-green-800",
-      });
+      setIsDialogOpen(false);
+      resetForm();
+      refetch();
     } catch (error) {
-      console.error("Failed to create project", error);
+      console.error("Failed to save project", error);
       toast({
-        title: "Gagal membuat project",
-        description: "Terjadi kesalahan saat membuat project baru.",
+        title: "Gagal menyimpan",
+        description: "Terjadi kesalahan saat menyimpan data project.",
         variant: "destructive",
       });
     }
+  };
+
+  const resetForm = () => {
+    setEditingProject(null);
+    setFormData({
+      customerId: "",
+      deskripsi: "",
+      quantity: 1,
+      hargaPerUnit: 0,
+      status: "OFFER",
+      specs: { panjang: 0, lebar: 0, tinggi: 0, pintuSamping: 0 },
+    });
+  };
+
+  const handleEdit = (project: Project) => {
+    setEditingProject(project);
+    setFormData({
+      customerId: project.customerId,
+      deskripsi: project.deskripsi,
+      quantity: project.quantity,
+      hargaPerUnit: project.hargaPerUnit,
+      status: project.status,
+      specs: {
+        panjang: project.specs?.panjang || 0,
+        lebar: project.specs?.lebar || 0,
+        tinggi: project.specs?.tinggi || 0,
+        pintuSamping: project.specs?.pintuSamping || 0,
+      },
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (project: Project) => {
+    setDeletingProject(project);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingProject) return;
+    try {
+      await deleteProject.mutateAsync(deletingProject.id);
+      toast({
+        title: "Project Dihapus",
+        description: "Data project berhasil dihapus.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
+      setIsDeleteModalOpen(false);
+      setDeletingProject(null);
+      refetch();
+    } catch (error: any) {
+      console.error(error);
+      const errorMessage =
+        error.response?.data?.error || "Gagal menghapus project.";
+      toast({
+        title: "Gagal Menghapus",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openAddDialog = () => {
+    resetForm();
+    setIsDialogOpen(true);
   };
 
   return (
@@ -124,7 +208,10 @@ export default function ProjectPage() {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer">
+              <Button
+                onClick={openAddDialog}
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Buat Penawaran Baru
               </Button>
@@ -133,11 +220,14 @@ export default function ProjectPage() {
               <form onSubmit={handleSubmit}>
                 <DialogHeader className="border-b border-slate-100 pb-4">
                   <DialogTitle className="text-xl font-bold text-slate-900">
-                    Smart Planning: Penawaran Baru
+                    {editingProject
+                      ? "Edit Penawaran"
+                      : "Smart Planning: Penawaran Baru"}
                   </DialogTitle>
                   <DialogDescription className="text-slate-500">
-                    Masukkan spesifikasi untuk kalkulasi otomatis kebutuhan
-                    material.
+                    {editingProject
+                      ? "Perbarui informasi penawaran project."
+                      : "Masukkan spesifikasi untuk kalkulasi otomatis kebutuhan material."}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -209,6 +299,28 @@ export default function ProjectPage() {
                         className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                       />
                     </div>
+                  </div>
+
+                  {/* Status Selection (Only for Edit) */}
+                  <div className="grid gap-2">
+                    <Label>Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(val) =>
+                        setFormData({ ...formData, status: val })
+                      }
+                    >
+                      <SelectTrigger className="rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                        <SelectValue placeholder="Pilih Status" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                        <SelectItem value="OFFER">Offer</SelectItem>
+                        <SelectItem value="DEAL">Deal</SelectItem>
+                        <SelectItem value="ON_PROGRESS">On Progress</SelectItem>
+                        <SelectItem value="DONE">Done</SelectItem>
+                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Specs Input */}
@@ -313,7 +425,7 @@ export default function ProjectPage() {
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
                   >
-                    Simpan Penawaran
+                    {editingProject ? "Simpan Perubahan" : "Simpan Penawaran"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -408,13 +520,24 @@ export default function ProjectPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="px-6 text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer rounded-lg"
-                        >
-                          Detail
-                        </Button>
+                        <div className="flex justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(project)}
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(project)}
+                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -433,6 +556,17 @@ export default function ProjectPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingProject(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingProject?.nomor}
+        title="Hapus Project"
+      />
     </DashboardLayout>
   );
 }

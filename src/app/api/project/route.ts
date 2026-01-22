@@ -22,9 +22,7 @@ export async function GET(request: NextRequest) {
         customer: true,
       },
       orderBy: {
-        createdAt: "desc", // Note: schema has 'tanggal' but also 'updatedAt'. 'createdAt' might not be in schema for Project based on review?
-        // Reviewing schema: Project has 'tanggal' @default(now()) and 'updatedAt'. It does NOT have 'createdAt'.
-        // I should check schema again.
+        tanggal: "desc",
       },
     });
 
@@ -83,6 +81,92 @@ export async function POST(request: NextRequest) {
     console.error("Error creating project:", error);
     return NextResponse.json(
       { success: false, error: "Failed to create project" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, customerId, deskripsi, quantity, hargaPerUnit, status } = body;
+
+    if (!id || !customerId) {
+      return NextResponse.json(
+        { success: false, error: "ID and Customer are required" },
+        { status: 400 },
+      );
+    }
+
+    const updatedProject = await db.project.update({
+      where: { id },
+      data: {
+        customerId,
+        deskripsi,
+        quantity: parseInt(quantity) || 1,
+        hargaPerUnit: parseFloat(hargaPerUnit) || 0,
+        totalHarga: (parseInt(quantity) || 1) * (parseFloat(hargaPerUnit) || 0),
+        status: status || "OFFER",
+      },
+      include: {
+        customer: true,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: updatedProject,
+      message: "Project updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating project:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to update project" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "ID is required" },
+        { status: 400 },
+      );
+    }
+
+    // Integrity Check
+    const relations = await Promise.all([
+      db.kendaraan.findFirst({ where: { projectId: id } }),
+    ]);
+
+    if (relations.some((r) => r !== null)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Project cannot be deleted because it is referenced by Kendaraan",
+        },
+        { status: 400 },
+      );
+    }
+
+    await db.project.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Project deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting project:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to delete project" },
       { status: 500 },
     );
   }

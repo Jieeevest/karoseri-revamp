@@ -50,3 +50,29 @@ export function useCreateProject() {
     },
   });
 }
+
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (project: Partial<Project>) => {
+      const { data } = await axios.put("/api/project", project);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project"] });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await axios.delete(`/api/project?id=${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project"] });
+    },
+  });
+}
