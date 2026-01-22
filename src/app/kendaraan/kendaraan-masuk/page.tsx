@@ -54,6 +54,7 @@ import {
   useDeleteKendaraanMasuk,
 } from "@/hooks/use-kendaraan-masuk";
 import { useMerekKendaraan, useTipeKendaraan } from "@/hooks/use-master";
+import { useToast } from "@/hooks/use-toast";
 
 const pengerjaanOptions = [
   "Wing Box",
@@ -253,6 +254,7 @@ export default function KendaraanMasukPage() {
   // Mutations
   const createKendaraanMasuk = useCreateKendaraanMasuk();
   const deleteKendaraanMasuk = useDeleteKendaraanMasuk();
+  const { toast } = useToast();
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -294,9 +296,19 @@ export default function KendaraanMasukPage() {
       await createKendaraanMasuk.mutateAsync(payload);
       resetForm();
       setIsDialogOpen(false);
+
+      toast({
+        title: "Data Disimpan",
+        description: "Data kendaraan masuk berhasil disimpan.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to create kendaraan masuk", error);
-      alert("Gagal menyimpan data kendaraan masuk");
+      toast({
+        title: "Gagal menyimpan",
+        description: "Terjadi kesalahan saat menyimpan data.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -335,9 +347,19 @@ export default function KendaraanMasukPage() {
       await deleteKendaraanMasuk.mutateAsync(deletingKendaraanMasuk.id);
       setIsDeleteModalOpen(false);
       setDeletingKendaraanMasuk(null);
+
+      toast({
+        title: "Data Dihapus",
+        description: "Data berhasil dihapus.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to delete", error);
-      alert("Gagal menghapus data");
+      toast({
+        title: "Gagal menghapus",
+        description: "Gagal menghapus data.",
+        variant: "destructive",
+      });
     }
   };
 

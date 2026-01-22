@@ -43,6 +43,7 @@ import {
   useDeleteCustomer,
   Customer,
 } from "@/hooks/use-customer";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CustomerPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,6 +51,7 @@ export default function CustomerPage() {
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
+  const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -84,9 +86,21 @@ export default function CustomerPage() {
       setEditingCustomer(null);
       setIsDialogOpen(false);
       refetch();
+
+      toast({
+        title: editingCustomer ? "Customer diperbarui" : "Customer ditambahkan",
+        description: editingCustomer
+          ? "Data customer berhasil diperbarui."
+          : "Customer baru berhasil ditambahkan.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to save customer", error);
-      alert("Gagal menyimpan customer");
+      toast({
+        title: "Gagal menyimpan",
+        description: "Terjadi kesalahan saat menyimpan customer.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -115,9 +129,19 @@ export default function CustomerPage() {
       refetch();
       setIsDeleteModalOpen(false);
       setDeletingCustomer(null);
+
+      toast({
+        title: "Customer dihapus",
+        description: "Data customer berhasil dihapus.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to delete", error);
-      alert("Gagal menghapus customer");
+      toast({
+        title: "Gagal menghapus",
+        description: "Gagal menghapus customer.",
+        variant: "destructive",
+      });
     }
   };
 

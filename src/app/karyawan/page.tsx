@@ -50,6 +50,7 @@ import {
   useUpdateKaryawan,
   useDeleteKaryawan,
 } from "@/hooks/use-karyawan";
+import { useToast } from "@/hooks/use-toast";
 
 interface Karyawan {
   id: string;
@@ -67,6 +68,7 @@ export default function KaryawanPage() {
   const createKaryawan = useCreateKaryawan();
   const updateKaryawan = useUpdateKaryawan();
   const deleteKaryawan = useDeleteKaryawan();
+  const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingKaryawan, setEditingKaryawan] = useState<Karyawan | null>(null);
@@ -114,9 +116,21 @@ export default function KaryawanPage() {
       setEditingKaryawan(null);
       setIsDialogOpen(false);
       refetch();
+
+      toast({
+        title: editingKaryawan ? "Karyawan diperbarui" : "Karyawan ditambahkan",
+        description: editingKaryawan
+          ? "Data karyawan berhasil diperbarui."
+          : "Karyawan baru berhasil ditambahkan.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to save karyawan", error);
-      alert("Gagal menyimpan data karyawan");
+      toast({
+        title: "Gagal menyimpan",
+        description: "Terjadi kesalahan saat menyimpan data karyawan.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -145,9 +159,19 @@ export default function KaryawanPage() {
       refetch();
       setIsDeleteModalOpen(false);
       setDeletingKaryawan(null);
+
+      toast({
+        title: "Karyawan dihapus",
+        description: "Data karyawan berhasil dihapus.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to delete karyawan", error);
-      alert("Gagal menghapus karyawan");
+      toast({
+        title: "Gagal menghapus",
+        description: "Gagal menghapus data karyawan.",
+        variant: "destructive",
+      });
     }
   };
 

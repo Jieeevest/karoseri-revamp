@@ -48,6 +48,7 @@ import {
   TipeKendaraan,
 } from "@/hooks/use-master";
 import { useCustomer, Customer } from "@/hooks/use-customer";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DataKendaraanPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,10 +58,10 @@ export default function DataKendaraanPage() {
   const { data: merekList = [] } = useMerekKendaraan();
   const { data: tipeList = [] } = useTipeKendaraan(); // Fetch all types
   const { data: customerList = [] } = useCustomer();
-
   const createKendaraan = useCreateKendaraan();
   const updateKendaraan = useUpdateKendaraan();
   const deleteKendaraan = useDeleteKendaraan();
+  const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -75,7 +76,6 @@ export default function DataKendaraanPage() {
     nomorChasis: "",
     nomorMesin: "",
     merekId: "",
-    tipeId: "",
     tipeId: "",
     customerId: "",
   });
@@ -143,9 +143,23 @@ export default function DataKendaraanPage() {
       setEditingKendaraan(null);
       setIsDialogOpen(false);
       refetch();
+
+      toast({
+        title: editingKendaraan
+          ? "Kendaraan diperbarui"
+          : "Kendaraan ditambahkan",
+        description: editingKendaraan
+          ? "Data kendaraan berhasil diperbarui."
+          : "Kendaraan baru berhasil ditambahkan.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to save kendaraan", error);
-      alert("Gagal menyimpan kendaraan");
+      toast({
+        title: "Gagal menyimpan",
+        description: "Terjadi kesalahan saat menyimpan kendaraan.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -175,9 +189,19 @@ export default function DataKendaraanPage() {
       refetch();
       setIsDeleteModalOpen(false);
       setDeletingKendaraan(null);
+
+      toast({
+        title: "Kendaraan dihapus",
+        description: "Data kendaraan berhasil dihapus.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Delete failed", error);
-      alert("Gagal menghapus kendaraan");
+      toast({
+        title: "Gagal menghapus",
+        description: "Gagal menghapus kendaraan.",
+        variant: "destructive",
+      });
     }
   };
 

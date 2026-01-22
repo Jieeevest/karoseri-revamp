@@ -54,6 +54,7 @@ import {
 } from "@/hooks/use-spek-order";
 import { useKendaraan } from "@/hooks/use-kendaraan";
 import { useKaryawan } from "@/hooks/use-karyawan";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SpekOrderPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -91,6 +92,7 @@ export default function SpekOrderPage() {
   const createSpekOrder = useCreateSpekOrder();
   const deleteSpekOrder = useDeleteSpekOrder();
   const createPayment = useCreatePayment();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,9 +100,19 @@ export default function SpekOrderPage() {
       await createSpekOrder.mutateAsync(formData);
       resetForm();
       setIsDialogOpen(false);
+
+      toast({
+        title: "Spek Order Dibuat",
+        description: "Surat perintah kerja borongan berhasil dibuat.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to create spek order", error);
-      alert("Gagal menyimpan data");
+      toast({
+        title: "Gagal menyimpan",
+        description: "Terjadi kesalahan saat membuat spek order.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -116,9 +128,19 @@ export default function SpekOrderPage() {
       setPayingSpekOrder(null);
       setIsPaymentDialogOpen(false);
       setPaymentFormData({ jumlah: 0, metode: "TRANSFER", bukti: "" });
+
+      toast({
+        title: "Pembayaran Berhasil",
+        description: "Data pembayaran berhasil disimpan.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to create payment", error);
-      alert("Gagal menyimpan pembayaran");
+      toast({
+        title: "Gagal membayar",
+        description: "Terjadi kesalahan saat menyimpan pembayaran.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -158,9 +180,19 @@ export default function SpekOrderPage() {
       await deleteSpekOrder.mutateAsync(deletingSpekOrder.id);
       setIsDeleteModalOpen(false);
       setDeletingSpekOrder(null);
+
+      toast({
+        title: "Data Dihapus",
+        description: "Spek order berhasil dihapus.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to delete", error);
-      alert("Gagal menghapus data");
+      toast({
+        title: "Gagal menghapus",
+        description: "Gagal menghapus spek order.",
+        variant: "destructive",
+      });
     }
   };
 

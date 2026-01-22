@@ -52,6 +52,7 @@ import {
   useDeleteKendaraanKeluar,
 } from "@/hooks/use-kendaraan-keluar";
 import { useKendaraan } from "@/hooks/use-kendaraan";
+import { useToast } from "@/hooks/use-toast";
 
 interface QCChecklist {
   id: string;
@@ -178,6 +179,7 @@ export default function KendaraanKeluarPage() {
 
   const createKendaraanKeluar = useCreateKendaraanKeluar();
   const deleteKendaraanKeluar = useDeleteKendaraanKeluar();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,11 +202,27 @@ export default function KendaraanKeluarPage() {
         layakKeluar: formData.layakKeluar,
         suratJalan: formData.layakKeluar ? `surat_jalan_${Date.now()}.pdf` : "",
       });
-      resetForm();
+      setFormData({
+        tanggalKeluar: new Date().toISOString().split("T")[0],
+        kendaraanId: "",
+        qcResult: "",
+        layakKeluar: false,
+        suratJalan: "",
+      });
       setIsDialogOpen(false);
+
+      toast({
+        title: "Kendaraan Keluar",
+        description: "Data kendaraan keluar berhasil disimpan.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to create kendaraan keluar", error);
-      alert("Gagal menyimpan data");
+      toast({
+        title: "Gagal menyimpan",
+        description: "Terjadi kesalahan saat menyimpan data.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -242,9 +260,19 @@ export default function KendaraanKeluarPage() {
       await deleteKendaraanKeluar.mutateAsync(deletingKendaraanKeluar.id);
       setIsDeleteModalOpen(false);
       setDeletingKendaraanKeluar(null);
+
+      toast({
+        title: "Data Dihapus",
+        description: "Data kendaraan keluar berhasil dihapus.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to delete", error);
-      alert("Gagal menghapus data");
+      toast({
+        title: "Gagal menghapus",
+        description: "Gagal menghapus data.",
+        variant: "destructive",
+      });
     }
   };
 

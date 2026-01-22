@@ -34,12 +34,14 @@ import { Plus, Calculator } from "lucide-react";
 import { useState } from "react";
 import { useProject, useCreateProject } from "@/hooks/use-project";
 import { useCustomer } from "@/hooks/use-customer";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProjectPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: projects = [], refetch } = useProject(searchTerm);
   const { data: customers = [] } = useCustomer();
   const createProject = useCreateProject();
+  const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -79,6 +81,7 @@ export default function ProjectPage() {
     try {
       await createProject.mutateAsync({
         ...formData,
+        status: formData.status as any,
         totalHarga: formData.quantity * formData.hargaPerUnit,
       });
       setIsDialogOpen(false);
@@ -91,9 +94,19 @@ export default function ProjectPage() {
         specs: { panjang: 0, lebar: 0, tinggi: 0, pintuSamping: 0 },
       });
       refetch();
+
+      toast({
+        title: "Project dibuat",
+        description: "Data project/penawaran berhasil dibuat.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error("Failed to create project", error);
-      alert("Gagal membuat project");
+      toast({
+        title: "Gagal membuat project",
+        description: "Terjadi kesalahan saat membuat project baru.",
+        variant: "destructive",
+      });
     }
   };
 
