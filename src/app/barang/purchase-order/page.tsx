@@ -39,7 +39,6 @@ import {
   Eye,
   Send,
   Check,
-  Check,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -192,7 +191,7 @@ export default function PurchaseOrderPage() {
     tanggal: new Date().toISOString().split("T")[0],
   });
   const [items, setItems] = useState<PurchaseOrderItem[]>([]);
-  
+
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingPO, setDeletingPO] = useState<PurchaseOrder | null>(null);
 
@@ -200,7 +199,7 @@ export default function PurchaseOrderPage() {
     (po) =>
       po.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       po.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      po.status.toLowerCase().includes(searchTerm.toLowerCase())
+      po.status.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const getStatusBadge = (status: string) => {
@@ -272,7 +271,7 @@ export default function PurchaseOrderPage() {
     }
 
     const selectedSupplier = supplierList.find(
-      (s) => s.id === formData.supplierId
+      (s) => s.id === formData.supplierId,
     );
     if (!selectedSupplier) return;
 
@@ -305,7 +304,7 @@ export default function PurchaseOrderPage() {
   const handleAjukan = (id: string) => {
     if (confirm("Apakah Anda yakin ingin mengajukan Purchase Order ini?")) {
       setPoList((prev) =>
-        prev.map((po) => (po.id === id ? { ...po, status: "DIAJUKAN" } : po))
+        prev.map((po) => (po.id === id ? { ...po, status: "DIAJUKAN" } : po)),
       );
     }
   };
@@ -476,7 +475,7 @@ export default function PurchaseOrderPage() {
                                   updateItem(
                                     index,
                                     "jumlah",
-                                    parseInt(e.target.value) || 0
+                                    parseInt(e.target.value) || 0,
                                   )
                                 }
                                 min="1"
@@ -495,7 +494,7 @@ export default function PurchaseOrderPage() {
                                   updateItem(
                                     index,
                                     "harga",
-                                    parseInt(e.target.value) || 0
+                                    parseInt(e.target.value) || 0,
                                   )
                                 }
                                 min="0"
@@ -774,7 +773,6 @@ export default function PurchaseOrderPage() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
         </Dialog>
       </div>
 

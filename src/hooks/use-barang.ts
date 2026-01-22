@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
-interface Barang {
+export interface Barang {
   id: string;
   kode: string;
   nama: string;
@@ -11,6 +11,7 @@ interface Barang {
   satuanBarang: { id: string; nama: string };
   stok: number;
   stokMinimum: number;
+  createdAt?: string;
 }
 
 export function useBarang(search?: string) {

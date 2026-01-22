@@ -261,14 +261,14 @@ export default function BarangMasukPage() {
       bm.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bm.barang.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bm.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bm.kondisi.toLowerCase().includes(searchTerm.toLowerCase())
+      bm.kondisi.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const selectedSupplier = supplierList.find(
-      (s) => s.id === formData.supplierId
+      (s) => s.id === formData.supplierId,
     );
     const selectedBarang = barangList.find((b) => b.id === formData.barangId);
     const selectedPO = formData.purchaseOrderId
@@ -330,7 +330,7 @@ export default function BarangMasukPage() {
     if (!deletingBarangMasuk) return;
 
     setBarangMasukList((prev) =>
-      prev.filter((bm) => bm.id !== deletingBarangMasuk.id)
+      prev.filter((bm) => bm.id !== deletingBarangMasuk.id),
     );
     setIsDeleteModalOpen(false);
     setDeletingBarangMasuk(null);
@@ -860,5 +860,4 @@ export default function BarangMasukPage() {
       />
     </DashboardLayout>
   );
-}
 }

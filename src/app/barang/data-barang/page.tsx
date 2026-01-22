@@ -41,11 +41,11 @@ import {
 import { useState } from "react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import {
-import {
   useBarang,
   useCreateBarang,
   useUpdateBarang,
   useDeleteBarang,
+  Barang,
 } from "@/hooks/use-barang";
 
 interface KategoriBarang {
@@ -56,19 +56,6 @@ interface KategoriBarang {
 interface SatuanBarang {
   id: string;
   nama: string;
-}
-
-interface Barang {
-  id: string;
-  kode: string;
-  nama: string;
-  kategoriId: number;
-  kategoriBarang: KategoriBarang;
-  satuanId: string;
-  satuanBarang: SatuanBarang;
-  stok: number;
-  stokMinimum: number;
-  createdAt: string;
 }
 
 export default function DataBarangPage() {
@@ -116,55 +103,40 @@ export default function DataBarangPage() {
         .includes(searchTerm.toLowerCase()),
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingBarang) {
-      setBarangList((prev) =>
-        prev.map((b) =>
-          b.id === editingBarang.id
-            ? {
-                ...b,
-                ...formData,
-                kategoriId: parseInt(formData.kategoriId),
-                kategoriBarang:
-                  kategoriList.find(
-                    (k) => k.id === parseInt(formData.kategoriId),
-                  ) || b.kategoriBarang,
-                satuanBarang:
-                  satuanList.find((s) => s.id === formData.satuanId) ||
-                  b.satuanBarang,
-              }
-            : b,
-        ),
-      );
-    } else {
-      const newBarang: Barang = {
-        id: Date.now().toString(),
-        ...formData,
-        kategoriId: parseInt(formData.kategoriId),
-        kategoriBarang: kategoriList.find(
-          (k) => k.id === parseInt(formData.kategoriId),
-        ) || { id: 0, nama: "" },
-        satuanBarang: satuanList.find((s) => s.id === formData.satuanId) || {
-          id: "",
-          nama: "",
-        },
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setBarangList((prev) => [...prev, newBarang]);
-    }
+    try {
+      if (editingBarang) {
+        await updateBarang.mutateAsync({
+          id: editingBarang.id,
+          ...formData,
+          kategoriId: parseInt(formData.kategoriId),
+          stok: formData.stok,
+          stokMinimum: formData.stokMinimum,
+        });
+      } else {
+        await createBarang.mutateAsync({
+          ...formData,
+          kategoriId: parseInt(formData.kategoriId),
+        });
+      }
 
-    setFormData({
-      kode: "",
-      nama: "",
-      kategoriId: "",
-      satuanId: "",
-      stok: 0,
-      stokMinimum: 0,
-    });
-    setEditingBarang(null);
-    setIsDialogOpen(false);
+      setFormData({
+        kode: "",
+        nama: "",
+        kategoriId: "",
+        satuanId: "",
+        stok: 0,
+        stokMinimum: 0,
+      });
+      setEditingBarang(null);
+      setIsDialogOpen(false);
+      refetch();
+    } catch (error) {
+      console.error("Failed to save barang", error);
+      alert("Gagal menyimpan barang");
+    }
   };
 
   const handleEdit = (barang: Barang) => {
