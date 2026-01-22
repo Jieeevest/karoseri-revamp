@@ -100,6 +100,16 @@ export default function KaryawanPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate NIK
+    if (!/^\d{16}$/.test(formData.nik)) {
+      toast({
+        title: "Input Tidak Valid",
+        description: "NIK harus terdiri dari 16 digit angka.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (editingKaryawan) {
         await updateKaryawan.mutateAsync({
@@ -124,11 +134,14 @@ export default function KaryawanPage() {
           : "Karyawan baru berhasil ditambahkan.",
         className: "bg-green-50 border-green-200 text-green-800",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save karyawan", error);
+      const errorMessage =
+        error.response?.data?.error ||
+        "Terjadi kesalahan saat menyimpan data karyawan.";
       toast({
         title: "Gagal menyimpan",
-        description: "Terjadi kesalahan saat menyimpan data karyawan.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
