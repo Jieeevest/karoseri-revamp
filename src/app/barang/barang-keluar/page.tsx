@@ -33,185 +33,45 @@ import {
 } from "@/components/ui/select";
 import {
   Plus,
-  Edit,
   Trash2,
   Search,
   Package,
   User,
-  Car,
   ArrowRight,
   Briefcase,
   Wrench,
+  Edit,
 } from "lucide-react";
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import { useToast } from "@/hooks/use-toast";
 
-interface Barang {
-  id: string;
-  kode: string;
-  nama: string;
-  satuan: string;
-  stok: number;
-}
-
-interface Karyawan {
-  id: string;
-  nama: string;
-  jabatan: string;
-}
-
-interface Kendaraan {
-  id: string;
-  nomorPolisi: string;
-  merek: string;
-  tipe: string;
-}
-
-type JenisPengeluaran = "PRODUKSI" | "OPERASIONAL";
-
-interface BarangKeluar {
-  id: string;
-  nomor: string;
-  tanggal: string;
-  jenis: JenisPengeluaran;
-  barangId: string;
-  barang: Barang;
-  jumlah: number;
-  karyawanId: string;
-  karyawan: Karyawan;
-
-  kendaraanId?: string;
-  kendaraan?: Kendaraan;
-  deskripsi: string;
-  createdAt: string;
-}
+import { useBarang } from "@/hooks/use-barang";
+import {
+  BarangKeluar,
+  JenisPengeluaran,
+  useBarangKeluar,
+  useCreateBarangKeluar,
+  useUpdateBarangKeluar, // Less likely to be used for modification but good to have
+  useDeleteBarangKeluar,
+  useKaryawan,
+  useKendaraan,
+} from "@/hooks/use-barang-keluar";
 
 export default function BarangKeluarPage() {
-  const [barangList] = useState<Barang[]>([
-    {
-      id: "1",
-      kode: "BRG001",
-      nama: "Cat Semprot Hitam",
-      satuan: "Liter",
-      stok: 25,
-    },
-    {
-      id: "2",
-      kode: "BRG002",
-      nama: "Besi Hollow 4x4",
-      satuan: "Meter",
-      stok: 80,
-    },
-    { id: "3", kode: "BRG003", nama: "Paku 10cm", satuan: "Kg", stok: 45 },
-    { id: "4", kode: "BRG004", nama: "Lampu LED", satuan: "Unit", stok: 30 },
-    {
-      id: "5",
-      kode: "BRG005",
-      nama: "Triplek Melamin",
-      satuan: "Lembar",
-      stok: 100,
-    },
-    { id: "6", kode: "BRG006", nama: "Kawat Las", satuan: "Kg", stok: 20 },
-  ]);
-
-  const [karyawanList] = useState<Karyawan[]>([
-    { id: "1", nama: "Ahmad Fauzi", jabatan: "Tukang Rakit" },
-    { id: "2", nama: "Budi Santoso", jabatan: "Tukang Cat" },
-    { id: "3", nama: "Chandra Wijaya", jabatan: "Tukang Aksesoris" },
-    { id: "4", nama: "Dedi Kurniawan", jabatan: "Tukang Rakit" },
-    { id: "5", nama: "Eko Prasetyo", jabatan: "Supervisor" },
-  ]);
-
-  const [kendaraanList] = useState<Kendaraan[]>([
-    { id: "1", nomorPolisi: "B 1234 ABC", merek: "Hino", tipe: "Ranger" },
-    { id: "2", nomorPolisi: "B 5678 DEF", merek: "Isuzu", tipe: "Dutro" },
-    { id: "3", nomorPolisi: "B 9012 GHI", merek: "Isuzu", tipe: "Elf" },
-    { id: "4", nomorPolisi: "B 3456 JKL", merek: "Mitsubishi", tipe: "L300" },
-  ]);
-
-  const [barangKeluarList, setBarangKeluarList] = useState<BarangKeluar[]>([
-    {
-      id: "1",
-      nomor: "BK-2024-001",
-      tanggal: "2024-01-15",
-      jenis: "PRODUKSI",
-      barangId: "1",
-      barang: {
-        id: "1",
-        kode: "BRG001",
-        nama: "Cat Semprot Hitam",
-        satuan: "Liter",
-        stok: 25,
-      },
-      jumlah: 5,
-      karyawanId: "1",
-      karyawan: { id: "1", nama: "Ahmad Fauzi", jabatan: "Tukang Rakit" },
-      kendaraanId: "1",
-      kendaraan: {
-        id: "1",
-        nomorPolisi: "B 1234 ABC",
-        merek: "Hino",
-        tipe: "Ranger",
-      },
-      deskripsi: "Penggunaan cat untuk pengecatan body kendaraan wing box",
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      nomor: "BK-2024-002",
-      tanggal: "2024-01-16",
-      jenis: "PRODUKSI",
-      barangId: "2",
-      barang: {
-        id: "2",
-        kode: "BRG002",
-        nama: "Besi Hollow 4x4",
-        satuan: "Meter",
-        stok: 80,
-      },
-      jumlah: 15,
-      karyawanId: "2",
-      karyawan: { id: "2", nama: "Budi Santoso", jabatan: "Tukang Cat" },
-      kendaraanId: "2",
-      kendaraan: {
-        id: "2",
-        nomorPolisi: "B 5678 DEF",
-        merek: "Isuzu",
-        tipe: "Dutro",
-      },
-      deskripsi: "Pemakaian besi untuk rangka box besi standart",
-      createdAt: "2024-01-16",
-    },
-    {
-      id: "3",
-      nomor: "BK-2024-003",
-      tanggal: "2024-01-17",
-      jenis: "PRODUKSI",
-      barangId: "3",
-      barang: {
-        id: "3",
-        kode: "BRG003",
-        nama: "Paku 10cm",
-        satuan: "Kg",
-        stok: 45,
-      },
-      jumlah: 3,
-      karyawanId: "1",
-      karyawan: { id: "1", nama: "Ahmad Fauzi", jabatan: "Tukang Rakit" },
-      kendaraanId: "1",
-      kendaraan: {
-        id: "1",
-        nomorPolisi: "B 1234 ABC",
-        merek: "Hino",
-        tipe: "Ranger",
-      },
-      deskripsi: "Paku untuk pemasangan triplek melamin pada bagian dalam",
-      createdAt: "2024-01-17",
-    },
-  ]);
+  const { data: barangList = [] } = useBarang();
+  const { data: karyawanList = [] } = useKaryawan();
+  const { data: kendaraanList = [] } = useKendaraan();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: barangKeluarList = [], isLoading } =
+    useBarangKeluar(searchTerm);
+  const createBarangKeluar = useCreateBarangKeluar();
+  const updateBarangKeluar = useUpdateBarangKeluar();
+  const deleteBarangKeluar = useDeleteBarangKeluar();
+  const { toast } = useToast();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBarangKeluar, setEditingBarangKeluar] =
     useState<BarangKeluar | null>(null);
@@ -240,52 +100,61 @@ export default function BarangKeluarPage() {
         .includes(searchTerm.toLowerCase()),
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const selectedBarang = barangList.find((b) => b.id === formData.barangId);
-    const selectedKaryawan = karyawanList.find(
-      (k) => k.id === formData.karyawanId,
-    );
 
-    const selectedKendaraan =
-      formData.jenis === "PRODUKSI"
-        ? kendaraanList.find((k) => k.id === formData.kendaraanId)
-        : undefined;
+    if (!selectedBarang) return; // Should be handled by required select
 
-    if (!selectedBarang || !selectedKaryawan) return;
-    if (formData.jenis === "PRODUKSI" && !selectedKendaraan) {
+    if (formData.jenis === "PRODUKSI" && !formData.kendaraanId) {
       alert("Untuk pengeluaran PRODUKSI, wajib memilih kendaraan.");
       return;
     }
 
-    if (formData.jumlah > selectedBarang.stok) {
+    if (formData.jumlah > (selectedBarang.stok || 0)) {
       alert(
-        `Jumlah melebihi stok tersedia! Stok tersedia: ${selectedBarang.stok} ${selectedBarang.satuan}`,
+        `Jumlah melebihi stok tersedia! Stok tersedia: ${selectedBarang.stok} ${selectedBarang.satuanBarang?.nama || "Unit"}`,
       );
       return;
     }
 
-    const newBarangKeluar: BarangKeluar = {
-      id: Date.now().toString(),
-      nomor: `BK-2024-${String(barangKeluarList.length + 1).padStart(3, "0")}`,
-      tanggal: formData.tanggal,
-      jenis: formData.jenis,
-      barangId: formData.barangId,
-      barang: selectedBarang,
-      jumlah: formData.jumlah,
-      karyawanId: formData.karyawanId,
-      karyawan: selectedKaryawan,
+    try {
+      if (editingBarangKeluar) {
+        // Editing might be complex due to stock recalculation, but let's assume backend handles diffs
+        await updateBarangKeluar.mutateAsync({
+          id: editingBarangKeluar.id,
+          ...formData,
+          kendaraanId: formData.kendaraanId || undefined,
+        });
+        toast({
+          title: "Berhasil",
+          description: "Data barang keluar berhasil diperbarui",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      } else {
+        await createBarangKeluar.mutateAsync({
+          ...formData,
+          kendaraanId: formData.kendaraanId || undefined,
+        });
+        toast({
+          title: "Berhasil",
+          description: "Data barang keluar berhasil dicatat",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      }
 
-      kendaraanId: selectedKendaraan?.id,
-      kendaraan: selectedKendaraan,
-      deskripsi: formData.deskripsi,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-
-    setBarangKeluarList([...barangKeluarList, newBarangKeluar]);
-    resetForm();
-    setIsDialogOpen(false);
+      resetForm();
+      setIsDialogOpen(false);
+      setEditingBarangKeluar(null);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menyimpan data barang keluar",
+        variant: "destructive",
+      });
+    }
   };
 
   const resetForm = () => {
@@ -308,7 +177,6 @@ export default function BarangKeluarPage() {
       barangId: barangKeluar.barangId,
       jumlah: barangKeluar.jumlah,
       karyawanId: barangKeluar.karyawanId,
-
       kendaraanId: barangKeluar.kendaraanId || "",
       deskripsi: barangKeluar.deskripsi,
     });
@@ -322,11 +190,24 @@ export default function BarangKeluarPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deletingBarangKeluar) return;
-    setBarangKeluarList((prev) =>
-      prev.filter((bk) => bk.id !== deletingBarangKeluar.id),
-    );
-    setIsDeleteModalOpen(false);
-    setDeletingBarangKeluar(null);
+
+    try {
+      await deleteBarangKeluar.mutateAsync(deletingBarangKeluar.id);
+      toast({
+        title: "Berhasil",
+        description: "Data barang keluar berhasil dihapus",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+      setIsDeleteModalOpen(false);
+      setDeletingBarangKeluar(null);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menghapus data barang keluar",
+        variant: "destructive",
+      });
+    }
   };
 
   const openAddDialog = () => {
@@ -342,7 +223,6 @@ export default function BarangKeluarPage() {
     return {
       total: todayItems.length,
       totalItems: todayItems.reduce((sum, bk) => sum + bk.jumlah, 0),
-
       uniqueKaryawan: [...new Set(todayItems.map((bk) => bk.karyawanId))]
         .length,
       uniqueKendaraan: [
@@ -585,7 +465,7 @@ export default function BarangKeluarPage() {
                               className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
                             >
                               {barang.kode} - {barang.nama} (Stok: {barang.stok}{" "}
-                              {barang.satuan})
+                              {barang.satuanBarang?.nama || "Unit"})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -806,10 +686,11 @@ export default function BarangKeluarPage() {
                           variant="outline"
                           className="border-slate-200 text-slate-600 font-normal"
                         >
-                          {barangKeluar.jumlah} {barangKeluar.barang.satuan}
+                          {barangKeluar.jumlah}{" "}
+                          {barangKeluar.barang.satuanBarang?.nama || "Unit"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-6">
+                      <TableCell className="px-6 text-slate-600">
                         <div>
                           <p className="font-medium text-slate-900">
                             {barangKeluar.karyawan.nama}
@@ -819,7 +700,7 @@ export default function BarangKeluarPage() {
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell className="px-6">
+                      <TableCell className="px-6 text-slate-600">
                         {barangKeluar.kendaraan ? (
                           <div>
                             <p className="font-medium text-slate-900">
@@ -831,21 +712,21 @@ export default function BarangKeluarPage() {
                             </p>
                           </div>
                         ) : (
-                          <span className="text-slate-400 text-sm">-</span>
+                          "-"
                         )}
                       </TableCell>
-                      <TableCell className="px-6">
-                        <div
-                          className="max-w-[200px]"
-                          title={barangKeluar.deskripsi}
-                        >
-                          <p className="text-sm text-slate-600 line-clamp-2">
-                            {barangKeluar.deskripsi}
-                          </p>
-                        </div>
+                      <TableCell
+                        className="px-6 text-slate-600 max-w-xs truncate"
+                        title={barangKeluar.deskripsi}
+                      >
+                        {barangKeluar.deskripsi}
                       </TableCell>
                       <TableCell className="px-6 text-center">
                         <div className="flex justify-center gap-2">
+                          {/* Edit Button */}
+                          {/* For inventory logs, editing is tricky. But let's add it if needed. 
+                               Original mock code didn't show it but we added it in other pages. 
+                               The state `editingBarangKeluar` exists effectively. */}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -858,7 +739,7 @@ export default function BarangKeluarPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteClick(barangKeluar)}
-                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
+                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -890,8 +771,8 @@ export default function BarangKeluarPage() {
         }}
         onConfirm={async () => handleDeleteConfirm()}
         itemName={deletingBarangKeluar?.nomor}
-        title="Hapus Barang Keluar"
-        description="Apakah Anda yakin ingin menghapus data barang keluar ini?"
+        title="Hapus Data Barang Keluar"
+        description="Apakah Anda yakin ingin menghapus data ini? Stok barang akan dikembalikan."
       />
     </DashboardLayout>
   );

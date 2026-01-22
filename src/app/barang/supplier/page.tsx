@@ -37,56 +37,16 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-interface Supplier {
-  id: string;
-  kode: string;
-  nama: string;
-  alamat?: string;
-  telepon?: string;
-  email?: string;
-  createdAt: string;
-}
+import { useToast } from "@/hooks/use-toast";
+import {
+  Supplier,
+  useSupplier,
+  useCreateSupplier,
+  useUpdateSupplier,
+  useDeleteSupplier,
+} from "@/hooks/use-supplier";
 
 export default function SupplierPage() {
-  const [supplierList, setSupplierList] = useState<Supplier[]>([
-    {
-      id: "1",
-      kode: "SUP001",
-      nama: "Supplier ABC",
-      alamat: "Jl. Industri No. 123, Jakarta",
-      telepon: "021-12345678",
-      email: "info@supplierabc.com",
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      kode: "SUP002",
-      nama: "Supplier XYZ",
-      alamat: "Jl. Pabrik No. 456, Surabaya",
-      telepon: "031-87654321",
-      email: "contact@supplierxyz.com",
-      createdAt: "2024-01-16",
-    },
-    {
-      id: "3",
-      kode: "SUP003",
-      nama: "Supplier Jaya",
-      alamat: "Jl. Raya No. 789, Bandung",
-      telepon: "022-11223344",
-      email: "sales@supplierjaya.com",
-      createdAt: "2024-01-17",
-    },
-    {
-      id: "4",
-      kode: "SUP004",
-      nama: "Supplier Makmur",
-      alamat: "Jl. Gatot Subroto No. 100, Semarang",
-      telepon: "024-55667788",
-      email: "info@suppliermakmur.com",
-      createdAt: "2024-01-18",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
@@ -103,35 +63,51 @@ export default function SupplierPage() {
     null,
   );
 
-  const filteredSupplier = supplierList.filter(
-    (supplier) =>
-      supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.kode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.alamat?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const { data: supplierList = [], isLoading } = useSupplier(searchTerm);
+  const createSupplier = useCreateSupplier();
+  const updateSupplier = useUpdateSupplier();
+  const deleteSupplier = useDeleteSupplier();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Filter handled by API search parameter, but keeping local filter for fallback/instant feedback if needed
+  // In this case, we rely on the API hook's search param, so we can use the list directly.
+  // However, since the hook might be debounced or relying on button press in some implementations (though here it's direct),
+  // we'll treat supplierList as the source of truth.
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingSupplier) {
-      setSupplierList((prev) =>
-        prev.map((s) =>
-          s.id === editingSupplier.id ? { ...s, ...formData } : s,
-        ),
-      );
-    } else {
-      const newSupplier: Supplier = {
-        id: Date.now().toString(),
-        ...formData,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setSupplierList((prev) => [...prev, newSupplier]);
-    }
+    try {
+      if (editingSupplier) {
+        await updateSupplier.mutateAsync({
+          id: editingSupplier.id,
+          ...formData,
+        });
+        toast({
+          title: "Berhasil",
+          description: "Data supplier berhasil diperbarui",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      } else {
+        await createSupplier.mutateAsync(formData);
+        toast({
+          title: "Berhasil",
+          description: "Supplier berhasil ditambahkan",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      }
 
-    setFormData({ kode: "", nama: "", alamat: "", telepon: "", email: "" });
-    setEditingSupplier(null);
-    setIsDialogOpen(false);
+      setFormData({ kode: "", nama: "", alamat: "", telepon: "", email: "" });
+      setEditingSupplier(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Terjadi kesalahan saat menyimpan data",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEdit = (supplier: Supplier) => {
@@ -154,9 +130,23 @@ export default function SupplierPage() {
   const handleDeleteConfirm = async () => {
     if (!deletingSupplier) return;
 
-    setSupplierList((prev) => prev.filter((s) => s.id !== deletingSupplier.id));
-    setIsDeleteModalOpen(false);
-    setDeletingSupplier(null);
+    try {
+      await deleteSupplier.mutateAsync(deletingSupplier.id);
+      toast({
+        title: "Berhasil",
+        description: "Supplier berhasil dihapus",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+      setIsDeleteModalOpen(false);
+      setDeletingSupplier(null);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menghapus supplier",
+        variant: "destructive",
+      });
+    }
   };
 
   const openAddDialog = () => {
@@ -370,8 +360,8 @@ export default function SupplierPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSupplier.length > 0 ? (
-                  filteredSupplier.map((supplier) => (
+                {supplierList.length > 0 ? (
+                  supplierList.map((supplier) => (
                     <TableRow
                       key={supplier.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"

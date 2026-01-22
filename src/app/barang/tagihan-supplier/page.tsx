@@ -20,7 +20,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -33,133 +32,29 @@ import {
 import {
   Search,
   Receipt,
-  Calendar,
+  Clock,
   DollarSign,
   CheckCircle,
-  Clock,
   AlertTriangle,
   Upload,
   FileText,
   CreditCard,
 } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
-interface Supplier {
-  id: string;
-  kode: string;
-  nama: string;
-}
-
-interface PurchaseOrder {
-  id: string;
-  nomor: string;
-  supplierId: string;
-  supplier: Supplier;
-  total: number;
-}
-
-interface TagihanSupplier {
-  id: string;
-  nomor: string;
-  purchaseOrderId: string;
-  purchaseOrder: PurchaseOrder;
-  supplierId: string;
-  supplier: Supplier;
-  jumlah: number;
-  tempo: string;
-  status: "BELUM_DIBAYAR" | "SUDAH_DIBAYAR";
-  metodePembayaran?: "TRANSFER" | "CASH" | "GIRO";
-  buktiPembayaran?: string;
-  createdAt: string;
-}
+import {
+  TagihanSupplier,
+  useTagihanSupplier,
+  useUpdateTagihanSupplier,
+} from "@/hooks/use-tagihan-supplier";
 
 export default function TagihanSupplierPage() {
-  const [supplierList] = useState<Supplier[]>([
-    { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-    { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
-    { id: "3", kode: "SUP003", nama: "Supplier Jaya" },
-  ]);
-
-  const [tagihanList, setTagihanList] = useState<TagihanSupplier[]>([
-    {
-      id: "1",
-      nomor: "TAG-2024-001",
-      purchaseOrderId: "1",
-      purchaseOrder: {
-        id: "1",
-        nomor: "PO-2024-001",
-        supplierId: "1",
-        supplier: { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-        total: 650000,
-      },
-      supplierId: "1",
-      supplier: { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-      jumlah: 650000,
-      tempo: "2024-02-15",
-      status: "BELUM_DIBAYAR",
-      createdAt: "2024-01-20",
-    },
-    {
-      id: "2",
-      nomor: "TAG-2024-002",
-      purchaseOrderId: "2",
-      purchaseOrder: {
-        id: "2",
-        nomor: "PO-2024-002",
-        supplierId: "2",
-        supplier: { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
-        total: 480000,
-      },
-      supplierId: "2",
-      supplier: { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
-      jumlah: 480000,
-      tempo: "2024-02-10",
-      status: "SUDAH_DIBAYAR",
-      metodePembayaran: "TRANSFER",
-      buktiPembayaran: "bukti_transfer_001.jpg",
-      createdAt: "2024-01-18",
-    },
-    {
-      id: "3",
-      nomor: "TAG-2024-003",
-      purchaseOrderId: "3",
-      purchaseOrder: {
-        id: "3",
-        nomor: "PO-2024-003",
-        supplierId: "3",
-        supplier: { id: "3", kode: "SUP003", nama: "Supplier Jaya" },
-        total: 1200000,
-      },
-      supplierId: "3",
-      supplier: { id: "3", kode: "SUP003", nama: "Supplier Jaya" },
-      jumlah: 1200000,
-      tempo: "2024-02-20",
-      status: "BELUM_DIBAYAR",
-      createdAt: "2024-01-22",
-    },
-    {
-      id: "4",
-      nomor: "TAG-2024-004",
-      purchaseOrderId: "4",
-      purchaseOrder: {
-        id: "4",
-        nomor: "PO-2024-004",
-        supplierId: "1",
-        supplier: { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-        total: 890000,
-      },
-      supplierId: "1",
-      supplier: { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-      jumlah: 890000,
-      tempo: "2024-01-25",
-      status: "SUDAH_DIBAYAR",
-      metodePembayaran: "CASH",
-      buktiPembayaran: "kwitansi_002.jpg",
-      createdAt: "2024-01-19",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: tagihanList = [], isLoading } = useTagihanSupplier(searchTerm);
+  const updateTagihan = useUpdateTagihanSupplier();
+  const { toast } = useToast();
+
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedTagihan, setSelectedTagihan] =
     useState<TagihanSupplier | null>(null);
@@ -174,7 +69,7 @@ export default function TagihanSupplierPage() {
       tagihan.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tagihan.purchaseOrder.nomor
         .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+        .includes(searchTerm.toLowerCase()),
   );
 
   const getStatusBadge = (status: string) => {
@@ -219,10 +114,16 @@ export default function TagihanSupplierPage() {
   };
 
   const getTempoStatus = (tempo: string) => {
+    if (!tempo)
+      return {
+        color: "text-slate-500",
+        label: "Tidak ada data tempo",
+        days: 0,
+      };
     const today = new Date();
     const tempoDate = new Date(tempo);
     const diffDays = Math.ceil(
-      (tempoDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      (tempoDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     if (diffDays < 0) {
@@ -259,31 +160,40 @@ export default function TagihanSupplierPage() {
     setIsPaymentDialogOpen(true);
   };
 
-  const confirmPayment = () => {
+  const confirmPayment = async () => {
     if (!selectedTagihan) return;
 
-    setTagihanList((prev) =>
-      prev.map((t) =>
-        t.id === selectedTagihan.id
-          ? {
-              ...t,
-              status: "SUDAH_DIBAYAR" as const,
-              metodePembayaran: paymentFormData.metode,
-              buktiPembayaran: paymentFormData.buktiPembayaran || undefined,
-            }
-          : t
-      )
-    );
+    try {
+      await updateTagihan.mutateAsync({
+        id: selectedTagihan.id,
+        status: "SUDAH_DIBAYAR",
+        metodePembayaran: paymentFormData.metode,
+        buktiPembayaran: paymentFormData.buktiPembayaran || undefined,
+      });
 
-    setIsPaymentDialogOpen(false);
-    setSelectedTagihan(null);
-    setPaymentFormData({ metode: "TRANSFER", buktiPembayaran: "" });
+      toast({
+        title: "Berhasil",
+        description: "Pembayaran berhasil dicatat",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+      setIsPaymentDialogOpen(false);
+      setSelectedTagihan(null);
+      setPaymentFormData({ metode: "TRANSFER", buktiPembayaran: "" });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal mencatat pembayaran",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStats = () => {
     const unpaid = tagihanList.filter((t) => t.status === "BELUM_DIBAYAR");
     const paid = tagihanList.filter((t) => t.status === "SUDAH_DIBAYAR");
     const overdue = unpaid.filter((t) => {
+      if (!t.tempo) return false;
       const tempoDate = new Date(t.tempo);
       return tempoDate < new Date();
     });
@@ -474,11 +384,13 @@ export default function TagihanSupplierPage() {
                             <p className="text-sm text-slate-900">
                               {tagihan.tempo}
                             </p>
-                            <p
-                              className={`text-xs font-medium ${tempoStatus.color}`}
-                            >
-                              {tempoStatus.label} ({tempoStatus.days} hari)
-                            </p>
+                            {tagihan.status === "BELUM_DIBAYAR" && (
+                              <p
+                                className={`text-xs font-medium ${tempoStatus.color}`}
+                              >
+                                {tempoStatus.label} ({tempoStatus.days} hari)
+                              </p>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="px-6">
@@ -523,7 +435,7 @@ export default function TagihanSupplierPage() {
                   <TableRow>
                     <TableCell
                       colSpan={8}
-                      className="h-24 text-center text-slate-500"
+                      className="px-6 h-24 text-center text-slate-500"
                     >
                       Data tidak ditemukan.
                     </TableCell>

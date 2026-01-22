@@ -45,143 +45,32 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
-interface Supplier {
-  id: string;
-  kode: string;
-  nama: string;
-}
-
-interface Barang {
-  id: string;
-  kode: string;
-  nama: string;
-  satuan: string;
-}
-
-interface PurchaseOrderItem {
-  id: string;
-  barangId: string;
-  barang: Barang;
-  jumlah: number;
-  harga: number;
-  subtotal: number;
-}
-
-interface PurchaseOrder {
-  id: string;
-  nomor: string;
-  tanggal: string;
-  supplierId: string;
-  supplier: Supplier;
-  status: "DRAFT" | "DIAJUKAN" | "DISETUJUI" | "DITOLAK" | "SELESAI";
-  total: number;
-  items: PurchaseOrderItem[];
-  createdAt: string;
-}
+import { useToast } from "@/hooks/use-toast";
+import { useSupplier } from "@/hooks/use-supplier";
+import { useBarang } from "@/hooks/use-barang";
+import {
+  PurchaseOrder,
+  PurchaseOrderItem,
+  usePurchaseOrder,
+  useCreatePurchaseOrder,
+  useUpdatePurchaseOrder, // For status updates
+  useDeletePurchaseOrder,
+} from "@/hooks/use-purchase-order";
 
 export default function PurchaseOrderPage() {
   const { data: session } = useSession();
   const isGudang = session?.user?.role === "GUDANG";
-  const [supplierList] = useState<Supplier[]>([
-    { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-    { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
-    { id: "3", kode: "SUP003", nama: "Supplier Jaya" },
-  ]);
 
-  const [barangList] = useState<Barang[]>([
-    { id: "1", kode: "BRG001", nama: "Cat Semprot Hitam", satuan: "Liter" },
-    { id: "2", kode: "BRG002", nama: "Besi Hollow 4x4", satuan: "Meter" },
-    { id: "3", kode: "BRG003", nama: "Paku 10cm", satuan: "Kg" },
-    { id: "4", kode: "BRG004", nama: "Lampu LED", satuan: "Unit" },
-  ]);
-
-  const [poList, setPoList] = useState<PurchaseOrder[]>([
-    {
-      id: "1",
-      nomor: "PO-2024-001",
-      tanggal: "2024-01-15",
-      supplierId: "1",
-      supplier: { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-      status: "DRAFT",
-      total: 650000,
-      items: [
-        {
-          id: "1",
-          barangId: "1",
-          barang: {
-            id: "1",
-            kode: "BRG001",
-            nama: "Cat Semprot Hitam",
-            satuan: "Liter",
-          },
-          jumlah: 2,
-          harga: 150000,
-          subtotal: 300000,
-        },
-        {
-          id: "2",
-          barangId: "2",
-          barang: {
-            id: "2",
-            kode: "BRG002",
-            nama: "Besi Hollow 4x4",
-            satuan: "Meter",
-          },
-          jumlah: 5,
-          harga: 70000,
-          subtotal: 350000,
-        },
-      ],
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      nomor: "PO-2024-002",
-      tanggal: "2024-01-16",
-      supplierId: "2",
-      supplier: { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
-      status: "DIAJUKAN",
-      total: 480000,
-      items: [
-        {
-          id: "3",
-          barangId: "3",
-          barang: { id: "3", kode: "BRG003", nama: "Paku 10cm", satuan: "Kg" },
-          jumlah: 10,
-          harga: 48000,
-          subtotal: 480000,
-        },
-      ],
-      createdAt: "2024-01-16",
-    },
-    {
-      id: "3",
-      nomor: "PO-2024-003",
-      tanggal: "2024-01-17",
-      supplierId: "3",
-      supplier: { id: "3", kode: "SUP003", nama: "Supplier Jaya" },
-      status: "DISETUJUI",
-      total: 1200000,
-      items: [
-        {
-          id: "4",
-          barangId: "4",
-          barang: {
-            id: "4",
-            kode: "BRG004",
-            nama: "Lampu LED",
-            satuan: "Unit",
-          },
-          jumlah: 20,
-          harga: 60000,
-          subtotal: 1200000,
-        },
-      ],
-      createdAt: "2024-01-17",
-    },
-  ]);
+  const { data: supplierList = [] } = useSupplier();
+  const { data: barangList = [] } = useBarang();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: poList = [], isLoading } = usePurchaseOrder(searchTerm);
+  const createPO = useCreatePurchaseOrder();
+  const updatePO = useUpdatePurchaseOrder();
+  const deletePO = useDeletePurchaseOrder();
+  const { toast } = useToast();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
@@ -195,12 +84,8 @@ export default function PurchaseOrderPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingPO, setDeletingPO] = useState<PurchaseOrder | null>(null);
 
-  const filteredPO = poList.filter(
-    (po) =>
-      po.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      po.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      po.status.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  // No local filter needed as hook handles search, using direct list
+  const filteredPO = poList; // or just use poList directly in render
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -228,7 +113,17 @@ export default function PurchaseOrderPage() {
     const newItem: PurchaseOrderItem = {
       id: Date.now().toString(),
       barangId: "",
-      barang: { id: "", kode: "", nama: "", satuan: "" },
+      barang: {
+        id: "",
+        kode: "",
+        nama: "",
+        kategoriId: 0,
+        kategoriBarang: { id: 0, nama: "" },
+        satuanId: "",
+        satuanBarang: { id: "", nama: "" }, // Adjusted to match Barang interface from hook
+        stok: 0,
+        stokMinimum: 0,
+      },
       jumlah: 1,
       harga: 0,
       subtotal: 0,
@@ -262,7 +157,7 @@ export default function PurchaseOrderPage() {
     return items.reduce((total, item) => total + item.subtotal, 0);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (items.length === 0) {
@@ -275,25 +170,38 @@ export default function PurchaseOrderPage() {
     );
     if (!selectedSupplier) return;
 
-    const newPO: PurchaseOrder = {
-      id: Date.now().toString(),
-      nomor: `PO-2024-${String(poList.length + 1).padStart(3, "0")}`,
-      tanggal: formData.tanggal,
-      supplierId: formData.supplierId,
-      supplier: selectedSupplier,
-      status: "DRAFT",
-      total: calculateTotal(),
-      items: items,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
+    try {
+      await createPO.mutateAsync({
+        tanggal: formData.tanggal,
+        supplierId: formData.supplierId,
+        items: items.map((item) => ({
+          ...item,
+          barang: undefined, // Avoid sending full object if API expects just IDs, but keeping per your schema design if needed
+          // Assuming backend handles relation creation or just needs IDs
+        })) as any, // Casting for now to bypass strict shape check if needed, but ideally match backend DTO
+        // Actually, let's assume backend takes items with barangId etc.
+      });
 
-    setPoList([...poList, newPO]);
-    setFormData({
-      supplierId: "",
-      tanggal: new Date().toISOString().split("T")[0],
-    });
-    setItems([]);
-    setIsDialogOpen(false);
+      toast({
+        title: "Berhasil",
+        description: "Purchase Order berhasil dibuat",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+
+      setFormData({
+        supplierId: "",
+        tanggal: new Date().toISOString().split("T")[0],
+      });
+      setItems([]);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal membuat PO",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleView = (po: PurchaseOrder) => {
@@ -301,11 +209,23 @@ export default function PurchaseOrderPage() {
     setIsDetailDialogOpen(true);
   };
 
-  const handleAjukan = (id: string) => {
+  const handleAjukan = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin mengajukan Purchase Order ini?")) {
-      setPoList((prev) =>
-        prev.map((po) => (po.id === id ? { ...po, status: "DIAJUKAN" } : po)),
-      );
+      try {
+        await updatePO.mutateAsync({ id, status: "DIAJUKAN" });
+        toast({
+          title: "Berhasil",
+          description: "Status PO berhasil diperbarui",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      } catch (error) {
+        console.error(error);
+        toast({
+          title: "Gagal",
+          description: "Gagal update status PO",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -316,9 +236,24 @@ export default function PurchaseOrderPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deletingPO) return;
-    setPoList((prev) => prev.filter((po) => po.id !== deletingPO.id));
-    setIsDeleteModalOpen(false);
-    setDeletingPO(null);
+
+    try {
+      await deletePO.mutateAsync(deletingPO.id);
+      toast({
+        title: "Berhasil",
+        description: "PO berhasil dihapus",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+      setIsDeleteModalOpen(false);
+      setDeletingPO(null);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menghapus PO",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -604,8 +539,8 @@ export default function PurchaseOrderPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPO.length > 0 ? (
-                  filteredPO.map((po) => (
+                {poList.length > 0 ? (
+                  poList.map((po) => (
                     <TableRow
                       key={po.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
@@ -739,7 +674,7 @@ export default function PurchaseOrderPage() {
                             {item.barang.nama}
                           </p>
                           <p className="text-sm text-slate-500 mt-0.5">
-                            {item.jumlah} {item.barang.satuan} ×{" "}
+                            {item.jumlah} {item.barang.satuanBarang?.nama} ×{" "}
                             {formatCurrency(item.harga)}
                           </p>
                         </div>

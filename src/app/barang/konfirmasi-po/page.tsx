@@ -36,155 +36,22 @@ import {
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 
-interface Supplier {
-  id: string;
-  kode: string;
-  nama: string;
-}
-
-interface Barang {
-  id: string;
-  kode: string;
-  nama: string;
-  satuan: string;
-}
-
-interface PurchaseOrderItem {
-  id: string;
-  barangId: string;
-  barang: Barang;
-  jumlah: number;
-  harga: number;
-  subtotal: number;
-}
-
-interface PurchaseOrder {
-  id: string;
-  nomor: string;
-  tanggal: string;
-  supplierId: string;
-  supplier: Supplier;
-  status: "DRAFT" | "DIAJUKAN" | "DISETUJUI" | "DITOLAK" | "SELESAI";
-  total: number;
-  items: PurchaseOrderItem[];
-  createdAt: string;
-}
+import { useToast } from "@/hooks/use-toast";
+import {
+  PurchaseOrder,
+  usePurchaseOrder,
+  useUpdatePurchaseOrder, // For status updates (approve/reject)
+} from "@/hooks/use-purchase-order";
 
 export default function KonfirmasiPOPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
-  const [purchaseOrderList, setPurchaseOrderList] = useState<PurchaseOrder[]>([
-    {
-      id: "1",
-      nomor: "PO-2024-001",
-      tanggal: "2024-01-15",
-      supplierId: "1",
-      supplier: { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-      status: "DIAJUKAN",
-      total: 650000,
-      items: [
-        {
-          id: "1",
-          barangId: "1",
-          barang: {
-            id: "1",
-            kode: "BRG001",
-            nama: "Cat Semprot Hitam",
-            satuan: "Liter",
-          },
-          jumlah: 2,
-          harga: 150000,
-          subtotal: 300000,
-        },
-        {
-          id: "2",
-          barangId: "2",
-          barang: {
-            id: "2",
-            kode: "BRG002",
-            nama: "Besi Hollow 4x4",
-            satuan: "Meter",
-          },
-          jumlah: 5,
-          harga: 70000,
-          subtotal: 350000,
-        },
-      ],
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      nomor: "PO-2024-002",
-      tanggal: "2024-01-16",
-      supplierId: "2",
-      supplier: { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
-      status: "DIAJUKAN",
-      total: 480000,
-      items: [
-        {
-          id: "3",
-          barangId: "3",
-          barang: { id: "3", kode: "BRG003", nama: "Paku 10cm", satuan: "Kg" },
-          jumlah: 10,
-          harga: 48000,
-          subtotal: 480000,
-        },
-      ],
-      createdAt: "2024-01-16",
-    },
-    {
-      id: "3",
-      nomor: "PO-2024-003",
-      tanggal: "2024-01-17",
-      supplierId: "3",
-      supplier: { id: "3", kode: "SUP003", nama: "Supplier Jaya" },
-      status: "DIAJUKAN",
-      total: 1200000,
-      items: [
-        {
-          id: "4",
-          barangId: "4",
-          barang: {
-            id: "4",
-            kode: "BRG004",
-            nama: "Lampu LED",
-            satuan: "Unit",
-          },
-          jumlah: 20,
-          harga: 60000,
-          subtotal: 1200000,
-        },
-      ],
-      createdAt: "2024-01-17",
-    },
-    {
-      id: "4",
-      nomor: "PO-2024-004",
-      tanggal: "2024-01-18",
-      supplierId: "1",
-      supplier: { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-      status: "DIAJUKAN",
-      total: 890000,
-      items: [
-        {
-          id: "5",
-          barangId: "5",
-          barang: {
-            id: "5",
-            kode: "BRG005",
-            nama: "Triplek Melamin",
-            satuan: "Lembar",
-          },
-          jumlah: 50,
-          harga: 17800,
-          subtotal: 890000,
-        },
-      ],
-      createdAt: "2024-01-18",
-    },
-  ]);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: purchaseOrderList = [] } = usePurchaseOrder(searchTerm);
+  const updatePO = useUpdatePurchaseOrder();
+  const { toast } = useToast();
+
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
@@ -194,11 +61,11 @@ export default function KonfirmasiPOPage() {
     (po) =>
       po.status === "DIAJUKAN" &&
       (po.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        po.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()))
+        po.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase())),
   );
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
+    const statusConfig: any = {
       DRAFT: {
         color: "bg-gray-100 text-gray-800",
         label: "Draft",
@@ -226,8 +93,7 @@ export default function KonfirmasiPOPage() {
       },
     };
 
-    const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.DRAFT;
+    const config = statusConfig[status] || statusConfig.DRAFT;
     const Icon = config.icon;
     return (
       <Badge className={config.color}>
@@ -245,17 +111,27 @@ export default function KonfirmasiPOPage() {
     }).format(amount);
   };
 
-  const handleApprove = (po: PurchaseOrder) => {
+  const handleApprove = async (po: PurchaseOrder) => {
     if (
       confirm(
-        `Apakah Anda yakin ingin menyetujui PO ${po.nomor} dari ${po.supplier.nama}?`
+        `Apakah Anda yakin ingin menyetujui PO ${po.nomor} dari ${po.supplier.nama}?`,
       )
     ) {
-      setPurchaseOrderList((prev) =>
-        prev.map((p) =>
-          p.id === po.id ? { ...p, status: "DISETUJUI" as const } : p
-        )
-      );
+      try {
+        await updatePO.mutateAsync({ id: po.id, status: "DISETUJUI" });
+        toast({
+          title: "Berhasil",
+          description: "PO berhasil disetujui",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      } catch (error) {
+        console.error(error);
+        toast({
+          title: "Gagal",
+          description: "Gagal menyetujui PO",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -265,21 +141,33 @@ export default function KonfirmasiPOPage() {
     setIsRejectDialogOpen(true);
   };
 
-  const confirmReject = () => {
+  const confirmReject = async () => {
     if (!selectedPO || !rejectReason.trim()) {
       alert("Alasan penolakan harus diisi!");
       return;
     }
 
-    setPurchaseOrderList((prev) =>
-      prev.map((p) =>
-        p.id === selectedPO.id ? { ...p, status: "DITOLAK" as const } : p
-      )
-    );
-
-    setIsRejectDialogOpen(false);
-    setSelectedPO(null);
-    setRejectReason("");
+    try {
+      await updatePO.mutateAsync({
+        id: selectedPO.id,
+        status: "DITOLAK",
+      });
+      toast({
+        title: "Berhasil",
+        description: "PO berhasil ditolak",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+      setIsRejectDialogOpen(false);
+      setSelectedPO(null);
+      setRejectReason("");
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menolak PO",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleViewDetail = (po: PurchaseOrder) => {
@@ -288,14 +176,17 @@ export default function KonfirmasiPOPage() {
   };
 
   const getStats = () => {
+    if (!purchaseOrderList)
+      return { submitted: 0, approved: 0, rejected: 0, totalValue: 0 };
+
     const submittedPO = purchaseOrderList.filter(
-      (po) => po.status === "DIAJUKAN"
+      (po) => po.status === "DIAJUKAN",
     );
     const approvedPO = purchaseOrderList.filter(
-      (po) => po.status === "DISETUJUI"
+      (po) => po.status === "DISETUJUI",
     );
     const rejectedPO = purchaseOrderList.filter(
-      (po) => po.status === "DITOLAK"
+      (po) => po.status === "DITOLAK",
     );
 
     return {
@@ -612,7 +503,8 @@ export default function KonfirmasiPOPage() {
                               {item.barang.nama}
                             </TableCell>
                             <TableCell className="text-slate-600">
-                              {item.jumlah} {item.barang.satuan}
+                              {item.jumlah}{" "}
+                              {item.barang.satuanBarang?.nama || "Unit"}
                             </TableCell>
                             <TableCell className="text-slate-600">
                               {formatCurrency(item.harga)}

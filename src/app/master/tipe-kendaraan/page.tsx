@@ -34,73 +34,17 @@ import { Plus, Edit, Trash2, Search, Car } from "lucide-react";
 import { useState } from "react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
-interface MerekKendaraan {
-  id: string;
-  nama: string;
-}
-
-interface TipeKendaraan {
-  id: string;
-  nama: string;
-  merekId: string;
-  merekKendaraan: MerekKendaraan;
-  createdAt: string;
-}
+import { useToast } from "@/hooks/use-toast";
+import {
+  TipeKendaraan,
+  useTipeKendaraan,
+  useCreateTipeKendaraan,
+  useUpdateTipeKendaraan,
+  useDeleteTipeKendaraan,
+  useMerekKendaraan,
+} from "@/hooks/use-master";
 
 export default function TipeKendaraanPage() {
-  const [merekList] = useState<MerekKendaraan[]>([
-    { id: "1", nama: "Hino" },
-    { id: "2", nama: "Isuzu" },
-    { id: "3", nama: "Mitsubishi" },
-    { id: "4", nama: "Toyota" },
-    { id: "5", nama: "Suzuki" },
-  ]);
-
-  const [tipeList, setTipeList] = useState<TipeKendaraan[]>([
-    {
-      id: "1",
-      nama: "Ranger",
-      merekId: "1",
-      merekKendaraan: { id: "1", nama: "Hino" },
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      nama: "Dutro",
-      merekId: "2",
-      merekKendaraan: { id: "2", nama: "Isuzu" },
-      createdAt: "2024-01-16",
-    },
-    {
-      id: "3",
-      nama: "Elf",
-      merekId: "2",
-      merekKendaraan: { id: "2", nama: "Isuzu" },
-      createdAt: "2024-01-17",
-    },
-    {
-      id: "4",
-      nama: "L300",
-      merekId: "4",
-      merekKendaraan: { id: "4", nama: "Mitsubishi" },
-      createdAt: "2024-01-18",
-    },
-    {
-      id: "5",
-      nama: "Colt Diesel",
-      merekId: "4",
-      merekKendaraan: { id: "4", nama: "Mitsubishi" },
-      createdAt: "2024-01-19",
-    },
-    {
-      id: "6",
-      nama: "Great Dyna",
-      merekId: "4",
-      merekKendaraan: { id: "4", nama: "Toyota" },
-      createdAt: "2024-01-20",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTipe, setEditingTipe] = useState<TipeKendaraan | null>(null);
@@ -112,45 +56,55 @@ export default function TipeKendaraanPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingTipe, setDeletingTipe] = useState<TipeKendaraan | null>(null);
 
+  const { data: tipeList = [], isLoading } = useTipeKendaraan();
+  const { data: merekList = [] } = useMerekKendaraan();
+  const createTipe = useCreateTipeKendaraan();
+  const updateTipe = useUpdateTipeKendaraan();
+  const deleteTipe = useDeleteTipeKendaraan();
+  const { toast } = useToast();
+
   const filteredTipe = tipeList.filter(
     (tipe) =>
       tipe.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tipe.merekKendaraan.nama.toLowerCase().includes(searchTerm.toLowerCase()),
+      tipe.merekKendaraan?.nama
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()),
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingTipe) {
-      setTipeList((prev) =>
-        prev.map((t) =>
-          t.id === editingTipe.id
-            ? {
-                ...t,
-                ...formData,
-                merekKendaraan:
-                  merekList.find((m) => m.id === formData.merekId) ||
-                  t.merekKendaraan,
-              }
-            : t,
-        ),
-      );
-    } else {
-      const newTipe: TipeKendaraan = {
-        id: Date.now().toString(),
-        ...formData,
-        merekKendaraan: merekList.find((m) => m.id === formData.merekId) || {
-          id: "",
-          nama: "",
-        },
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setTipeList((prev) => [...prev, newTipe]);
-    }
+    try {
+      if (editingTipe) {
+        await updateTipe.mutateAsync({
+          id: editingTipe.id,
+          ...formData,
+        });
+        toast({
+          title: "Berhasil",
+          description: "Tipe kendaraan berhasil diperbarui",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      } else {
+        await createTipe.mutateAsync(formData);
+        toast({
+          title: "Berhasil",
+          description: "Tipe kendaraan berhasil ditambahkan",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      }
 
-    setFormData({ nama: "", merekId: "" });
-    setEditingTipe(null);
-    setIsDialogOpen(false);
+      setFormData({ nama: "", merekId: "" });
+      setEditingTipe(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Terjadi kesalahan saat menyimpan data",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEdit = (tipe: TipeKendaraan) => {
@@ -169,9 +123,24 @@ export default function TipeKendaraanPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deletingTipe) return;
-    setTipeList((prev) => prev.filter((t) => t.id !== deletingTipe.id));
-    setIsDeleteModalOpen(false);
-    setDeletingTipe(null);
+
+    try {
+      await deleteTipe.mutateAsync(deletingTipe.id);
+      toast({
+        title: "Berhasil",
+        description: "Tipe kendaraan berhasil dihapus",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+      setIsDeleteModalOpen(false);
+      setDeletingTipe(null);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menghapus tipe kendaraan",
+        variant: "destructive",
+      });
+    }
   };
 
   const openAddDialog = () => {
@@ -342,7 +311,7 @@ export default function TipeKendaraanPage() {
                           variant="secondary"
                           className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 rounded-md px-2.5 py-0.5 font-medium transition-colors"
                         >
-                          {tipe.merekKendaraan.nama}
+                          {tipe.merekKendaraan?.nama || "-"}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-6 font-medium">

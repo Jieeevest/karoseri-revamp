@@ -30,145 +30,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Search, Star, TrendingUp } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Star } from "lucide-react";
 import { useState } from "react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import { useToast } from "@/hooks/use-toast";
 
-interface KategoriBarang {
-  id: number;
-  nama: string;
-}
-
-interface Barang {
-  id: string;
-  kode: string;
-  nama: string;
-  kategoriId: number;
-  kategoriBarang: KategoriBarang;
-}
-
-interface Supplier {
-  id: string;
-  kode: string;
-  nama: string;
-}
-
-interface HargaBarang {
-  id: string;
-  barangId: string;
-  barang: Barang;
-  supplierId: string;
-  supplier: Supplier;
-  kategoriId: number;
-  kategoriBarang: KategoriBarang;
-  harga: number;
-  adalahHargaTerbaik: boolean;
-  createdAt: string;
-}
+import { useBarang } from "@/hooks/use-barang";
+import { useSupplier } from "@/hooks/use-supplier";
+import {
+  HargaBarang,
+  useHargaBarang,
+  useCreateHargaBarang,
+  useUpdateHargaBarang,
+  useDeleteHargaBarang,
+} from "@/hooks/use-harga-barang";
 
 export default function HargaBarangPage() {
-  const [kategoriList] = useState<KategoriBarang[]>([
-    { id: 1, nama: "Cat" },
-    { id: 2, nama: "Besi" },
-    { id: 3, nama: "Aksesoris" },
-    { id: 4, nama: "Paku & Sekrup" },
-  ]);
-
-  const [barangList] = useState<Barang[]>([
-    {
-      id: "1",
-      kode: "BRG001",
-      nama: "Cat Semprot Hitam",
-      kategoriId: 1,
-      kategoriBarang: { id: 1, nama: "Cat" },
-    },
-    {
-      id: "2",
-      kode: "BRG002",
-      nama: "Besi Hollow 4x4",
-      kategoriId: 2,
-      kategoriBarang: { id: 2, nama: "Besi" },
-    },
-    {
-      id: "3",
-      kode: "BRG003",
-      nama: "Paku 10cm",
-      kategoriId: 4,
-      kategoriBarang: { id: 4, nama: "Paku & Sekrup" },
-    },
-    {
-      id: "4",
-      kode: "BRG004",
-      nama: "Lampu LED",
-      kategoriId: 3,
-      kategoriBarang: { id: 3, nama: "Aksesoris" },
-    },
-  ]);
-
-  const [supplierList] = useState<Supplier[]>([
-    { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-    { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
-    { id: "3", kode: "SUP003", nama: "Supplier Jaya" },
-  ]);
-
-  const [hargaList, setHargaList] = useState<HargaBarang[]>([
-    {
-      id: "1",
-      barangId: "1",
-      barang: {
-        id: "1",
-        kode: "BRG001",
-        nama: "Cat Semprot Hitam",
-        kategoriId: 1,
-        kategoriBarang: { id: 1, nama: "Cat" },
-      },
-      supplierId: "1",
-      supplier: { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-      kategoriId: 1,
-      kategoriBarang: { id: 1, nama: "Cat" },
-      harga: 150000,
-      adalahHargaTerbaik: true,
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      barangId: "1",
-      barang: {
-        id: "1",
-        kode: "BRG001",
-        nama: "Cat Semprot Hitam",
-        kategoriId: 1,
-        kategoriBarang: { id: 1, nama: "Cat" },
-      },
-      supplierId: "2",
-      supplier: { id: "2", kode: "SUP002", nama: "Supplier XYZ" },
-      kategoriId: 1,
-      kategoriBarang: { id: 1, nama: "Cat" },
-      harga: 165000,
-      adalahHargaTerbaik: false,
-      createdAt: "2024-01-16",
-    },
-    {
-      id: "3",
-      barangId: "2",
-      barang: {
-        id: "2",
-        kode: "BRG002",
-        nama: "Besi Hollow 4x4",
-        kategoriId: 2,
-        kategoriBarang: { id: 2, nama: "Besi" },
-      },
-      supplierId: "1",
-      supplier: { id: "1", kode: "SUP001", nama: "Supplier ABC" },
-      kategoriId: 2,
-      kategoriBarang: { id: 2, nama: "Besi" },
-      harga: 75000,
-      adalahHargaTerbaik: true,
-      createdAt: "2024-01-17",
-    },
-  ]);
+  const { data: barangList = [] } = useBarang();
+  const { data: supplierList = [] } = useSupplier();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: hargaList = [], isLoading } = useHargaBarang(searchTerm);
+  const createHarga = useCreateHargaBarang();
+  const updateHarga = useUpdateHargaBarang();
+  const deleteHarga = useDeleteHargaBarang();
+  const { toast } = useToast();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingHarga, setEditingHarga] = useState<HargaBarang | null>(null);
   const [formData, setFormData] = useState({
@@ -186,12 +73,12 @@ export default function HargaBarangPage() {
       harga.barang.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       harga.barang.kode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       harga.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      harga.kategoriBarang.nama
+      harga.kategoriBarang?.nama // Optional chaining in case relation is partial
         .toLowerCase()
         .includes(searchTerm.toLowerCase()),
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const selectedBarang = barangList.find((b) => b.id === formData.barangId);
@@ -201,42 +88,48 @@ export default function HargaBarangPage() {
 
     if (!selectedBarang || !selectedSupplier) return;
 
-    if (editingHarga) {
-      setHargaList((prev) =>
-        prev.map((h) =>
-          h.id === editingHarga.id
-            ? {
-                ...h,
-                ...formData,
-                barang: selectedBarang,
-                supplier: selectedSupplier,
-                kategoriId: selectedBarang.kategoriId,
-                kategoriBarang: selectedBarang.kategoriBarang,
-              }
-            : h,
-        ),
-      );
-    } else {
-      const newHarga: HargaBarang = {
-        id: Date.now().toString(),
-        ...formData,
-        barang: selectedBarang,
-        supplier: selectedSupplier,
-        kategoriId: selectedBarang.kategoriId,
-        kategoriBarang: selectedBarang.kategoriBarang,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setHargaList((prev) => [...prev, newHarga]);
-    }
+    try {
+      if (editingHarga) {
+        await updateHarga.mutateAsync({
+          id: editingHarga.id,
+          ...formData,
+          // Backend should handle relation updates or just IDs
+          // Ideally we also update kategoriId based on selectedBarang
+          kategoriId: selectedBarang.kategoriId,
+        });
+        toast({
+          title: "Berhasil",
+          description: "Harga barang berhasil diperbarui",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      } else {
+        await createHarga.mutateAsync({
+          ...formData,
+          kategoriId: selectedBarang.kategoriId,
+        });
+        toast({
+          title: "Berhasil",
+          description: "Harga barang berhasil ditambahkan",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      }
 
-    setFormData({
-      barangId: "",
-      supplierId: "",
-      harga: 0,
-      adalahHargaTerbaik: false,
-    });
-    setEditingHarga(null);
-    setIsDialogOpen(false);
+      setFormData({
+        barangId: "",
+        supplierId: "",
+        harga: 0,
+        adalahHargaTerbaik: false,
+      });
+      setEditingHarga(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menyimpan harga barang",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEdit = (harga: HargaBarang) => {
@@ -257,9 +150,23 @@ export default function HargaBarangPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deletingHarga) return;
-    setHargaList((prev) => prev.filter((h) => h.id !== deletingHarga.id));
-    setIsDeleteModalOpen(false);
-    setDeletingHarga(null);
+    try {
+      await deleteHarga.mutateAsync(deletingHarga.id);
+      toast({
+        title: "Berhasil",
+        description: "Harga barang berhasil dihapus",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+      setIsDeleteModalOpen(false);
+      setDeletingHarga(null);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menghapus harga barang",
+        variant: "destructive",
+      });
+    }
   };
 
   const openAddDialog = () => {
@@ -285,6 +192,9 @@ export default function HargaBarangPage() {
     const bestPrices: { [key: number]: HargaBarang } = {};
 
     hargaList.forEach((harga) => {
+      // Logic for "best price" could be: flagged as best, or lowest price
+      // Here we trust the 'adalahHargaTerbaik' flag if used, or calculate min
+      // Let's assume low price is best
       if (
         !bestPrices[harga.kategoriId] ||
         harga.harga < bestPrices[harga.kategoriId].harga
@@ -461,7 +371,7 @@ export default function HargaBarangPage() {
                       variant="secondary"
                       className="bg-white text-slate-600 border-slate-200"
                     >
-                      {harga.kategoriBarang.nama}
+                      {harga.kategoriBarang?.nama || "Umum"}
                     </Badge>
                     <Star className="h-4 w-4 text-yellow-500" />
                   </div>
@@ -544,7 +454,7 @@ export default function HargaBarangPage() {
                           variant="outline"
                           className="border-slate-200 text-slate-600 font-normal"
                         >
-                          {harga.kategoriBarang.nama}
+                          {harga.kategoriBarang?.nama || "-"}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-6">
@@ -613,7 +523,11 @@ export default function HargaBarangPage() {
           setDeletingHarga(null);
         }}
         onConfirm={async () => handleDeleteConfirm()}
-        itemName={`${deletingHarga?.barang.nama} - ${deletingHarga?.supplier.nama}`}
+        itemName={
+          deletingHarga
+            ? `${deletingHarga.barang.nama} - ${deletingHarga.supplier.nama}`
+            : ""
+        }
         title="Hapus Harga Barang"
       />
     </DashboardLayout>

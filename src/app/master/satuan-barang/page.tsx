@@ -27,22 +27,16 @@ import { Plus, Edit, Trash2, Search } from "lucide-react";
 import { useState } from "react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
-interface SatuanBarang {
-  id: string;
-  nama: string;
-  createdAt: string;
-}
+import { useToast } from "@/hooks/use-toast";
+import {
+  SatuanBarang,
+  useSatuanBarang,
+  useCreateSatuanBarang,
+  useUpdateSatuanBarang,
+  useDeleteSatuanBarang,
+} from "@/hooks/use-master";
 
 export default function SatuanBarangPage() {
-  const [satuanList, setSatuanList] = useState<SatuanBarang[]>([
-    { id: "1", nama: "Unit", createdAt: "2024-01-15" },
-    { id: "2", nama: "Kg", createdAt: "2024-01-16" },
-    { id: "3", nama: "Liter", createdAt: "2024-01-17" },
-    { id: "4", nama: "Meter", createdAt: "2024-01-18" },
-    { id: "5", nama: "Dus", createdAt: "2024-01-19" },
-    { id: "6", nama: "Roll", createdAt: "2024-01-20" },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSatuan, setEditingSatuan] = useState<SatuanBarang | null>(null);
@@ -55,31 +49,50 @@ export default function SatuanBarangPage() {
     null,
   );
 
+  const { data: satuanList = [], isLoading } = useSatuanBarang();
+  const createSatuan = useCreateSatuanBarang();
+  const updateSatuan = useUpdateSatuanBarang();
+  const deleteSatuan = useDeleteSatuanBarang();
+  const { toast } = useToast();
+
   const filteredSatuan = satuanList.filter((satuan) =>
     satuan.nama.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingSatuan) {
-      setSatuanList((prev) =>
-        prev.map((s) =>
-          s.id === editingSatuan.id ? { ...s, ...formData } : s,
-        ),
-      );
-    } else {
-      const newSatuan: SatuanBarang = {
-        id: Date.now().toString(),
-        ...formData,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setSatuanList((prev) => [...prev, newSatuan]);
-    }
+    try {
+      if (editingSatuan) {
+        await updateSatuan.mutateAsync({
+          id: editingSatuan.id,
+          ...formData,
+        });
+        toast({
+          title: "Berhasil",
+          description: "Satuan barang berhasil diperbarui",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      } else {
+        await createSatuan.mutateAsync(formData);
+        toast({
+          title: "Berhasil",
+          description: "Satuan barang berhasil ditambahkan",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      }
 
-    setFormData({ nama: "" });
-    setEditingSatuan(null);
-    setIsDialogOpen(false);
+      setFormData({ nama: "" });
+      setEditingSatuan(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Terjadi kesalahan saat menyimpan data",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEdit = (satuan: SatuanBarang) => {
@@ -97,9 +110,24 @@ export default function SatuanBarangPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deletingSatuan) return;
-    setSatuanList((prev) => prev.filter((s) => s.id !== deletingSatuan.id));
-    setIsDeleteModalOpen(false);
-    setDeletingSatuan(null);
+
+    try {
+      await deleteSatuan.mutateAsync(deletingSatuan.id);
+      toast({
+        title: "Berhasil",
+        description: "Satuan barang berhasil dihapus",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+      setIsDeleteModalOpen(false);
+      setDeletingSatuan(null);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menghapus satuan barang",
+        variant: "destructive",
+      });
+    }
   };
 
   const openAddDialog = () => {

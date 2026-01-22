@@ -47,32 +47,11 @@ import {
   useDeleteBarang,
   Barang,
 } from "@/hooks/use-barang";
-
-interface KategoriBarang {
-  id: number;
-  nama: string;
-}
-
-interface SatuanBarang {
-  id: string;
-  nama: string;
-}
+import { useKategoriBarang, useSatuanBarang } from "@/hooks/use-master";
 
 export default function DataBarangPage() {
-  const [kategoriList] = useState<KategoriBarang[]>([
-    { id: 1, nama: "Cat" },
-    { id: 2, nama: "Besi" },
-    { id: 3, nama: "Aksesoris" },
-    { id: 4, nama: "Paku & Sekrup" },
-  ]);
-
-  const [satuanList] = useState<SatuanBarang[]>([
-    { id: "1", nama: "Unit" },
-    { id: "2", nama: "Kg" },
-    { id: "3", nama: "Liter" },
-    { id: "4", nama: "Meter" },
-    { id: "5", nama: "Dus" },
-  ]);
+  const { data: kategoriList = [] } = useKategoriBarang();
+  const { data: satuanList = [] } = useSatuanBarang();
 
   const [searchTerm, setSearchTerm] = useState("");
   const { data: barangList = [], refetch } = useBarang(searchTerm);

@@ -27,24 +27,16 @@ import { Plus, Edit, Trash2, Search, Car } from "lucide-react";
 import { useState } from "react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
-interface MerekKendaraan {
-  id: string;
-  nama: string;
-  createdAt: string;
-}
+import { useToast } from "@/hooks/use-toast";
+import {
+  MerekKendaraan,
+  useMerekKendaraan,
+  useCreateMerekKendaraan,
+  useUpdateMerekKendaraan,
+  useDeleteMerekKendaraan,
+} from "@/hooks/use-master";
 
 export default function MerekKendaraanPage() {
-  const [merekList, setMerekList] = useState<MerekKendaraan[]>([
-    { id: "1", nama: "Hino", createdAt: "2024-01-15" },
-    { id: "2", nama: "Isuzu", createdAt: "2024-01-16" },
-    { id: "3", nama: "Mitsubishi", createdAt: "2024-01-17" },
-    { id: "4", nama: "Toyota", createdAt: "2024-01-18" },
-    { id: "5", nama: "Suzuki", createdAt: "2024-01-19" },
-    { id: "6", nama: "Daihatsu", createdAt: "2024-01-20" },
-    { id: "7", nama: "Mercedes-Benz", createdAt: "2024-01-21" },
-    { id: "8", nama: "Volvo", createdAt: "2024-01-22" },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMerek, setEditingMerek] = useState<MerekKendaraan | null>(null);
@@ -57,29 +49,50 @@ export default function MerekKendaraanPage() {
     null,
   );
 
+  const { data: merekList = [], isLoading } = useMerekKendaraan();
+  const createMerek = useCreateMerekKendaraan();
+  const updateMerek = useUpdateMerekKendaraan();
+  const deleteMerek = useDeleteMerekKendaraan();
+  const { toast } = useToast();
+
   const filteredMerek = merekList.filter((merek) =>
     merek.nama.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingMerek) {
-      setMerekList((prev) =>
-        prev.map((m) => (m.id === editingMerek.id ? { ...m, ...formData } : m)),
-      );
-    } else {
-      const newMerek: MerekKendaraan = {
-        id: Date.now().toString(),
-        ...formData,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setMerekList((prev) => [...prev, newMerek]);
-    }
+    try {
+      if (editingMerek) {
+        await updateMerek.mutateAsync({
+          id: editingMerek.id,
+          ...formData,
+        });
+        toast({
+          title: "Berhasil",
+          description: "Merek kendaraan berhasil diperbarui",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      } else {
+        await createMerek.mutateAsync(formData);
+        toast({
+          title: "Berhasil",
+          description: "Merek kendaraan berhasil ditambahkan",
+          className: "bg-green-50 text-green-800 border-green-200",
+        });
+      }
 
-    setFormData({ nama: "" });
-    setEditingMerek(null);
-    setIsDialogOpen(false);
+      setFormData({ nama: "" });
+      setEditingMerek(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Terjadi kesalahan saat menyimpan data",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEdit = (merek: MerekKendaraan) => {
@@ -97,9 +110,24 @@ export default function MerekKendaraanPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deletingMerek) return;
-    setMerekList((prev) => prev.filter((m) => m.id !== deletingMerek.id));
-    setIsDeleteModalOpen(false);
-    setDeletingMerek(null);
+
+    try {
+      await deleteMerek.mutateAsync(deletingMerek.id);
+      toast({
+        title: "Berhasil",
+        description: "Merek kendaraan berhasil dihapus",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+      setIsDeleteModalOpen(false);
+      setDeletingMerek(null);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menghapus merek kendaraan",
+        variant: "destructive",
+      });
+    }
   };
 
   const openAddDialog = () => {
