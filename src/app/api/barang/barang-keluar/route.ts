@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
         include: {
           barang: true,
           karyawan: true,
-          project: true,
         },
         orderBy: { tanggal: "desc" },
       });
@@ -56,7 +55,6 @@ export async function GET(request: NextRequest) {
         include: {
           barang: true,
           karyawan: true,
-          project: true,
         },
         orderBy: { tanggal: "desc" },
       }),
@@ -85,13 +83,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { tanggal, barangId, jumlah, karyawanId, projectId, keterangan } =
+    const { tanggal, barangId, jumlah, karyawanId, kendaraanId, deskripsi } =
       body;
 
     // Validation
-    if (!tanggal || !barangId || !jumlah) {
+    if (!tanggal || !barangId || !jumlah || !karyawanId) {
       return NextResponse.json(
-        { success: false, error: "Tanggal, Barang, dan Jumlah wajib diisi" },
+        {
+          success: false,
+          error: "Tanggal, Barang, Jumlah, dan Karyawan wajib diisi",
+        },
         { status: 400 },
       );
     }
@@ -118,19 +119,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generate Number (BK-YYYY-XXX) based on last record to handle deletions correctly
+    const year = new Date().getFullYear();
+    const lastRecord = await db.barangKeluar.findFirst({
+      where: {
+        nomor: {
+          startsWith: `BK-${year}-`,
+        },
+      },
+      orderBy: {
+        nomor: "desc",
+      },
+    });
+
+    let sequence = 1;
+    if (lastRecord) {
+      const parts = lastRecord.nomor.split("-");
+      if (parts.length === 3) {
+        sequence = parseInt(parts[2]) + 1;
+      }
+    }
+    const nomor = `BK-${year}-${String(sequence).padStart(3, "0")}`;
+
     const result = await db.$transaction(async (prisma) => {
       // Create BarangKeluar record
       const barangKeluar = await prisma.barangKeluar.create({
         data: {
-          tanggal,
+          nomor,
+          tanggal: new Date(tanggal),
+          jenis: body.jenis || "PRODUKSI",
           barangId,
           jumlah: parseInt(jumlah),
-          karyawanId: karyawanId || null,
-          projectId: projectId || null,
-          keterangan: keterangan || "",
+          karyawanId,
+          kendaraanId: kendaraanId || null,
+          deskripsi: deskripsi || "",
         },
         include: {
           barang: true,
+          karyawan: true,
+          kendaraan: true,
         },
       });
 

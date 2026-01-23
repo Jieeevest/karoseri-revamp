@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
-interface Karyawan {
+export interface Karyawan {
   id: string;
   nik: string;
   nama: string;

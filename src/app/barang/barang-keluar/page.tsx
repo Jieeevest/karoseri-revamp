@@ -119,6 +119,11 @@ export default function BarangKeluarPage() {
       return;
     }
 
+    if (!formData.karyawanId) {
+      alert("Wajib memilih karyawan/teknisi.");
+      return;
+    }
+
     try {
       if (editingBarangKeluar) {
         // Editing might be complex due to stock recalculation, but let's assume backend handles diffs
@@ -372,8 +377,9 @@ export default function BarangKeluarPage() {
                                 value={kendaraan.id}
                                 className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
                               >
-                                {kendaraan.nomorPolisi} - {kendaraan.merek}{" "}
-                                {kendaraan.tipe}
+                                {kendaraan.nomorPolisi} -{" "}
+                                {kendaraan.merekKendaraan?.nama}{" "}
+                                {kendaraan.tipeKendaraan?.nama}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -707,8 +713,8 @@ export default function BarangKeluarPage() {
                               {barangKeluar.kendaraan.nomorPolisi}
                             </p>
                             <p className="text-xs text-slate-500">
-                              {barangKeluar.kendaraan.merek}{" "}
-                              {barangKeluar.kendaraan.tipe}
+                              {barangKeluar.kendaraan.merekKendaraan?.nama}{" "}
+                              {barangKeluar.kendaraan.tipeKendaraan?.nama}
                             </p>
                           </div>
                         ) : (
