@@ -68,8 +68,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const count = await db.kendaraanKeluar.count();
-    const nomor = `KK-${new Date().getFullYear()}-${String(count + 1).padStart(3, "0")}`;
+    // Robust Number Generation
+    const year = new Date().getFullYear();
+    const lastRecord = await db.kendaraanKeluar.findFirst({
+      where: {
+        nomor: {
+          startsWith: `KK-${year}-`,
+        },
+      },
+      orderBy: {
+        nomor: "desc",
+      },
+    });
+
+    let sequence = 1;
+    if (lastRecord) {
+      const parts = lastRecord.nomor.split("-");
+      if (parts.length === 3) {
+        sequence = parseInt(parts[2]) + 1;
+      }
+    }
+    const nomor = `KK-${year}-${String(sequence).padStart(3, "0")}`;
 
     const newEntry = await db.kendaraanKeluar.create({
       data: {
@@ -99,6 +118,60 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, tanggalKeluar, qcResult, layakKeluar, suratJalan } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "ID is required" },
+        { status: 400 },
+      );
+    }
+
+    const currentRecord = await db.kendaraanKeluar.findUnique({
+      where: { id },
+    });
+
+    if (!currentRecord) {
+      return NextResponse.json(
+        { success: false, error: "Data not found" },
+        { status: 404 },
+      );
+    }
+
+    const updatedEntry = await db.kendaraanKeluar.update({
+      where: { id },
+      data: {
+        tanggalKeluar: new Date(tanggalKeluar),
+        qcResult,
+        layakKeluar,
+        suratJalan,
+      },
+    });
+
+    // Update vehicle status logic
+    // If it WAS layakKeluar and now is NOT, revert to SELESAI
+    // If it WAS NOT layakKeluar and now IS, set to KELUAR
+    if (currentRecord.layakKeluar !== layakKeluar) {
+      const newStatus = layakKeluar ? "KELUAR" : "SELESAI";
+      await db.kendaraan.update({
+        where: { id: currentRecord.kendaraanId },
+        data: { status: newStatus },
+      });
+    }
+
+    return NextResponse.json({ success: true, data: updatedEntry });
+  } catch (error) {
+    console.error("Error update kendaraan keluar:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to update data" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -111,7 +184,17 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await db.kendaraanKeluar.delete({ where: { id } });
+    const record = await db.kendaraanKeluar.findUnique({ where: { id } });
+    if (record) {
+      // Revert vehicle status if it was marked as KELUAR
+      if (record.layakKeluar) {
+        await db.kendaraan.update({
+          where: { id: record.kendaraanId },
+          data: { status: "SELESAI" },
+        });
+      }
+      await db.kendaraanKeluar.delete({ where: { id } });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

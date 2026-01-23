@@ -48,8 +48,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { kendaraanId, karyawanId, jenis, deskripsi, upah } = body;
 
-    const count = await db.spekOrder.count();
-    const nomor = `SO-${new Date().getFullYear()}-${String(count + 1).padStart(3, "0")}`;
+    // Robust Number Generation
+    const year = new Date().getFullYear();
+    const lastRecord = await db.spekOrder.findFirst({
+      where: {
+        nomor: {
+          startsWith: `SO-${year}-`,
+        },
+      },
+      orderBy: {
+        nomor: "desc",
+      },
+    });
+
+    let sequence = 1;
+    if (lastRecord) {
+      const parts = lastRecord.nomor.split("-");
+      if (parts.length === 3) {
+        sequence = parseInt(parts[2]) + 1;
+      }
+    }
+    const nomor = `SO-${year}-${String(sequence).padStart(3, "0")}`;
 
     const newItem = await db.spekOrder.create({
       data: {
@@ -68,6 +87,39 @@ export async function POST(request: NextRequest) {
     console.error("Error create spek order:", error);
     return NextResponse.json(
       { success: false, error: "Failed to create data" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, kendaraanId, karyawanId, jenis, deskripsi, upah } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "ID is required" },
+        { status: 400 },
+      );
+    }
+
+    const updatedItem = await db.spekOrder.update({
+      where: { id },
+      data: {
+        kendaraanId,
+        karyawanId,
+        jenis,
+        deskripsi,
+        upah: parseFloat(upah),
+      },
+    });
+
+    return NextResponse.json({ success: true, data: updatedItem });
+  } catch (error) {
+    console.error("Error update spek order:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to update data" },
       { status: 500 },
     );
   }

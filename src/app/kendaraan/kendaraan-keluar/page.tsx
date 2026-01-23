@@ -42,6 +42,7 @@ import {
   Calendar,
   ClipboardCheck,
   Trash2,
+  Edit,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-mod
 import {
   useKendaraanKeluar,
   useCreateKendaraanKeluar,
+  useUpdateKendaraanKeluar,
   useDeleteKendaraanKeluar,
 } from "@/hooks/use-kendaraan-keluar";
 import { useKendaraan } from "@/hooks/use-kendaraan";
@@ -68,6 +70,9 @@ export default function KendaraanKeluarPage() {
   const [isQCDialogOpen, setIsQCDialogOpen] = useState(false);
   const [isSuratDialogOpen, setIsSuratDialogOpen] = useState(false);
   const [selectedKendaraan, setSelectedKendaraan] = useState<any | null>(null);
+  const [editingKendaraanKeluar, setEditingKendaraanKeluar] = useState<
+    any | null
+  >(null);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingKendaraanKeluar, setDeletingKendaraanKeluar] = useState<
@@ -178,6 +183,7 @@ export default function KendaraanKeluarPage() {
   const kendaraanList = (allKendaraanData as any[]) || [];
 
   const createKendaraanKeluar = useCreateKendaraanKeluar();
+  const updateKendaraanKeluar = useUpdateKendaraanKeluar();
   const deleteKendaraanKeluar = useDeleteKendaraanKeluar();
   const { toast } = useToast();
 
@@ -189,35 +195,56 @@ export default function KendaraanKeluarPage() {
     );
     if (!selectedVeh) return;
 
-    if (selectedVeh.status !== "SELESAI") {
-      alert('Kendaraan harus memiliki status "Selesai" sebelum dapat keluar!');
-      return;
+    // Validation: Only "SELESAI" vehicles can leave, or currently edited vehicle (which might be "KELUAR")
+    if (editingKendaraanKeluar) {
+      // If editing, logic is relaxed because it might already be KELUAR
+    } else {
+      if (selectedVeh.status !== "SELESAI") {
+        alert(
+          'Kendaraan harus memiliki status "Selesai" sebelum dapat keluar!',
+        );
+        return;
+      }
     }
 
     try {
-      await createKendaraanKeluar.mutateAsync({
-        tanggalKeluar: formData.tanggalKeluar,
-        kendaraanId: formData.kendaraanId,
-        qcResult: formData.qcResult,
-        layakKeluar: formData.layakKeluar,
-        suratJalan: formData.layakKeluar ? `surat_jalan_${Date.now()}.pdf` : "",
-      });
-      setFormData({
-        tanggalKeluar: new Date().toISOString().split("T")[0],
-        kendaraanId: "",
-        qcResult: "",
-        layakKeluar: false,
-        suratJalan: "",
-      });
-      setIsDialogOpen(false);
+      if (editingKendaraanKeluar) {
+        await updateKendaraanKeluar.mutateAsync({
+          id: editingKendaraanKeluar.id,
+          tanggalKeluar: formData.tanggalKeluar,
+          // kendaraanId is typically read-only in update to avoid complex state changes
+          qcResult: formData.qcResult,
+          layakKeluar: formData.layakKeluar,
+          suratJalan: formData.layakKeluar
+            ? formData.suratJalan || `surat_jalan_${Date.now()}.pdf`
+            : "",
+        });
+        toast({
+          title: "Data Diperbarui",
+          description: "Data kendaraan keluar berhasil diperbarui.",
+          className: "bg-green-50 border-green-200 text-green-800",
+        });
+      } else {
+        await createKendaraanKeluar.mutateAsync({
+          tanggalKeluar: formData.tanggalKeluar,
+          kendaraanId: formData.kendaraanId,
+          qcResult: formData.qcResult,
+          layakKeluar: formData.layakKeluar,
+          suratJalan: formData.layakKeluar
+            ? `surat_jalan_${Date.now()}.pdf`
+            : "",
+        });
+        toast({
+          title: "Kendaraan Keluar",
+          description: "Data kendaraan keluar berhasil disimpan.",
+          className: "bg-green-50 border-green-200 text-green-800",
+        });
+      }
 
-      toast({
-        title: "Kendaraan Keluar",
-        description: "Data kendaraan keluar berhasil disimpan.",
-        className: "bg-green-50 border-green-200 text-green-800",
-      });
+      resetForm();
+      setIsDialogOpen(false);
     } catch (error) {
-      console.error("Failed to create kendaraan keluar", error);
+      console.error("Failed to save kendaraan keluar", error);
       toast({
         title: "Gagal menyimpan",
         description: "Terjadi kesalahan saat menyimpan data.",
@@ -227,6 +254,7 @@ export default function KendaraanKeluarPage() {
   };
 
   const resetForm = () => {
+    setEditingKendaraanKeluar(null);
     setFormData({
       tanggalKeluar: new Date().toISOString().split("T")[0],
       kendaraanId: "",
@@ -237,6 +265,20 @@ export default function KendaraanKeluarPage() {
     setQcChecklist(
       qcChecklist.map((item) => ({ ...item, kondisi: "BAIK", catatan: "" })),
     );
+  };
+
+  const handleEdit = (kendaraanKeluar: any) => {
+    setEditingKendaraanKeluar(kendaraanKeluar);
+    setFormData({
+      tanggalKeluar: new Date(kendaraanKeluar.tanggalKeluar)
+        .toISOString()
+        .split("T")[0],
+      kendaraanId: kendaraanKeluar.kendaraanId,
+      qcResult: kendaraanKeluar.qcResult || "",
+      layakKeluar: kendaraanKeluar.layakKeluar,
+      suratJalan: kendaraanKeluar.suratJalan || "",
+    });
+    setIsDialogOpen(true);
   };
 
   const handleQC = (kendaraanKeluar: any) => {
@@ -263,7 +305,8 @@ export default function KendaraanKeluarPage() {
 
       toast({
         title: "Data Dihapus",
-        description: "Data kendaraan keluar berhasil dihapus.",
+        description:
+          "Data kendaraan keluar berhasil dihapus (Status kendaraan dikembalikan).",
         className: "bg-green-50 border-green-200 text-green-800",
       });
     } catch (error) {
@@ -335,10 +378,14 @@ export default function KendaraanKeluarPage() {
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold text-slate-900">
-                    Form Kendaraan Keluar
+                    {editingKendaraanKeluar
+                      ? "Edit Kendaraan Keluar"
+                      : "Form Kendaraan Keluar"}
                   </DialogTitle>
                   <DialogDescription className="text-slate-500">
-                    Quality Control dan persetujuan kendaraan untuk keluar
+                    {editingKendaraanKeluar
+                      ? "Perbarui data kendaraan keluar"
+                      : "Quality Control dan persetujuan kendaraan untuk keluar"}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-6 py-6">
@@ -385,7 +432,12 @@ export default function KendaraanKeluarPage() {
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-xl">
                           {kendaraanList
-                            .filter((k: any) => k.status === "SELESAI")
+                            .filter(
+                              (k: any) =>
+                                k.status === "SELESAI" ||
+                                (editingKendaraanKeluar &&
+                                  k.id === editingKendaraanKeluar.kendaraanId),
+                            )
                             .map((kendaraan: any) => (
                               <SelectItem
                                 key={kendaraan.id}
@@ -680,6 +732,15 @@ export default function KendaraanKeluarPage() {
                               <FileText className="h-4 w-4" />
                             </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(kendaraanKeluar)}
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
+                            title="Edit Data"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

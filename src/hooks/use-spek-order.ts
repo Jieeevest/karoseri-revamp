@@ -26,6 +26,18 @@ export const useCreateSpekOrder = () => {
     },
   });
 };
+export const useUpdateSpekOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const response = await axios.put(API_URL, data);
+      return response.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spek-order"] });
+    },
+  });
+};
 
 export const useDeleteSpekOrder = () => {
   const queryClient = useQueryClient();

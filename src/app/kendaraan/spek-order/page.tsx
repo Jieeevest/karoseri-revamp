@@ -42,6 +42,7 @@ import {
   Clock,
   Briefcase,
   DollarSign,
+  Edit,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-mod
 import {
   useSpekOrder,
   useCreateSpekOrder,
+  useUpdateSpekOrder,
   useDeleteSpekOrder,
   useCreatePayment,
 } from "@/hooks/use-spek-order";
@@ -64,6 +66,7 @@ export default function SpekOrderPage() {
 
   const [viewingSpekOrder, setViewingSpekOrder] = useState<any | null>(null);
   const [payingSpekOrder, setPayingSpekOrder] = useState<any | null>(null);
+  const [editingSpekOrder, setEditingSpekOrder] = useState<any | null>(null);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingSpekOrder, setDeletingSpekOrder] = useState<any | null>(null);
@@ -90,6 +93,7 @@ export default function SpekOrderPage() {
 
   // Mutations
   const createSpekOrder = useCreateSpekOrder();
+  const updateSpekOrder = useUpdateSpekOrder();
   const deleteSpekOrder = useDeleteSpekOrder();
   const createPayment = useCreatePayment();
   const { toast } = useToast();
@@ -97,20 +101,32 @@ export default function SpekOrderPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createSpekOrder.mutateAsync(formData);
+      if (editingSpekOrder) {
+        await updateSpekOrder.mutateAsync({
+          id: editingSpekOrder.id,
+          ...formData,
+        });
+        toast({
+          title: "Spek Order Diperbarui",
+          description: "Data spek order berhasil diperbarui.",
+          className: "bg-green-50 border-green-200 text-green-800",
+        });
+      } else {
+        await createSpekOrder.mutateAsync(formData);
+        toast({
+          title: "Spek Order Dibuat",
+          description: "Surat perintah kerja borongan berhasil dibuat.",
+          className: "bg-green-50 border-green-200 text-green-800",
+        });
+      }
+
       resetForm();
       setIsDialogOpen(false);
-
-      toast({
-        title: "Spek Order Dibuat",
-        description: "Surat perintah kerja borongan berhasil dibuat.",
-        className: "bg-green-50 border-green-200 text-green-800",
-      });
     } catch (error) {
-      console.error("Failed to create spek order", error);
+      console.error("Failed to save spek order", error);
       toast({
         title: "Gagal menyimpan",
-        description: "Terjadi kesalahan saat membuat spek order.",
+        description: "Terjadi kesalahan saat menyimpan data.",
         variant: "destructive",
       });
     }
@@ -145,6 +161,7 @@ export default function SpekOrderPage() {
   };
 
   const resetForm = () => {
+    setEditingSpekOrder(null);
     setFormData({
       kendaraanId: "",
       karyawanId: "",
@@ -157,6 +174,18 @@ export default function SpekOrderPage() {
   const handleView = (spekOrder: any) => {
     setViewingSpekOrder(spekOrder);
     setIsDetailDialogOpen(true);
+  };
+
+  const handleEdit = (spekOrder: any) => {
+    setEditingSpekOrder(spekOrder);
+    setFormData({
+      kendaraanId: spekOrder.kendaraanId || spekOrder.kendaraan?.id,
+      karyawanId: spekOrder.karyawanId || spekOrder.karyawan?.id,
+      jenis: spekOrder.jenis,
+      deskripsi: spekOrder.deskripsi,
+      upah: spekOrder.upah,
+    });
+    setIsDialogOpen(true);
   };
 
   const handlePaymentDialog = (spekOrder: any) => {
@@ -308,10 +337,14 @@ export default function SpekOrderPage() {
               <form onSubmit={handleSubmit}>
                 <DialogHeader className="border-b border-slate-100 pb-4">
                   <DialogTitle className="text-xl font-bold text-slate-900">
-                    Form Spek Order Baru
+                    {editingSpekOrder
+                      ? "Edit Spek Order"
+                      : "Form Spek Order Baru"}
                   </DialogTitle>
                   <DialogDescription className="text-slate-500">
-                    Buat surat perintah kerja borongan untuk karyawan
+                    {editingSpekOrder
+                      ? "Perbarui data spek order"
+                      : "Buat surat perintah kerja borongan untuk karyawan"}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-6 py-6">
@@ -652,6 +685,7 @@ export default function SpekOrderPage() {
                             size="icon"
                             onClick={() => handleView(spekOrder)}
                             className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
+                            title="Detail"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -666,6 +700,15 @@ export default function SpekOrderPage() {
                               <Receipt className="h-4 w-4" />
                             </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(spekOrder)}
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
+                            title="Edit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

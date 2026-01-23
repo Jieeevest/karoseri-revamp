@@ -26,6 +26,19 @@ export const useCreateKendaraanKeluar = () => {
     },
   });
 };
+export const useUpdateKendaraanKeluar = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const response = await axios.put(API_URL, data);
+      return response.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kendaraan-keluar"] });
+      queryClient.invalidateQueries({ queryKey: ["kendaraan"] });
+    },
+  });
+};
 
 export const useDeleteKendaraanKeluar = () => {
   const queryClient = useQueryClient();
