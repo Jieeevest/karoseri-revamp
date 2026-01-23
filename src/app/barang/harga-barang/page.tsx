@@ -35,6 +35,7 @@ import { useState } from "react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { useToast } from "@/hooks/use-toast";
 
+import { Combobox } from "@/components/ui/combobox";
 import { useBarang } from "@/hooks/use-barang";
 import { useSupplier } from "@/hooks/use-supplier";
 import {
@@ -184,7 +185,8 @@ export default function HargaBarangPage() {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -250,27 +252,18 @@ export default function HargaBarangPage() {
                     >
                       Barang
                     </Label>
-                    <Select
+                    <Combobox
                       value={formData.barangId}
-                      onValueChange={(value) =>
+                      onChange={(value) =>
                         setFormData((prev) => ({ ...prev, barangId: value }))
                       }
-                    >
-                      <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                        <SelectValue placeholder="Pilih barang" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                        {barangList.map((barang) => (
-                          <SelectItem
-                            key={barang.id}
-                            value={barang.id}
-                            className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                          >
-                            {barang.kode} - {barang.nama}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      options={barangList.map((b) => ({
+                        value: b.id,
+                        label: `${b.kode} - ${b.nama}`,
+                      }))}
+                      placeholder="Pilih barang"
+                      searchPlaceholder="Cari barang..."
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label
@@ -279,27 +272,18 @@ export default function HargaBarangPage() {
                     >
                       Supplier
                     </Label>
-                    <Select
+                    <Combobox
                       value={formData.supplierId}
-                      onValueChange={(value) =>
+                      onChange={(value) =>
                         setFormData((prev) => ({ ...prev, supplierId: value }))
                       }
-                    >
-                      <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                        <SelectValue placeholder="Pilih supplier" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                        {supplierList.map((supplier) => (
-                          <SelectItem
-                            key={supplier.id}
-                            value={supplier.id}
-                            className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                          >
-                            {supplier.kode} - {supplier.nama}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      options={supplierList.map((s) => ({
+                        value: s.id,
+                        label: `${s.kode} - ${s.nama}`,
+                      }))}
+                      placeholder="Pilih supplier"
+                      searchPlaceholder="Cari supplier..."
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label
@@ -319,11 +303,12 @@ export default function HargaBarangPage() {
                         onChange={(e) =>
                           setFormData((prev) => ({
                             ...prev,
-                            harga: parseInt(e.target.value) || 0,
+                            harga: parseFloat(e.target.value) || 0,
                           }))
                         }
                         className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                         min="0"
+                        step="0.01"
                         placeholder="0"
                         required
                       />

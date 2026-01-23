@@ -36,9 +36,47 @@ export async function POST(request: NextRequest) {
       data: { nama, merekId },
     });
     return NextResponse.json({ success: true, data: newItem });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { success: false, error: "Data sudah terdaftar/sudah ada" },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
       { success: false, error: "Failed to create tipe" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, nama, merekId } = body;
+
+    if (!id || !nama || !merekId) {
+      return NextResponse.json(
+        { success: false, error: "ID, Nama, and MerekId required" },
+        { status: 400 },
+      );
+    }
+
+    const updatedItem = await db.tipeKendaraan.update({
+      where: { id },
+      data: { nama, merekId },
+    });
+
+    return NextResponse.json({ success: true, data: updatedItem });
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { success: false, error: "Data sudah terdaftar/sudah ada" },
+        { status: 400 },
+      );
+    }
+    return NextResponse.json(
+      { success: false, error: "Failed to update tipe" },
       { status: 500 },
     );
   }

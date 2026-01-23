@@ -1,41 +1,44 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { generateNextCode } from "@/lib/code-generator";
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const search = searchParams.get('search') || ''
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const skip = (page - 1) * limit
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search") || "";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const skip = (page - 1) * limit;
 
-    const where = search ? {
-      OR: [
-        { nama: { contains: search, mode: 'insensitive' } },
-        { kode: { contains: search, mode: 'insensitive' } }
-      ]
-    } : {}
+    const where = search
+      ? {
+          OR: [
+            { nama: { contains: search, mode: "insensitive" } },
+            { kode: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {};
 
     const [barangList, totalCount] = await Promise.all([
       db.barang.findMany({
-        where,
+        where: where as any,
         include: {
           kategoriBarang: true,
           satuanBarang: true,
           hargaBarang: {
             include: {
-              supplier: true
-            }
-          }
+              supplier: true,
+            },
+          },
         },
         orderBy: {
-          createdAt: 'desc'
+          createdAt: "desc",
         },
         skip,
-        take: limit
+        take: limit,
       }),
-      db.barang.count({ where })
-    ])
+      db.barang.count({ where: where as any }),
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -44,41 +47,46 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total: totalCount,
-        totalPages: Math.ceil(totalCount / limit)
-      }
-    })
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error) {
-    console.error('Error fetching barang:', error)
+    console.error("Error fetching barang:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch barang' },
-      { status: 500 }
-    )
+      { success: false, error: "Failed to fetch barang" },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { kode, nama, kategoriId, satuanId, stok, stokMinimum } = body
+    const body = await request.json();
+    let { kode, nama, kategoriId, satuanId, stok, stokMinimum } = body;
 
     // Validation
-    if (!kode || !nama || !kategoriId || !satuanId) {
+    if (!nama || !kategoriId || !satuanId) {
       return NextResponse.json(
-        { success: false, error: 'Semua field wajib diisi' },
-        { status: 400 }
-      )
+        { success: false, error: "Nama, Kategori, dan Satuan wajib diisi" },
+        { status: 400 },
+      );
+    }
+
+    // Auto-generate code if not provided
+    if (!kode) {
+      kode = await generateNextCode("BRG", "barang", "kode");
     }
 
     // Check if kode already exists
     const existingKode = await db.barang.findFirst({
-      where: { kode: { equals: kode, mode: 'insensitive' } }
-    })
+      where: { kode: { equals: kode, mode: "insensitive" } },
+    });
 
     if (existingKode) {
       return NextResponse.json(
-        { success: false, error: 'Kode barang sudah ada' },
-        { status: 400 }
-      )
+        { success: false, error: "Kode barang sudah ada" },
+        { status: 400 },
+      );
     }
 
     const newBarang = await db.barang.create({
@@ -88,38 +96,38 @@ export async function POST(request: NextRequest) {
         kategoriId: parseInt(kategoriId),
         satuanId,
         stok: parseInt(stok) || 0,
-        stokMinimum: parseInt(stokMinimum) || 0
+        stokMinimum: parseInt(stokMinimum) || 0,
       },
       include: {
         kategoriBarang: true,
-        satuanBarang: true
-      }
-    })
+        satuanBarang: true,
+      },
+    });
 
     return NextResponse.json({
       success: true,
       data: newBarang,
-      message: 'Barang berhasil ditambahkan'
-    })
+      message: "Barang berhasil ditambahkan",
+    });
   } catch (error) {
-    console.error('Error creating barang:', error)
+    console.error("Error creating barang:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create barang' },
-      { status: 500 }
-    )
+      { success: false, error: "Failed to create barang" },
+      { status: 500 },
+    );
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { id, kode, nama, kategoriId, satuanId, stok, stokMinimum } = body
+    const body = await request.json();
+    const { id, kode, nama, kategoriId, satuanId, stok, stokMinimum } = body;
 
     if (!id || !kode || !nama || !kategoriId || !satuanId) {
       return NextResponse.json(
-        { success: false, error: 'Semua field wajib diisi' },
-        { status: 400 }
-      )
+        { success: false, error: "Semua field wajib diisi" },
+        { status: 400 },
+      );
     }
 
     // Check if kode already exists (excluding current record)
@@ -127,16 +135,16 @@ export async function PUT(request: NextRequest) {
       where: {
         AND: [
           { id: { not: id } },
-          { kode: { equals: kode, mode: 'insensitive' } }
-        ]
-      }
-    })
+          { kode: { equals: kode, mode: "insensitive" } },
+        ],
+      },
+    });
 
     if (existingKode) {
       return NextResponse.json(
-        { success: false, error: 'Kode barang sudah digunakan' },
-        { status: 400 }
-      )
+        { success: false, error: "Kode barang sudah digunakan" },
+        { status: 400 },
+      );
     }
 
     const updatedBarang = await db.barang.update({
@@ -147,38 +155,38 @@ export async function PUT(request: NextRequest) {
         kategoriId: parseInt(kategoriId),
         satuanId,
         stok: parseInt(stok) || 0,
-        stokMinimum: parseInt(stokMinimum) || 0
+        stokMinimum: parseInt(stokMinimum) || 0,
       },
       include: {
         kategoriBarang: true,
-        satuanBarang: true
-      }
-    })
+        satuanBarang: true,
+      },
+    });
 
     return NextResponse.json({
       success: true,
       data: updatedBarang,
-      message: 'Barang berhasil diperbarui'
-    })
+      message: "Barang berhasil diperbarui",
+    });
   } catch (error) {
-    console.error('Error updating barang:', error)
+    console.error("Error updating barang:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update barang' },
-      { status: 500 }
-    )
+      { success: false, error: "Failed to update barang" },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: 'ID barang wajib diisi' },
-        { status: 400 }
-      )
+        { success: false, error: "ID barang wajib diisi" },
+        { status: 400 },
+      );
     }
 
     // Check if barang is referenced in other tables
@@ -186,31 +194,35 @@ export async function DELETE(request: NextRequest) {
       db.hargaBarang.findFirst({ where: { barangId: id } }),
       db.barangMasuk.findFirst({ where: { barangId: id } }),
       db.barangKeluar.findFirst({ where: { barangId: id } }),
-      db.purchaseOrderItem.findFirst({ where: { barangId: id } })
-    ])
+      db.purchaseOrderItem.findFirst({ where: { barangId: id } }),
+    ]);
 
-    const isInUse = barangInUse.some(ref => ref !== null)
+    const isInUse = barangInUse.some((ref) => ref !== null);
 
     if (isInUse) {
       return NextResponse.json(
-        { success: false, error: 'Barang tidak dapat dihapus karena masih digunakan dalam transaksi' },
-        { status: 400 }
-      )
+        {
+          success: false,
+          error:
+            "Barang tidak dapat dihapus karena masih digunakan dalam transaksi",
+        },
+        { status: 400 },
+      );
     }
 
     await db.barang.delete({
-      where: { id }
-    })
+      where: { id },
+    });
 
     return NextResponse.json({
       success: true,
-      message: 'Barang berhasil dihapus'
-    })
+      message: "Barang berhasil dihapus",
+    });
   } catch (error) {
-    console.error('Error deleting barang:', error)
+    console.error("Error deleting barang:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to delete barang' },
-      { status: 500 }
-    )
+      { success: false, error: "Failed to delete barang" },
+      { status: 500 },
+    );
   }
 }

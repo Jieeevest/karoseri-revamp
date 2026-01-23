@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { generateNextCode } from "@/lib/code-generator";
 
 export async function GET(request: NextRequest) {
   try {
@@ -66,14 +67,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { kode, nama, alamat, telepon, email } = body;
+    let { kode, nama, alamat, telepon, email } = body;
 
     // Validation
-    if (!kode || !nama) {
+    if (!nama) {
       return NextResponse.json(
-        { success: false, error: "Kode dan Nama Supplier wajib diisi" },
+        { success: false, error: "Nama Supplier wajib diisi" },
         { status: 400 },
       );
+    }
+
+    if (!kode) {
+      kode = await generateNextCode("SUP", "supplier", "kode");
     }
 
     // Check if kode already exists

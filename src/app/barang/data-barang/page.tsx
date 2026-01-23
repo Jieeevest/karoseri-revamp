@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import { Combobox } from "@/components/ui/combobox";
 import {
   useBarang,
   useCreateBarang,
@@ -263,30 +264,21 @@ export default function DataBarangPage() {
                       >
                         Kategori
                       </Label>
-                      <Select
+                      <Combobox
                         value={formData.kategoriId}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData((prev) => ({
                             ...prev,
                             kategoriId: value,
                           }))
                         }
-                      >
-                        <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                          <SelectValue placeholder="Pilih kategori" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          {kategoriList.map((kategori) => (
-                            <SelectItem
-                              key={kategori.id}
-                              value={kategori.id.toString()}
-                              className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                            >
-                              {kategori.nama}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        options={kategoriList.map((cat) => ({
+                          value: cat.id.toString(),
+                          label: cat.nama,
+                        }))}
+                        placeholder="Pilih kategori"
+                        searchPlaceholder="Cari kategori..."
+                      />
                     </div>
                     <div className="grid gap-2">
                       <Label
@@ -295,27 +287,18 @@ export default function DataBarangPage() {
                       >
                         Satuan
                       </Label>
-                      <Select
+                      <Combobox
                         value={formData.satuanId}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData((prev) => ({ ...prev, satuanId: value }))
                         }
-                      >
-                        <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                          <SelectValue placeholder="Pilih satuan" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          {satuanList.map((satuan) => (
-                            <SelectItem
-                              key={satuan.id}
-                              value={satuan.id}
-                              className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                            >
-                              {satuan.nama}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        options={satuanList.map((sat) => ({
+                          value: sat.id,
+                          label: sat.nama,
+                        }))}
+                        placeholder="Pilih satuan"
+                        searchPlaceholder="Cari satuan..."
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
