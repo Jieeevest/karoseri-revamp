@@ -44,8 +44,16 @@ import {
   useMerekKendaraan,
 } from "@/hooks/use-master";
 
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ArrowUpDown } from "lucide-react";
+
 export default function TipeKendaraanPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTipe, setEditingTipe] = useState<TipeKendaraan | null>(null);
   const [formData, setFormData] = useState({
@@ -56,20 +64,34 @@ export default function TipeKendaraanPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingTipe, setDeletingTipe] = useState<TipeKendaraan | null>(null);
 
-  const { data: tipeList = [], isLoading } = useTipeKendaraan();
-  const { data: merekList = [] } = useMerekKendaraan();
+  const { data: queryData, isLoading } = useTipeKendaraan({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+
+  // improved: fetch more brands for dropdown
+  const { data: merekData } = useMerekKendaraan({
+    limit: 100,
+    sortBy: "nama",
+    sortOrder: "asc",
+  });
+
   const createTipe = useCreateTipeKendaraan();
   const updateTipe = useUpdateTipeKendaraan();
   const deleteTipe = useDeleteTipeKendaraan();
   const { toast } = useToast();
 
-  const filteredTipe = tipeList.filter(
-    (tipe) =>
-      tipe.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tipe.merekKendaraan?.nama
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()),
-  );
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,7 +225,7 @@ export default function TipeKendaraanPage() {
                         <SelectValue placeholder="Pilih merek kendaraan" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                        {merekList.map((merek) => (
+                        {merekData?.data?.map((merek) => (
                           <SelectItem
                             key={merek.id}
                             value={merek.id}
@@ -269,7 +291,10 @@ export default function TipeKendaraanPage() {
                 <Input
                   placeholder="Cari tipe kendaraan..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
@@ -282,14 +307,35 @@ export default function TipeKendaraanPage() {
                   <TableHead className="w-[50px] text-center font-semibold text-slate-500">
                     No
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("merek.nama")}
+                    // Note: sorting by joined field might require API adjustment, or just sort by local key if API supports relation sort.
+                    // For now, let's stick to simple sorts or disable complex relation sort unless API supports it.
+                    // I will leave it non-sortable or sort by merekId if easy.
+                    // Let's just make Tipe Name and CreatedAt sortable for now.
+                  >
                     Merek
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Tipe Kendaraan
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("nama")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Tipe Kendaraan
+                      {sortBy === "nama" && <ArrowUpDown className="w-3 h-3" />}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Tanggal Dibuat
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("createdAt")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Tanggal Dibuat
+                      {sortBy === "createdAt" && (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 text-center font-semibold text-slate-500">
                     Aksi
@@ -297,14 +343,23 @@ export default function TipeKendaraanPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTipe.length > 0 ? (
-                  filteredTipe.map((tipe, index) => (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="h-24 text-center text-slate-500"
+                    >
+                      Memuat data...
+                    </TableCell>
+                  </TableRow>
+                ) : queryData?.data && queryData.data.length > 0 ? (
+                  queryData.data.map((tipe, index) => (
                     <TableRow
                       key={tipe.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
                     >
                       <TableCell className="px-6 text-center text-slate-500">
-                        {index + 1}
+                        {index + 1 + (page - 1) * limit}
                       </TableCell>
                       <TableCell className="px-6">
                         <Badge
@@ -321,7 +376,9 @@ export default function TipeKendaraanPage() {
                         </div>
                       </TableCell>
                       <TableCell className="px-6 text-slate-500 text-sm">
-                        {tipe.createdAt}
+                        {tipe.createdAt
+                          ? new Date(tipe.createdAt).toLocaleDateString("id-ID")
+                          : "-"}
                       </TableCell>
                       <TableCell className="px-6 text-center">
                         <div className="flex justify-center gap-2">
@@ -357,6 +414,17 @@ export default function TipeKendaraanPage() {
                 )}
               </TableBody>
             </Table>
+
+            {queryData?.pagination && (
+              <PaginationControls
+                currentPage={queryData.pagination.page}
+                totalPages={queryData.pagination.totalPages}
+                totalData={queryData.pagination.total}
+                limit={queryData.pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            )}
           </CardContent>
         </Card>
       </div>

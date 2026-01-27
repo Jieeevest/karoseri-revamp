@@ -22,12 +22,31 @@ export interface KategoriBarang {
   createdAt: string;
 }
 
-export function useMerekKendaraan() {
+export function useMerekKendaraan(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}) {
   return useQuery({
-    queryKey: ["merek-kendaraan"],
+    queryKey: ["merek-kendaraan", params],
     queryFn: async () => {
-      const { data } = await axios.get("/api/master/merek-kendaraan");
-      return data.data as MerekKendaraan[];
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append("page", params.page.toString());
+      if (params?.limit) queryParams.append("limit", params.limit.toString());
+      if (params?.search) queryParams.append("search", params.search);
+      if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+      if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+
+      const { data } = await axios.get(
+        `/api/master/merek-kendaraan?${queryParams.toString()}`,
+      );
+      return data as {
+        success: boolean;
+        data: MerekKendaraan[];
+        pagination: PaginationMeta;
+      };
     },
   });
 }
@@ -70,16 +89,33 @@ export function useDeleteMerekKendaraan() {
   });
 }
 
-export function useTipeKendaraan(merekId?: string) {
+export function useTipeKendaraan(params?: {
+  merekId?: string; // Keep for existing usage if needed, or integrate into params
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}) {
   return useQuery({
-    queryKey: ["tipe-kendaraan", merekId],
+    queryKey: ["tipe-kendaraan", params],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (merekId) params.append("merekId", merekId);
+      const queryParams = new URLSearchParams();
+      if (params?.merekId) queryParams.append("merekId", params.merekId);
+      if (params?.page) queryParams.append("page", params.page.toString());
+      if (params?.limit) queryParams.append("limit", params.limit.toString());
+      if (params?.search) queryParams.append("search", params.search);
+      if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+      if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+
       const { data } = await axios.get(
-        `/api/master/tipe-kendaraan?${params.toString()}`,
+        `/api/master/tipe-kendaraan?${queryParams.toString()}`,
       );
-      return data.data as TipeKendaraan[];
+      return data as {
+        success: boolean;
+        data: TipeKendaraan[];
+        pagination: PaginationMeta;
+      };
     },
   });
 }
@@ -128,12 +164,43 @@ export function useDeleteTipeKendaraan() {
 
 // Kategori Barang Hooks
 
-export function useKategoriBarang() {
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationMeta;
+}
+
+export function useKategoriBarang(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}) {
   return useQuery({
-    queryKey: ["kategori-barang"],
+    queryKey: ["kategori-barang", params],
     queryFn: async () => {
-      const { data } = await axios.get("/api/master/kategori-barang");
-      return data.data as KategoriBarang[];
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append("page", params.page.toString());
+      if (params?.limit) queryParams.append("limit", params.limit.toString());
+      if (params?.search) queryParams.append("search", params.search);
+      if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+      if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+
+      const { data } = await axios.get(
+        `/api/master/kategori-barang?${queryParams.toString()}`,
+      );
+      return data as {
+        success: boolean;
+        data: KategoriBarang[];
+        pagination: PaginationMeta;
+      };
     },
   });
 }
@@ -187,12 +254,31 @@ export interface SatuanBarang {
   createdAt: string;
 }
 
-export function useSatuanBarang() {
+export function useSatuanBarang(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}) {
   return useQuery({
-    queryKey: ["satuan-barang"],
+    queryKey: ["satuan-barang", params],
     queryFn: async () => {
-      const { data } = await axios.get("/api/master/satuan-barang");
-      return data.data as SatuanBarang[];
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append("page", params.page.toString());
+      if (params?.limit) queryParams.append("limit", params.limit.toString());
+      if (params?.search) queryParams.append("search", params.search);
+      if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+      if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+
+      const { data } = await axios.get(
+        `/api/master/satuan-barang?${queryParams.toString()}`,
+      );
+      return data as {
+        success: boolean;
+        data: SatuanBarang[];
+        pagination: PaginationMeta;
+      };
     },
   });
 }

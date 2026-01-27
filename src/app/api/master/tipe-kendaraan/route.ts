@@ -4,17 +4,49 @@ import { db } from "@/lib/db";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "asc") as
+      | "asc"
+      | "desc";
     const merekId = searchParams.get("merekId");
 
-    // If merekId is provided, filter by it, otherwise list all (or limited)
-    const where = merekId ? { merekId } : {};
+    const skip = (page - 1) * limit;
 
-    const list = await db.tipeKendaraan.findMany({
-      where,
-      orderBy: { nama: "asc" },
-      include: { merekKendaraan: true },
+    const where: any = {};
+    if (merekId) where.merekId = merekId;
+    if (search) {
+      where.OR = [
+        { nama: { contains: search, mode: "insensitive" } },
+        { merekKendaraan: { nama: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    const [list, total] = await Promise.all([
+      db.tipeKendaraan.findMany({
+        where,
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: limit,
+        include: { merekKendaraan: true },
+      }),
+      db.tipeKendaraan.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      success: true,
+      data: list,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
     });
-    return NextResponse.json({ success: true, data: list });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Failed to fetch tipe" },

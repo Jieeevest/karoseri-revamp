@@ -1,21 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const kategoriList = await db.kategoriBarang.findMany({
-      orderBy: {
-        nama: "asc",
-      },
-      include: {
-        barang: true,
-        hargaBarang: true,
-      },
-    });
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "asc") as
+      | "asc"
+      | "desc";
+
+    const skip = (page - 1) * limit;
+
+    const where = search
+      ? {
+          OR: [
+            { nama: { contains: search, mode: "insensitive" } },
+            { deskripsi: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {};
+
+    const [kategoriList, total] = await Promise.all([
+      db.kategoriBarang.findMany({
+        where: where as any,
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip,
+        take: limit,
+        include: {
+          _count: {
+            select: { barang: true }, // Include count of related items if useful
+          },
+        },
+      }),
+      db.kategoriBarang.count({ where: where as any }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
 
     return NextResponse.json({
       success: true,
       data: kategoriList,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
     });
   } catch (error) {
     console.error("Error fetching kategori barang:", error);

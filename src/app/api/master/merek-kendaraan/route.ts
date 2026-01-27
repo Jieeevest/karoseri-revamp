@@ -3,10 +3,45 @@ import { db } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    const list = await db.merekKendaraan.findMany({
-      orderBy: { nama: "asc" },
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "asc") as
+      | "asc"
+      | "desc";
+
+    const skip = (page - 1) * limit;
+
+    const where = search
+      ? {
+          OR: [{ nama: { contains: search, mode: "insensitive" } }],
+        }
+      : {};
+
+    const [list, total] = await Promise.all([
+      db.merekKendaraan.findMany({
+        where: where as any,
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      db.merekKendaraan.count({ where: where as any }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      success: true,
+      data: list,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
     });
-    return NextResponse.json({ success: true, data: list });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Failed to fetch merek" },

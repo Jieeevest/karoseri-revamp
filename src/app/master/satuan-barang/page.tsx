@@ -36,8 +36,16 @@ import {
   useDeleteSatuanBarang,
 } from "@/hooks/use-master";
 
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ArrowUpDown } from "lucide-react";
+
 export default function SatuanBarangPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSatuan, setEditingSatuan] = useState<SatuanBarang | null>(null);
   const [formData, setFormData] = useState({
@@ -49,15 +57,27 @@ export default function SatuanBarangPage() {
     null,
   );
 
-  const { data: satuanList = [], isLoading } = useSatuanBarang();
+  const { data: queryData, isLoading } = useSatuanBarang({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+
   const createSatuan = useCreateSatuanBarang();
   const updateSatuan = useUpdateSatuanBarang();
   const deleteSatuan = useDeleteSatuanBarang();
   const { toast } = useToast();
 
-  const filteredSatuan = satuanList.filter((satuan) =>
-    satuan.nama.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,7 +245,10 @@ export default function SatuanBarangPage() {
                 <Input
                   placeholder="Cari satuan..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
@@ -238,11 +261,25 @@ export default function SatuanBarangPage() {
                   <TableHead className="w-[50px] text-center font-semibold text-slate-500">
                     No
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Nama Satuan
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("nama")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Nama Satuan
+                      {sortBy === "nama" && <ArrowUpDown className="w-3 h-3" />}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Tanggal Dibuat
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("createdAt")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Tanggal Dibuat
+                      {sortBy === "createdAt" && (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 text-center font-semibold text-slate-500">
                     Aksi
@@ -250,14 +287,23 @@ export default function SatuanBarangPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSatuan.length > 0 ? (
-                  filteredSatuan.map((satuan, index) => (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="h-24 text-center text-slate-500"
+                    >
+                      Memuat data...
+                    </TableCell>
+                  </TableRow>
+                ) : queryData?.data && queryData.data.length > 0 ? (
+                  queryData.data.map((satuan, index) => (
                     <TableRow
                       key={satuan.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
                     >
                       <TableCell className="px-6 text-center text-slate-500">
-                        {index + 1}
+                        {index + 1 + (page - 1) * limit}
                       </TableCell>
                       <TableCell className="px-6">
                         <Badge
@@ -268,7 +314,11 @@ export default function SatuanBarangPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="px-6 text-slate-500 text-sm">
-                        {satuan.createdAt}
+                        {satuan.createdAt
+                          ? new Date(satuan.createdAt).toLocaleDateString(
+                              "id-ID",
+                            )
+                          : "-"}
                       </TableCell>
                       <TableCell className="px-6 text-center">
                         <div className="flex justify-center gap-2">
@@ -304,6 +354,17 @@ export default function SatuanBarangPage() {
                 )}
               </TableBody>
             </Table>
+
+            {queryData?.pagination && (
+              <PaginationControls
+                currentPage={queryData.pagination.page}
+                totalPages={queryData.pagination.totalPages}
+                totalData={queryData.pagination.total}
+                limit={queryData.pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            )}
           </CardContent>
         </Card>
       </div>

@@ -36,8 +36,16 @@ import {
 } from "@/hooks/use-master";
 import { useToast } from "@/hooks/use-toast";
 
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ArrowUpDown } from "lucide-react";
+
 export default function KategoriBarangPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingKategori, setEditingKategori] = useState<KategoriBarang | null>(
     null,
@@ -52,17 +60,28 @@ export default function KategoriBarangPage() {
     useState<KategoriBarang | null>(null);
 
   // Hooks
-  const { data: kategoriList = [], isLoading } = useKategoriBarang();
+  // Debounce search term if needed, or pass directly
+  const { data: queryData, isLoading } = useKategoriBarang({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+
   const createKategori = useCreateKategoriBarang();
   const updateKategori = useUpdateKategoriBarang();
   const deleteKategori = useDeleteKategoriBarang();
   const { toast } = useToast();
 
-  const filteredKategori = kategoriList.filter(
-    (kategori) =>
-      kategori.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      kategori.deskripsi?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,7 +272,10 @@ export default function KategoriBarangPage() {
                 <Input
                   placeholder="Cari kategori..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1); // Reset page on search
+                  }}
                   className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
@@ -266,14 +288,28 @@ export default function KategoriBarangPage() {
                   <TableHead className="w-[50px] text-center font-semibold text-slate-500">
                     No
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Nama Kategori
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("nama")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Nama Kategori
+                      {sortBy === "nama" && <ArrowUpDown className="w-3 h-3" />}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Deskripsi
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Tanggal Dibuat
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("createdAt")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Tanggal Dibuat
+                      {sortBy === "createdAt" && (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 text-center font-semibold text-slate-500">
                     Aksi
@@ -281,14 +317,23 @@ export default function KategoriBarangPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredKategori.length > 0 ? (
-                  filteredKategori.map((kategori, index) => (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="h-24 text-center text-slate-500"
+                    >
+                      Memuat data...
+                    </TableCell>
+                  </TableRow>
+                ) : queryData?.data && queryData.data.length > 0 ? (
+                  queryData.data.map((kategori, index) => (
                     <TableRow
                       key={kategori.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
                     >
                       <TableCell className="px-6 text-center text-slate-500">
-                        {index + 1}
+                        {index + 1 + (page - 1) * limit}
                       </TableCell>
                       <TableCell className="px-6">
                         <Badge
@@ -307,7 +352,9 @@ export default function KategoriBarangPage() {
                       </TableCell>
                       <TableCell className="px-6 text-slate-500 text-sm">
                         {kategori.createdAt
-                          ? new Date(kategori.createdAt).toLocaleDateString()
+                          ? new Date(kategori.createdAt).toLocaleDateString(
+                              "id-ID",
+                            )
                           : "-"}
                       </TableCell>
                       <TableCell className="px-6 text-center">
@@ -338,12 +385,24 @@ export default function KategoriBarangPage() {
                       colSpan={5}
                       className="h-24 text-center text-slate-500"
                     >
-                      {isLoading ? "Memuat data..." : "Data tidak ditemukan."}
+                      Data tidak ditemukan.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+
+            {/* Pagination Controls */}
+            {queryData?.pagination && (
+              <PaginationControls
+                currentPage={queryData.pagination.page}
+                totalPages={queryData.pagination.totalPages}
+                totalData={queryData.pagination.total}
+                limit={queryData.pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            )}
           </CardContent>
         </Card>
       </div>
