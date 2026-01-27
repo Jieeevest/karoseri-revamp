@@ -8,6 +8,33 @@ export interface Karyawan {
   jabatan: string;
   telepon?: string;
   alamat?: string;
+
+  // Data Pribadi Tambahan
+  tempatLahir?: string;
+  tanggalLahir?: string;
+  jenisKelamin?: string;
+  agama?: string;
+  statusPernikahan?: string;
+
+  // Data Pendidikan
+  pendidikanTerakhir?: string;
+  jurusan?: string;
+  tahunLulus?: string;
+
+  // Data Kepegawaian
+  tanggalBergabung?: string;
+  statusKaryawan?: string;
+
+  // Data Bank
+  namaBank?: string;
+  nomorRekening?: string;
+  pemilikRekening?: string;
+
+  // Kontak Darurat
+  kontakDaruratNama?: string;
+  kontakDaruratHubungan?: string;
+  kontakDaruratTelepon?: string;
+
   createdAt: string;
   totalBarangKeluar?: number;
   totalSpekOrder?: number;

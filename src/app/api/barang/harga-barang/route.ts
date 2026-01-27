@@ -130,6 +130,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Create history record
+    await db.riwayatHarga.create({
+      data: {
+        barangId,
+        supplierId,
+        hargaLama: 0,
+        hargaBaru: parseFloat(harga),
+        keterangan: "Harga awal",
+      },
+    });
+
     return NextResponse.json({
       success: true,
       data: newHarga,
@@ -184,13 +195,20 @@ export async function PUT(request: NextRequest) {
       });
     }
 
+    const currentHarga = await db.hargaBarang.findUnique({
+      where: { id },
+    });
+
+    const oldPrice = currentHarga ? currentHarga.harga : 0;
+    const newPrice = parseFloat(harga);
+
     const updatedHarga = await db.hargaBarang.update({
       where: { id },
       data: {
         barangId,
         supplierId,
         kategoriId: parseInt(kategoriId),
-        harga: parseFloat(harga),
+        harga: newPrice,
         adalahHargaTerbaik: adalahHargaTerbaik || false,
       },
       include: {
@@ -198,6 +216,19 @@ export async function PUT(request: NextRequest) {
         supplier: true,
       },
     });
+
+    // Record history if price changed
+    if (oldPrice !== newPrice) {
+      await db.riwayatHarga.create({
+        data: {
+          barangId,
+          supplierId,
+          hargaLama: oldPrice,
+          hargaBaru: newPrice,
+          keterangan: "Update harga",
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

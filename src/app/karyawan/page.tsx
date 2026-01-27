@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -49,18 +51,9 @@ import {
   useCreateKaryawan,
   useUpdateKaryawan,
   useDeleteKaryawan,
+  type Karyawan,
 } from "@/hooks/use-karyawan";
 import { useToast } from "@/hooks/use-toast";
-
-interface Karyawan {
-  id: string;
-  nik: string;
-  nama: string;
-  jabatan: string;
-  telepon?: string;
-  alamat?: string;
-  createdAt: string;
-}
 
 export default function KaryawanPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -78,6 +71,22 @@ export default function KaryawanPage() {
     jabatan: "",
     telepon: "",
     alamat: "",
+    tempatLahir: "",
+    tanggalLahir: "",
+    jenisKelamin: "",
+    agama: "",
+    statusPernikahan: "",
+    pendidikanTerakhir: "",
+    jurusan: "",
+    tahunLulus: "",
+    tanggalBergabung: "",
+    statusKaryawan: "",
+    namaBank: "",
+    nomorRekening: "",
+    pemilikRekening: "",
+    kontakDaruratNama: "",
+    kontakDaruratHubungan: "",
+    kontakDaruratTelepon: "",
   });
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -122,7 +131,29 @@ export default function KaryawanPage() {
         });
       }
 
-      setFormData({ nik: "", nama: "", jabatan: "", telepon: "", alamat: "" });
+      setFormData({
+        nik: "",
+        nama: "",
+        jabatan: "",
+        telepon: "",
+        alamat: "",
+        tempatLahir: "",
+        tanggalLahir: "",
+        jenisKelamin: "",
+        agama: "",
+        statusPernikahan: "",
+        pendidikanTerakhir: "",
+        jurusan: "",
+        tahunLulus: "",
+        tanggalBergabung: "",
+        statusKaryawan: "",
+        namaBank: "",
+        nomorRekening: "",
+        pemilikRekening: "",
+        kontakDaruratNama: "",
+        kontakDaruratHubungan: "",
+        kontakDaruratTelepon: "",
+      });
       setEditingKaryawan(null);
       setIsDialogOpen(false);
       refetch();
@@ -155,6 +186,26 @@ export default function KaryawanPage() {
       jabatan: karyawan.jabatan,
       telepon: karyawan.telepon || "",
       alamat: karyawan.alamat || "",
+      tempatLahir: karyawan.tempatLahir || "",
+      tanggalLahir: karyawan.tanggalLahir
+        ? new Date(karyawan.tanggalLahir).toISOString().split("T")[0]
+        : "",
+      jenisKelamin: karyawan.jenisKelamin || "",
+      agama: karyawan.agama || "",
+      statusPernikahan: karyawan.statusPernikahan || "",
+      pendidikanTerakhir: karyawan.pendidikanTerakhir || "",
+      jurusan: karyawan.jurusan || "",
+      tahunLulus: karyawan.tahunLulus || "",
+      tanggalBergabung: karyawan.tanggalBergabung
+        ? new Date(karyawan.tanggalBergabung).toISOString().split("T")[0]
+        : "",
+      statusKaryawan: karyawan.statusKaryawan || "",
+      namaBank: karyawan.namaBank || "",
+      nomorRekening: karyawan.nomorRekening || "",
+      pemilikRekening: karyawan.pemilikRekening || "",
+      kontakDaruratNama: karyawan.kontakDaruratNama || "",
+      kontakDaruratHubungan: karyawan.kontakDaruratHubungan || "",
+      kontakDaruratTelepon: karyawan.kontakDaruratTelepon || "",
     });
     setIsDialogOpen(true);
   };
@@ -190,7 +241,29 @@ export default function KaryawanPage() {
 
   const openAddDialog = () => {
     setEditingKaryawan(null);
-    setFormData({ nik: "", nama: "", jabatan: "", telepon: "", alamat: "" });
+    setFormData({
+      nik: "",
+      nama: "",
+      jabatan: "",
+      telepon: "",
+      alamat: "",
+      tempatLahir: "",
+      tanggalLahir: "",
+      jenisKelamin: "",
+      agama: "",
+      statusPernikahan: "",
+      pendidikanTerakhir: "",
+      jurusan: "",
+      tahunLulus: "",
+      tanggalBergabung: "",
+      statusKaryawan: "",
+      namaBank: "",
+      nomorRekening: "",
+      pemilikRekening: "",
+      kontakDaruratNama: "",
+      kontakDaruratHubungan: "",
+      kontakDaruratTelepon: "",
+    });
     setIsDialogOpen(true);
   };
 
@@ -247,7 +320,7 @@ export default function KaryawanPage() {
                 Tambah Karyawan
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px] rounded-xl border-slate-100 shadow-2xl">
+            <DialogContent className="sm:max-w-[700px] h-[90vh] sm:h-auto rounded-xl border-slate-100 shadow-2xl flex flex-col">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold text-slate-900">
@@ -259,121 +332,413 @@ export default function KaryawanPage() {
                       : "Isi form berikut untuk menambahkan karyawan baru."}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-6 py-6">
-                  <div className="grid gap-2">
-                    <Label htmlFor="nik" className="text-slate-700 font-medium">
-                      NIK
-                    </Label>
-                    <Input
-                      id="nik"
-                      value={formData.nik}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          nik: e.target.value,
-                        }))
-                      }
-                      className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                      placeholder="Nomor Induk Kependudukan"
-                      maxLength={16}
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label
-                      htmlFor="nama"
-                      className="text-slate-700 font-medium"
-                    >
-                      Nama Lengkap
-                    </Label>
-                    <Input
-                      id="nama"
-                      value={formData.nama}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          nama: e.target.value,
-                        }))
-                      }
-                      className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                      placeholder="Nama lengkap karyawan"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label
-                        htmlFor="jabatan"
-                        className="text-slate-700 font-medium"
-                      >
-                        Jabatan
-                      </Label>
-                      <Select
-                        value={formData.jabatan}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({ ...prev, jabatan: value }))
-                        }
-                        required
-                      >
-                        <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                          <SelectValue placeholder="Pilih jabatan" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          {jabatanOptions.map((jab) => (
-                            <SelectItem
-                              key={jab}
-                              value={jab}
-                              className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                            >
-                              {jab}
+                <ScrollArea className="flex-1 px-1 -mx-1">
+                  <Tabs defaultValue="profil" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4 mb-4">
+                      <TabsTrigger value="profil">Profil</TabsTrigger>
+                      <TabsTrigger value="pribadi">Pribadi</TabsTrigger>
+                      <TabsTrigger value="pekerjaan">Pekerjaan</TabsTrigger>
+                      <TabsTrigger value="lainnya">Lainnya</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="profil" className="space-y-4 py-2">
+                      {/* Basic Info */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="nik">NIK</Label>
+                          <Input
+                            id="nik"
+                            value={formData.nik}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                nik: e.target.value,
+                              }))
+                            }
+                            maxLength={16}
+                            required
+                            placeholder="Nomor Induk Kependudukan"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="nama">Nama Lengkap</Label>
+                          <Input
+                            id="nama"
+                            value={formData.nama}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                nama: e.target.value,
+                              }))
+                            }
+                            required
+                            placeholder="Nama Lengkap"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="jabatan">Jabatan</Label>
+                          <Select
+                            value={formData.jabatan}
+                            onValueChange={(val) =>
+                              setFormData((prev) => ({ ...prev, jabatan: val }))
+                            }
+                            required
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih jabatan" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {jabatanOptions.map((jab) => (
+                                <SelectItem key={jab} value={jab}>
+                                  {jab}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="telepon">Telepon / WA</Label>
+                          <Input
+                            id="telepon"
+                            value={formData.telepon}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                telepon: e.target.value,
+                              }))
+                            }
+                            placeholder="08xx-xxxx-xxxx"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="statusKaryawan">Status Karyawan</Label>
+                        <Select
+                          value={formData.statusKaryawan}
+                          onValueChange={(val) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              statusKaryawan: val,
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Tetap">Tetap</SelectItem>
+                            <SelectItem value="Kontrak">Kontrak</SelectItem>
+                            <SelectItem value="Magang">Magang</SelectItem>
+                            <SelectItem value="Harian">Harian</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="pribadi" className="space-y-4 py-2">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="tempatLahir">Tempat Lahir</Label>
+                          <Input
+                            id="tempatLahir"
+                            value={formData.tempatLahir}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                tempatLahir: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="tanggalLahir">Tanggal Lahir</Label>
+                          <Input
+                            id="tanggalLahir"
+                            type="date"
+                            value={formData.tanggalLahir}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                tanggalLahir: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="jenisKelamin">Jenis Kelamin</Label>
+                          <Select
+                            value={formData.jenisKelamin}
+                            onValueChange={(val) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                jenisKelamin: val,
+                              }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih Jenis Kelamin" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Laki-laki">
+                                Laki-laki
+                              </SelectItem>
+                              <SelectItem value="Perempuan">
+                                Perempuan
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="agama">Agama</Label>
+                          <Input
+                            id="agama"
+                            value={formData.agama}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                agama: e.target.value,
+                              }))
+                            }
+                            placeholder="Islam, Kristen, dll"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="statusPernikahan">
+                          Status Pernikahan
+                        </Label>
+                        <Select
+                          value={formData.statusPernikahan}
+                          onValueChange={(val) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              statusPernikahan: val,
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Belum Menikah">
+                              Belum Menikah
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label
-                        htmlFor="telepon"
-                        className="text-slate-700 font-medium"
-                      >
-                        Telepon
-                      </Label>
-                      <Input
-                        id="telepon"
-                        value={formData.telepon}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            telepon: e.target.value,
-                          }))
-                        }
-                        className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                        placeholder="08xx-xxxx-xxxx"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label
-                      htmlFor="alamat"
-                      className="text-slate-700 font-medium"
-                    >
-                      Alamat
-                    </Label>
-                    <Textarea
-                      id="alamat"
-                      value={formData.alamat}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          alamat: e.target.value,
-                        }))
-                      }
-                      className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 resize-none"
-                      placeholder="Alamat lengkap karyawan"
-                      rows={3}
-                    />
-                  </div>
-                </div>
+                            <SelectItem value="Menikah">Menikah</SelectItem>
+                            <SelectItem value="Cerai">Cerai</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="pekerjaan" className="space-y-4 py-2">
+                      <div className="grid gap-2">
+                        <Label htmlFor="tanggalBergabung">
+                          Tanggal Bergabung
+                        </Label>
+                        <Input
+                          id="tanggalBergabung"
+                          type="date"
+                          value={formData.tanggalBergabung}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              tanggalBergabung: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="text-sm font-semibold mb-3">
+                          Pendidikan Terakhir
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="pendidikanTerakhir">Jenjang</Label>
+                            <Select
+                              value={formData.pendidikanTerakhir}
+                              onValueChange={(val) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  pendidikanTerakhir: val,
+                                }))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih Jenjang" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="SD">SD</SelectItem>
+                                <SelectItem value="SMP">SMP</SelectItem>
+                                <SelectItem value="SMA/SMK">SMA/SMK</SelectItem>
+                                <SelectItem value="D3">D3</SelectItem>
+                                <SelectItem value="S1">S1</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="tahunLulus">Tahun Lulus</Label>
+                            <Input
+                              id="tahunLulus"
+                              value={formData.tahunLulus}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  tahunLulus: e.target.value,
+                                }))
+                              }
+                              placeholder="20XX"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="jurusan">Jurusan</Label>
+                          <Input
+                            id="jurusan"
+                            value={formData.jurusan}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                jurusan: e.target.value,
+                              }))
+                            }
+                            placeholder="Contoh: Teknik Mesin"
+                          />
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="lainnya" className="space-y-4 py-2">
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold">
+                          Alamat Domisili
+                        </h4>
+                        <Textarea
+                          id="alamat"
+                          value={formData.alamat}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              alamat: e.target.value,
+                            }))
+                          }
+                          rows={2}
+                          placeholder="Alamat lengkap..."
+                        />
+                      </div>
+
+                      <div className="space-y-4 pt-2 border-t">
+                        <h4 className="text-sm font-semibold">Rekening Bank</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="namaBank">Nama Bank</Label>
+                            <Input
+                              id="namaBank"
+                              value={formData.namaBank}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  namaBank: e.target.value,
+                                }))
+                              }
+                              placeholder="BCA/Mandiri/..."
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="nomorRekening">
+                              Nomor Rekening
+                            </Label>
+                            <Input
+                              id="nomorRekening"
+                              value={formData.nomorRekening}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  nomorRekening: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="pemilikRekening">Atas Nama</Label>
+                          <Input
+                            id="pemilikRekening"
+                            value={formData.pemilikRekening}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                pemilikRekening: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 pt-2 border-t">
+                        <h4 className="text-sm font-semibold">
+                          Kontak Darurat
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="kontakDaruratNama">
+                              Nama Kontak
+                            </Label>
+                            <Input
+                              id="kontakDaruratNama"
+                              value={formData.kontakDaruratNama}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  kontakDaruratNama: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="kontakDaruratHubungan">
+                              Hubungan
+                            </Label>
+                            <Input
+                              id="kontakDaruratHubungan"
+                              value={formData.kontakDaruratHubungan}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  kontakDaruratHubungan: e.target.value,
+                                }))
+                              }
+                              placeholder="Orang Tua/Istri/..."
+                            />
+                          </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="kontakDaruratTelepon">
+                            Telepon Darurat
+                          </Label>
+                          <Input
+                            id="kontakDaruratTelepon"
+                            value={formData.kontakDaruratTelepon}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                kontakDaruratTelepon: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </ScrollArea>
                 <DialogFooter className="gap-2">
                   <Button
                     type="button"

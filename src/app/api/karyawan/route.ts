@@ -78,7 +78,29 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    let { nik, nama, jabatan, telepon, alamat } = body;
+    let {
+      nik,
+      nama,
+      jabatan,
+      telepon,
+      alamat,
+      tempatLahir,
+      tanggalLahir,
+      jenisKelamin,
+      agama,
+      statusPernikahan,
+      pendidikanTerakhir,
+      jurusan,
+      tahunLulus,
+      tanggalBergabung,
+      statusKaryawan,
+      namaBank,
+      nomorRekening,
+      pemilikRekening,
+      kontakDaruratNama,
+      kontakDaruratHubungan,
+      kontakDaruratTelepon,
+    } = body;
 
     // Validation
     if (!nama || !jabatan) {
@@ -91,14 +113,6 @@ export async function POST(request: NextRequest) {
     if (!nik) {
       nik = await generateNextCode("KRY", "karyawan", "nik");
     }
-
-    // Validate NIK format (16 digits) - REMOVED to allow custom auto codes
-    // if (!/^\d{16}$/.test(nik)) {
-    //   return NextResponse.json(
-    //     { success: false, error: 'Format NIK tidak valid (harus 16 digit angka)' },
-    //     { status: 400 }
-    //   )
-    // }
 
     // Check if NIK already exists
     const existingNIK = await db.karyawan.findFirst({
@@ -119,6 +133,22 @@ export async function POST(request: NextRequest) {
         jabatan: jabatan.trim(),
         telepon: telepon?.trim() || null,
         alamat: alamat?.trim() || null,
+        tempatLahir: tempatLahir?.trim() || null,
+        tanggalLahir: tanggalLahir ? new Date(tanggalLahir) : null,
+        jenisKelamin: jenisKelamin || null,
+        agama: agama || null,
+        statusPernikahan: statusPernikahan || null,
+        pendidikanTerakhir: pendidikanTerakhir || null,
+        jurusan: jurusan?.trim() || null,
+        tahunLulus: tahunLulus?.trim() || null,
+        tanggalBergabung: tanggalBergabung ? new Date(tanggalBergabung) : null,
+        statusKaryawan: statusKaryawan || null,
+        namaBank: namaBank?.trim() || null,
+        nomorRekening: nomorRekening?.trim() || null,
+        pemilikRekening: pemilikRekening?.trim() || null,
+        kontakDaruratNama: kontakDaruratNama?.trim() || null,
+        kontakDaruratHubungan: kontakDaruratHubungan?.trim() || null,
+        kontakDaruratTelepon: kontakDaruratTelepon?.trim() || null,
       },
     });
 
@@ -139,7 +169,30 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, nik, nama, jabatan, telepon, alamat } = body;
+    const {
+      id,
+      nik,
+      nama,
+      jabatan,
+      telepon,
+      alamat,
+      tempatLahir,
+      tanggalLahir,
+      jenisKelamin,
+      agama,
+      statusPernikahan,
+      pendidikanTerakhir,
+      jurusan,
+      tahunLulus,
+      tanggalBergabung,
+      statusKaryawan,
+      namaBank,
+      nomorRekening,
+      pemilikRekening,
+      kontakDaruratNama,
+      kontakDaruratHubungan,
+      kontakDaruratTelepon,
+    } = body;
 
     if (!id || !nik || !nama || !jabatan) {
       return NextResponse.json(
@@ -147,14 +200,6 @@ export async function PUT(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    // Validate NIK format - REMOVED
-    // if (!/^\d{16}$/.test(nik)) {
-    //   return NextResponse.json(
-    //     { success: false, error: 'Format NIK tidak valid (harus 16 digit angka)' },
-    //     { status: 400 }
-    //   )
-    // }
 
     // Check if NIK already exists (excluding current record)
     const existingNIK = await db.karyawan.findFirst({
@@ -178,6 +223,22 @@ export async function PUT(request: NextRequest) {
         jabatan: jabatan.trim(),
         telepon: telepon?.trim() || null,
         alamat: alamat?.trim() || null,
+        tempatLahir: tempatLahir?.trim() || null,
+        tanggalLahir: tanggalLahir ? new Date(tanggalLahir) : null,
+        jenisKelamin: jenisKelamin || null,
+        agama: agama || null,
+        statusPernikahan: statusPernikahan || null,
+        pendidikanTerakhir: pendidikanTerakhir || null,
+        jurusan: jurusan?.trim() || null,
+        tahunLulus: tahunLulus?.trim() || null,
+        tanggalBergabung: tanggalBergabung ? new Date(tanggalBergabung) : null,
+        statusKaryawan: statusKaryawan || null,
+        namaBank: namaBank?.trim() || null,
+        nomorRekening: nomorRekening?.trim() || null,
+        pemilikRekening: pemilikRekening?.trim() || null,
+        kontakDaruratNama: kontakDaruratNama?.trim() || null,
+        kontakDaruratHubungan: kontakDaruratHubungan?.trim() || null,
+        kontakDaruratTelepon: kontakDaruratTelepon?.trim() || null,
       },
     });
 

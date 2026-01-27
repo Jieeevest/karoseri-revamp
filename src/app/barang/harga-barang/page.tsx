@@ -20,501 +20,499 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, Edit, Trash2, Search, Star } from "lucide-react";
-import { useState } from "react";
-import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+  Plus,
+  Edit,
+  Search,
+  TrendingUp,
+  TrendingDown,
+  History,
+  DollarSign,
+  Package,
+} from "lucide-react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
-
 import { Combobox } from "@/components/ui/combobox";
-import { useBarang } from "@/hooks/use-barang";
+import { useBarang, Barang } from "@/hooks/use-barang";
 import { useSupplier } from "@/hooks/use-supplier";
 import {
   HargaBarang,
   useHargaBarang,
   useCreateHargaBarang,
   useUpdateHargaBarang,
-  useDeleteHargaBarang,
+  useDeleteHargaBarang, // Keep for managing inside modal
 } from "@/hooks/use-harga-barang";
+// import { formatCurrency } from "@/lib/utils"; // Removed as it doesn't exist
 
 export default function HargaBarangPage() {
-  const { data: barangList = [] } = useBarang();
+  const { data: barangList = [], isLoading: isLoadingBarang } = useBarang();
   const { data: supplierList = [] } = useSupplier();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const { data: hargaList = [], isLoading } = useHargaBarang(searchTerm);
+  // Fetch ALL prices to map to products
+  // In a real large app, we would fetch prices per product or use a robust composed API.
+  // For now, assuming reasonable size, fetching all is fine.
+  const { data: hargaList = [], isLoading: isLoadingHarga } = useHargaBarang();
+
   const createHarga = useCreateHargaBarang();
   const updateHarga = useUpdateHargaBarang();
-  const deleteHarga = useDeleteHargaBarang();
   const { toast } = useToast();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingHarga, setEditingHarga] = useState<HargaBarang | null>(null);
-  const [formData, setFormData] = useState({
-    barangId: "",
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // State for Manage Price Dialog
+  const [selectedProduct, setSelectedProduct] = useState<Barang | null>(null);
+  const [isManagePriceOpen, setIsManagePriceOpen] = useState(false);
+
+  // State for Add/Edit Price Form inside the dialog
+  const [editingHargaId, setEditingHargaId] = useState<string | null>(null);
+  const [priceForm, setPriceForm] = useState({
     supplierId: "",
     harga: 0,
     adalahHargaTerbaik: false,
   });
 
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingHarga, setDeletingHarga] = useState<HargaBarang | null>(null);
+  // Calculate Best Price for each Product
+  const productPriceMap = useMemo(() => {
+    const map = new Map<string, HargaBarang>();
+    hargaList.forEach((harga) => {
+      // Logic: Prefer 'adalahHargaTerbaik', otherwise maybe lowest?
+      // For now, if multiple, the one marked as best wins.
+      // If none marked best, we might want the lowest.
+      const existing = map.get(harga.barangId);
 
-  const filteredHarga = hargaList.filter(
-    (harga) =>
-      harga.barang.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      harga.barang.kode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      harga.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      harga.kategoriBarang?.nama // Optional chaining in case relation is partial
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()),
-  );
+      if (harga.adalahHargaTerbaik) {
+        map.set(harga.barangId, harga);
+      } else if (!existing) {
+        map.set(harga.barangId, harga);
+      } else if (!existing.adalahHargaTerbaik && harga.harga < existing.harga) {
+        // If existing is NOT best, and new one is cheaper, take new one
+        map.set(harga.barangId, harga);
+      }
+    });
+    return map;
+  }, [hargaList]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const selectedBarang = barangList.find((b) => b.id === formData.barangId);
-    const selectedSupplier = supplierList.find(
-      (s) => s.id === formData.supplierId,
+  // Group Products by Category
+  const groupedProducts = useMemo(() => {
+    const filtered = barangList.filter(
+      (b) =>
+        b.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.kode.toLowerCase().includes(searchTerm.toLowerCase()),
     );
 
-    if (!selectedBarang || !selectedSupplier) return;
+    const groups: { [category: string]: Barang[] } = {};
+
+    filtered.forEach((b) => {
+      const category = b.kategoriBarang?.nama || "Uncategorized";
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(b);
+    });
+
+    return groups;
+  }, [barangList, searchTerm]);
+
+  const handleManagePrice = (product: Barang) => {
+    setSelectedProduct(product);
+    setPriceForm({ supplierId: "", harga: 0, adalahHargaTerbaik: true });
+    setEditingHargaId(null);
+    setIsManagePriceOpen(true);
+  };
+
+  const handleSavePrice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct) return;
 
     try {
-      if (editingHarga) {
+      if (editingHargaId) {
         await updateHarga.mutateAsync({
-          id: editingHarga.id,
-          ...formData,
-          // Backend should handle relation updates or just IDs
-          // Ideally we also update kategoriId based on selectedBarang
-          kategoriId: selectedBarang.kategoriId,
+          id: editingHargaId,
+          barangId: selectedProduct.id,
+          supplierId: priceForm.supplierId,
+          kategoriId: selectedProduct.kategoriId, // Maintain category consistency
+          harga: priceForm.harga,
+          adalahHargaTerbaik: priceForm.adalahHargaTerbaik,
         });
-        toast({
-          title: "Berhasil",
-          description: "Harga barang berhasil diperbarui",
-          className: "bg-green-50 text-green-800 border-green-200",
-        });
+        toast({ title: "Berhasil", description: "Harga berhasil diperbarui" });
       } else {
         await createHarga.mutateAsync({
-          ...formData,
-          kategoriId: selectedBarang.kategoriId,
+          barangId: selectedProduct.id,
+          supplierId: priceForm.supplierId,
+          kategoriId: selectedProduct.kategoriId,
+          harga: priceForm.harga,
+          adalahHargaTerbaik: priceForm.adalahHargaTerbaik,
         });
         toast({
           title: "Berhasil",
-          description: "Harga barang berhasil ditambahkan",
-          className: "bg-green-50 text-green-800 border-green-200",
+          description: "Harga baru berhasil ditambahkan",
         });
       }
-
-      setFormData({
-        barangId: "",
-        supplierId: "",
-        harga: 0,
-        adalahHargaTerbaik: false,
-      });
-      setEditingHarga(null);
-      setIsDialogOpen(false);
+      // Reset form
+      setEditingHargaId(null);
+      setPriceForm({ supplierId: "", harga: 0, adalahHargaTerbaik: true });
     } catch (error) {
       console.error(error);
       toast({
         title: "Gagal",
-        description: "Gagal menyimpan harga barang",
+        description: "Gagal menyimpan harga",
         variant: "destructive",
       });
     }
   };
 
-  const handleEdit = (harga: HargaBarang) => {
-    setEditingHarga(harga);
-    setFormData({
-      barangId: harga.barangId,
+  const startEditPrice = (harga: HargaBarang) => {
+    setEditingHargaId(harga.id);
+    setPriceForm({
       supplierId: harga.supplierId,
       harga: harga.harga,
       adalahHargaTerbaik: harga.adalahHargaTerbaik,
     });
-    setIsDialogOpen(true);
   };
 
-  const handleDeleteClick = (harga: HargaBarang) => {
-    setDeletingHarga(harga);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!deletingHarga) return;
-    try {
-      await deleteHarga.mutateAsync(deletingHarga.id);
-      toast({
-        title: "Berhasil",
-        description: "Harga barang berhasil dihapus",
-        className: "bg-green-50 text-green-800 border-green-200",
-      });
-      setIsDeleteModalOpen(false);
-      setDeletingHarga(null);
-    } catch (error) {
-      console.error(error);
-      toast({
-        title: "Gagal",
-        description: "Gagal menghapus harga barang",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const openAddDialog = () => {
-    setEditingHarga(null);
-    setFormData({
-      barangId: "",
-      supplierId: "",
-      harga: 0,
-      adalahHargaTerbaik: false,
-    });
-    setIsDialogOpen(true);
-  };
-
-  const formatCurrency = (amount: number) => {
+  // Helper currency formatter if not imported
+  const formatIDR = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
-
-  const getBestPricesByCategory = () => {
-    const bestPrices: { [key: number]: HargaBarang } = {};
-
-    hargaList.forEach((harga) => {
-      // Logic for "best price" could be: flagged as best, or lowest price
-      // Here we trust the 'adalahHargaTerbaik' flag if used, or calculate min
-      // Let's assume low price is best
-      if (
-        !bestPrices[harga.kategoriId] ||
-        harga.harga < bestPrices[harga.kategoriId].harga
-      ) {
-        bestPrices[harga.kategoriId] = harga;
-      }
-    });
-
-    return Object.values(bestPrices);
-  };
-
-  const bestPrices = getBestPricesByCategory();
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Harga Barang
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Manajemen harga barang dan supplier.
-            </p>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Aplikasi Manajemen Stok Barang
+          </h1>
+          <p className="text-sm text-slate-500">
+            Kelola stok dan pantau harga barang dengan mudah
+          </p>
+        </div>
+
+        {/* Quick Stats / Navigation look-alike */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-slate-100 p-3 rounded-xl flex items-center justify-center gap-2 text-slate-500 font-medium cursor-pointer hover:bg-slate-200 transition">
+            <Package className="w-5 h-5" />
+            Manajemen Stok
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                onClick={openAddDialog}
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Tambah Harga
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px] rounded-xl border-slate-100 shadow-2xl">
-              <form onSubmit={handleSubmit}>
-                <DialogHeader>
-                  <DialogTitle className="text-xl font-bold text-slate-900">
-                    {editingHarga ? "Edit Harga" : "Tambah Harga Baru"}
-                  </DialogTitle>
-                  <DialogDescription className="text-slate-500">
-                    {editingHarga
-                      ? "Perbarui informasi harga barang di sini."
-                      : "Isi form berikut untuk menambahkan harga barang baru."}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 py-6">
-                  <div className="grid gap-2">
-                    <Label
-                      htmlFor="barangId"
-                      className="text-slate-700 font-medium"
+          <div className="bg-white border border-slate-200 shadow-sm p-3 rounded-xl flex items-center justify-center gap-2 text-slate-900 font-bold cursor-default">
+            <DollarSign className="w-5 h-5" />
+            Harga Barang
+          </div>
+        </div>
+
+        <Card className="border-slate-200 shadow-sm rounded-xl bg-white">
+          <CardHeader className="border-b border-slate-100 pb-4">
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+              <div>
+                <CardTitle className="text-lg font-bold text-slate-900">
+                  Harga Barang per Kategori
+                </CardTitle>
+                <p className="text-sm text-slate-500">
+                  Pantau harga tertinggi dan terendah per kategori
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span className="flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-green-500" /> Harga
+                  Tertinggi
+                </span>
+                <span className="flex items-center gap-1">
+                  <TrendingDown className="w-3 h-3 text-red-500" /> Harga
+                  Terendah
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  placeholder="Cari produk atau SKU..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-slate-50"
+                />
+              </div>
+              <div className="w-full md:w-[200px]">
+                {/* Placeholder for Category Filter if needed, currently we stick to list headers */}
+                <div className="h-10 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-500 flex items-center justify-between">
+                  Semua Kategori
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-6 space-y-8">
+            {isLoadingBarang ? (
+              <div className="text-center py-10 text-slate-500">
+                Memuat data barang...
+              </div>
+            ) : Object.keys(groupedProducts).length === 0 ? (
+              <div className="text-center py-10 text-slate-500">
+                Tidak ada produk ditemukan.
+              </div>
+            ) : (
+              Object.entries(groupedProducts).map(([category, products]) => (
+                <div
+                  key={category}
+                  className="border border-slate-100 rounded-xl overflow-hidden"
+                >
+                  <div className="bg-slate-50 px-6 py-3 border-b border-slate-100 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-700">{category}</h3>
+                    <Badge
+                      variant="secondary"
+                      className="bg-white text-slate-500 border-slate-200 hover:bg-white"
                     >
-                      Barang
-                    </Label>
-                    <Combobox
-                      value={formData.barangId}
-                      onChange={(value) =>
-                        setFormData((prev) => ({ ...prev, barangId: value }))
-                      }
-                      options={barangList.map((b) => ({
-                        value: b.id,
-                        label: `${b.kode} - ${b.nama}`,
-                      }))}
-                      placeholder="Pilih barang"
-                      searchPlaceholder="Cari barang..."
-                    />
+                      {products.length} produk
+                    </Badge>
                   </div>
-                  <div className="grid gap-2">
-                    <Label
-                      htmlFor="supplierId"
-                      className="text-slate-700 font-medium"
-                    >
-                      Supplier
-                    </Label>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent border-slate-100">
+                        <TableHead className="w-[100px]">SKU</TableHead>
+                        <TableHead>Nama Produk</TableHead>
+                        <TableHead className="w-[100px]">Stok</TableHead>
+                        <TableHead className="w-[200px]">Harga</TableHead>
+                        <TableHead className="w-[100px] text-right">
+                          Aksi
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {products.map((product) => {
+                        const bestPrice = productPriceMap.get(product.id);
+                        return (
+                          <TableRow
+                            key={product.id}
+                            className="hover:bg-slate-50 border-slate-100"
+                          >
+                            <TableCell className="font-medium text-slate-700">
+                              {product.kode}
+                            </TableCell>
+                            <TableCell className="font-semibold text-slate-900">
+                              {product.nama}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={`${product.stok < (product.stokMinimum || 5) ? "text-red-600 font-bold" : "text-green-600 font-medium"}`}
+                              >
+                                {product.stok}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {bestPrice ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-slate-900">
+                                    {formatIDR(bestPrice.harga)}
+                                  </span>
+                                  {bestPrice.harga > 10000000 && (
+                                    <TrendingUp className="w-4 h-4 text-green-500" />
+                                  )}
+                                  {bestPrice.harga < 500000 && (
+                                    <TrendingDown className="w-4 h-4 text-red-500" />
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 italic text-sm">
+                                  Belum ada harga
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                                onClick={() => handleManagePrice(product)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Manage Price Dialog */}
+      <Dialog open={isManagePriceOpen} onOpenChange={setIsManagePriceOpen}>
+        <DialogContent className="sm:max-w-[600px] rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Kelola Harga Barang</DialogTitle>
+            <DialogDescription>
+              {selectedProduct?.nama} ({selectedProduct?.kode})
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Form Add/Edit */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 mb-2">
+                {editingHargaId ? "Edit Harga" : "Tambah Harga Supplier"}
+              </h4>
+              <form onSubmit={handleSavePrice} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Supplier</Label>
                     <Combobox
-                      value={formData.supplierId}
-                      onChange={(value) =>
-                        setFormData((prev) => ({ ...prev, supplierId: value }))
+                      value={priceForm.supplierId}
+                      onChange={(val) =>
+                        setPriceForm((prev) => ({ ...prev, supplierId: val }))
                       }
                       options={supplierList.map((s) => ({
                         value: s.id,
-                        label: `${s.kode} - ${s.nama}`,
+                        label: s.nama,
                       }))}
-                      placeholder="Pilih supplier"
-                      searchPlaceholder="Cari supplier..."
+                      placeholder="Pilih Supplier"
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label
-                      htmlFor="harga"
-                      className="text-slate-700 font-medium"
-                    >
-                      Harga
-                    </Label>
+                  <div className="space-y-2">
+                    <Label>Harga</Label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
                         Rp
                       </span>
                       <Input
-                        id="harga"
                         type="number"
-                        value={formData.harga}
+                        className="pl-9"
+                        value={priceForm.harga}
                         onChange={(e) =>
-                          setFormData((prev) => ({
+                          setPriceForm((prev) => ({
                             ...prev,
                             harga: parseFloat(e.target.value) || 0,
                           }))
                         }
-                        className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                        min="0"
-                        step="0.01"
-                        placeholder="0"
                         required
                       />
                     </div>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    className="rounded-xl cursor-pointer"
-                  >
-                    Batal
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="bestPrice"
+                    checked={priceForm.adalahHargaTerbaik}
+                    onChange={(e) =>
+                      setPriceForm((prev) => ({
+                        ...prev,
+                        adalahHargaTerbaik: e.target.checked,
+                      }))
+                    }
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <Label htmlFor="bestPrice" className="cursor-pointer">
+                    Set sebagai Harga Utama (Terbaik)
+                  </Label>
+                </div>
+                <div className="flex justify-end gap-2">
+                  {editingHargaId && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setEditingHargaId(null);
+                        setPriceForm({
+                          supplierId: "",
+                          harga: 0,
+                          adalahHargaTerbaik: true,
+                        });
+                      }}
+                    >
+                      Batal Edit
+                    </Button>
+                  )}
                   <Button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
+                    size="sm"
+                    className="bg-blue-600 text-white hover:bg-blue-700"
                   >
-                    {editingHarga ? "Simpan Perubahan" : "Buat Harga"}
+                    Simpan
                   </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Harga Terbaik per Kategori */}
-        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
-          <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
-              <Star className="h-5 w-5 text-yellow-500" />
-              Harga Terbaik per Kategori
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {bestPrices.map((harga) => (
-                <div
-                  key={harga.id}
-                  className="p-4 border border-yellow-200 rounded-xl bg-yellow-50/50 hover:bg-yellow-50 transition-colors"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge
-                      variant="secondary"
-                      className="bg-white text-slate-600 border-slate-200"
-                    >
-                      {harga.kategoriBarang?.nama || "Umum"}
-                    </Badge>
-                    <Star className="h-4 w-4 text-yellow-500" />
-                  </div>
-                  <p className="font-semibold text-slate-900">
-                    {harga.barang.nama}
-                  </p>
-                  <p className="text-xs text-slate-500 mb-3">
-                    {harga.supplier.nama}
-                  </p>
-                  <p className="text-lg font-bold text-green-600">
-                    {formatCurrency(harga.harga)}
-                  </p>
                 </div>
-              ))}
+              </form>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Daftar Harga */}
-        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
-          <CardHeader className="border-b border-slate-100 pb-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <CardTitle className="text-lg font-bold text-slate-900">
-                Semua Harga Barang
-              </CardTitle>
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  placeholder="Cari harga barang..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
-                />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Barang
-                  </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Kategori
-                  </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Supplier
-                  </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Harga
-                  </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Status
-                  </TableHead>
-                  <TableHead className="px-6 text-center font-semibold text-slate-500">
-                    Aksi
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredHarga.length > 0 ? (
-                  filteredHarga.map((harga) => (
-                    <TableRow
-                      key={harga.id}
-                      className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
-                    >
-                      <TableCell className="px-6">
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {harga.barang.nama}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {harga.barang.kode}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-6">
-                        <Badge
-                          variant="outline"
-                          className="border-slate-200 text-slate-600 font-normal"
-                        >
-                          {harga.kategoriBarang?.nama || "-"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="px-6">
-                        <div>
-                          <p className="font-medium text-slate-700">
-                            {harga.supplier.nama}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {harga.supplier.kode}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-6 font-medium text-slate-900">
-                        {formatCurrency(harga.harga)}
-                      </TableCell>
-                      <TableCell className="px-6">
-                        {harga.adalahHargaTerbaik && (
-                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 shadow-none">
-                            <Star className="mr-1 h-3 w-3" />
-                            Terbaik
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="px-6 text-center">
-                        <div className="flex justify-center gap-2">
+            {/* List Existing Prices */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 mb-2">
+                Daftar Harga Supplier
+              </h4>
+              <Table>
+                <TableHeader>
+                  <TableRow className="h-8">
+                    <TableHead className="text-xs">Supplier</TableHead>
+                    <TableHead className="text-xs">Harga</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {hargaList
+                    .filter((h) => h.barangId === selectedProduct?.id)
+                    .map((harga) => (
+                      <TableRow key={harga.id} className="h-10">
+                        <TableCell className="py-2">
+                          {harga.supplier.nama}
+                        </TableCell>
+                        <TableCell className="py-2 font-medium">
+                          {formatIDR(harga.harga)}
+                        </TableCell>
+                        <TableCell className="py-2">
+                          {harga.adalahHargaTerbaik && (
+                            <Badge className="text-[10px] bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
+                              Utama
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-2 text-right">
                           <Button
-                            variant="ghost"
                             size="icon"
-                            onClick={() => handleEdit(harga)}
-                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
                             variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteClick(harga)}
-                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                            className="h-6 w-6"
+                            onClick={() => startEditPrice(harga)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Edit className="w-3 h-3 text-slate-500" />
                           </Button>
-                        </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  {hargaList.filter((h) => h.barangId === selectedProduct?.id)
+                    .length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center text-xs text-slate-400 py-4"
+                      >
+                        Belum ada data harga.
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="px-6 h-24 text-center text-slate-500"
-                    >
-                      Data tidak ditemukan.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
 
-      <DeleteConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setDeletingHarga(null);
-        }}
-        onConfirm={async () => handleDeleteConfirm()}
-        itemName={
-          deletingHarga
-            ? `${deletingHarga.barang.nama} - ${deletingHarga.supplier.nama}`
-            : ""
-        }
-        title="Hapus Harga Barang"
-      />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsManagePriceOpen(false)}
+            >
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

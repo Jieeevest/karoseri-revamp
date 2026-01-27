@@ -122,6 +122,7 @@ model Barang {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   hargaBarang     HargaBarang[]
+  riwayatHarga    RiwayatHarga[]
   barangMasuk     BarangMasuk[]
   barangKeluar    BarangKeluar[]
   purchaseOrder   PurchaseOrderItem[]
@@ -142,6 +143,18 @@ model HargaBarang {
   @@unique([barangId, supplierId])
 }
 
+model RiwayatHarga {
+  id          String   @id @default(cuid())
+  barangId    String
+  barang      Barang   @relation(fields: [barangId], references: [id])
+  supplierId  String
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  hargaLama   Float
+  hargaBaru   Float
+  tanggal     DateTime @default(now())
+  keterangan  String?
+}
+
 model Supplier {
   id              String              @id @default(cuid())
   kode            String              @unique
@@ -152,6 +165,7 @@ model Supplier {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   hargaBarang     HargaBarang[]
+  riwayatHarga    RiwayatHarga[]
   purchaseOrder   PurchaseOrder[]
   tagihanSupplier TagihanSupplier[]
   barangMasuk     BarangMasuk[]
@@ -245,6 +259,33 @@ model Karyawan {
   jabatan         String
   telepon         String?
   alamat          String?
+  
+  // Data Pribadi Tambahan
+  tempatLahir     String?
+  tanggalLahir    DateTime?
+  jenisKelamin    String?   // 'Laki-laki' | 'Perempuan'
+  agama           String?
+  statusPernikahan String?  // 'Menikah' | 'Belum Menikah' | 'Cerai'
+  
+  // Data Pendidikan
+  pendidikanTerakhir String? // 'SD' | 'SMP' | 'SMA/SMK' | 'D3' | 'S1' | 'S2'
+  jurusan           String?
+  tahunLulus        String?
+  
+  // Data Kepegawaian
+  tanggalBergabung  DateTime?
+  statusKaryawan    String?   // 'Tetap' | 'Kontrak' | 'Magang' | 'Harian'
+  
+  // Data Bank
+  namaBank          String?
+  nomorRekening     String?
+  pemilikRekening   String?
+  
+  // Kontak Darurat
+  kontakDaruratNama     String?
+  kontakDaruratHubungan String?
+  kontakDaruratTelepon  String?
+
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   barangKeluar    BarangKeluar[]
