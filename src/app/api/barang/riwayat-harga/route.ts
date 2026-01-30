@@ -5,9 +5,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
-
-    // Sort logic (default: latest first)
-    // Filter logic can be added later
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "desc") as
+      | "asc"
+      | "desc";
+    const skip = (page - 1) * limit;
 
     const where = search
       ? {
@@ -31,17 +35,32 @@ export async function GET(request: NextRequest) {
         }
       : {};
 
-    const riwayatList = await db.riwayatHarga.findMany({
-      where: where as any,
-      include: {
-        barang: true,
-        supplier: true,
-      },
-      orderBy: { tanggal: "desc" },
-      take: 100, // Limit for now
-    });
+    const [riwayatList, totalCount] = await Promise.all([
+      db.riwayatHarga.findMany({
+        where: where as any,
+        include: {
+          barang: true,
+          supplier: true,
+        },
+        orderBy: {
+          [sortBy === "createdAt" ? "tanggal" : sortBy]: sortOrder,
+        },
+        skip,
+        take: limit,
+      }),
+      db.riwayatHarga.count({ where: where as any }),
+    ]);
 
-    return NextResponse.json({ success: true, data: riwayatList });
+    return NextResponse.json({
+      success: true,
+      data: riwayatList,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching riwayat harga:", error);
     return NextResponse.json(

@@ -8,6 +8,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "desc") as
+      | "asc"
+      | "desc";
     const skip = (page - 1) * limit;
 
     const where = search
@@ -32,7 +36,7 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: {
-          createdAt: "desc",
+          [sortBy]: sortOrder,
         },
         skip,
         take: limit,

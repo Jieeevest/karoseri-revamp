@@ -14,16 +14,39 @@ export interface Barang {
   createdAt?: string;
 }
 
-export function useBarang(search?: string) {
+export interface BarangParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export function useBarang(params?: BarangParams | string) {
+  const queryParams = new URLSearchParams();
+
+  // Backward compatibility for when params is just a search string
+  if (typeof params === "string") {
+    if (params) queryParams.append("search", params);
+  } else if (params) {
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+    if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+  }
+
   return useQuery({
-    queryKey: ["barang", search],
+    queryKey: ["barang", params],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (search) params.append("search", search);
       const { data } = await axios.get(
-        `/api/barang/data-barang?${params.toString()}`,
+        `/api/barang/data-barang?${queryParams.toString()}`,
       );
-      return data.data as Barang[];
+      // Handle both paginated and non-paginated responses structure if API varies
+      // But we standardized API to return { data, pagination }
+      // For backward compat with existing code expecting array, we might need adjustments in components
+      // The API now returns { success, data, pagination }.
+      return data;
     },
   });
 }

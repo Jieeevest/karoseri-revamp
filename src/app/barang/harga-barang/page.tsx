@@ -12,14 +12,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, TrendingUp, TrendingDown, Minus, History } from "lucide-react";
+import {
+  Search,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  History,
+  ArrowUpDown,
+} from "lucide-react";
 import { useState } from "react";
 import { useRiwayatHarga } from "@/hooks/use-riwayat-harga";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 // import { formatCurrency } from "@/lib/utils"; // Removed as it doesn't exist
 
 export default function PriceMonitoringPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: riwayatList = [], isLoading } = useRiwayatHarga(searchTerm);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const { data: queryData, isLoading } = useRiwayatHarga({
+    search: searchTerm,
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+  });
+
+  const riwayatList = (queryData as any)?.data || [];
+  const pagination = (queryData as any)?.pagination;
 
   // Helper currency formatter if not imported or different
   const formatIDR = (amount: number) => {
@@ -33,6 +55,15 @@ export default function PriceMonitoringPage() {
   const getPercentageChange = (oldPrice: number, newPrice: number) => {
     if (oldPrice === 0) return 100; // New price established
     return ((newPrice - oldPrice) / oldPrice) * 100;
+  };
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
   };
 
   return (
@@ -65,7 +96,10 @@ export default function PriceMonitoringPage() {
                 <Input
                   placeholder="Cari produk, SKU, atau supplier..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-slate-50"
                 />
               </div>
@@ -76,11 +110,51 @@ export default function PriceMonitoringPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="w-[150px]">Tanggal</TableHead>
-                  <TableHead>Produk</TableHead>
-                  <TableHead>Supplier</TableHead>
+                  <TableHead
+                    className="w-[150px] cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("createdAt")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Tanggal
+                      {sortBy === "createdAt" && (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("barang.nama")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Produk
+                      {sortBy === "barang.nama" && (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("supplier.nama")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Supplier
+                      {sortBy === "supplier.nama" && (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                    </div>
+                  </TableHead>
                   <TableHead className="text-right">Harga Lama</TableHead>
-                  <TableHead className="text-right">Harga Baru</TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("hargaBaru")}
+                  >
+                    <div className="flex items-center justify-end gap-2">
+                      Harga Baru
+                      {sortBy === "hargaBaru" && (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                    </div>
+                  </TableHead>
                   <TableHead className="text-right">Selisih</TableHead>
                   <TableHead className="text-center w-[100px]">Trend</TableHead>
                 </TableRow>
@@ -193,6 +267,18 @@ export default function PriceMonitoringPage() {
               </TableBody>
             </Table>
           </CardContent>
+          {pagination && (
+            <div className="pb-4 px-4 border-t border-slate-100">
+              <PaginationControls
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalData={pagination.total}
+                limit={pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            </div>
+          )}
         </Card>
       </div>
     </DashboardLayout>

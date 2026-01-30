@@ -10,6 +10,10 @@ export async function GET(request: NextRequest) {
     // Check if pagination parameters exist, otherwise return all
     const pageParam = searchParams.get("page");
     const limitParam = searchParams.get("limit");
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "desc") as
+      | "asc"
+      | "desc";
 
     // Default filter
     const where = search
@@ -26,7 +30,7 @@ export async function GET(request: NextRequest) {
     if (!pageParam && !limitParam) {
       const suppliers = await db.supplier.findMany({
         where: where as any,
-        orderBy: { createdAt: "desc" },
+        orderBy: { [sortBy]: sortOrder },
       });
       return NextResponse.json({ success: true, data: suppliers });
     }
@@ -40,7 +44,7 @@ export async function GET(request: NextRequest) {
         where: where as any,
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: { [sortBy]: sortOrder },
       }),
       db.supplier.count({ where: where as any }),
     ]);

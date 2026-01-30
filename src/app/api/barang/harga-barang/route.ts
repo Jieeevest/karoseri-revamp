@@ -8,6 +8,10 @@ export async function GET(request: NextRequest) {
 
     const pageParam = searchParams.get("page");
     const limitParam = searchParams.get("limit");
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "desc") as
+      | "asc"
+      | "desc";
 
     const where = search
       ? {
@@ -34,7 +38,7 @@ export async function GET(request: NextRequest) {
           supplier: true,
           kategoriBarang: true,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { [sortBy]: sortOrder },
       });
       return NextResponse.json({ success: true, data: hargaList });
     }
@@ -53,7 +57,7 @@ export async function GET(request: NextRequest) {
           supplier: true,
           kategoriBarang: true,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { [sortBy]: sortOrder },
       }),
       db.hargaBarang.count({ where: where as any }),
     ]);

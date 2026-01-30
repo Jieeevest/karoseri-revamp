@@ -41,6 +41,7 @@ import {
 import { useState } from "react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { Combobox } from "@/components/ui/combobox";
+import { useToast } from "@/hooks/use-toast";
 import {
   useBarang,
   useCreateBarang,
@@ -50,12 +51,37 @@ import {
 } from "@/hooks/use-barang";
 import { useKategoriBarang, useSatuanBarang } from "@/hooks/use-master";
 
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ArrowUpDown } from "lucide-react";
+
 export default function DataBarangPage() {
-  const { data: kategoriList = [] } = useKategoriBarang();
-  const { data: satuanList = [] } = useSatuanBarang();
+  const { data: kategoriQuery } = useKategoriBarang({ limit: 100 });
+  const { data: satuanQuery } = useSatuanBarang({ limit: 100 });
+
+  const kategoriList = kategoriQuery?.data || [];
+  const satuanList = satuanQuery?.data || [];
 
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: barangList = [], refetch } = useBarang(searchTerm);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const {
+    data: queryData,
+    refetch,
+    isLoading,
+  } = useBarang({
+    search: searchTerm,
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+  });
+
+  const barangList = (queryData as any)?.data || [];
+  const pagination = (queryData as any)?.pagination;
+
   const createBarang = useCreateBarang();
   const updateBarang = useUpdateBarang();
   const deleteBarang = useDeleteBarang();
@@ -74,14 +100,18 @@ export default function DataBarangPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingBarang, setDeletingBarang] = useState<Barang | null>(null);
 
-  const filteredBarang = barangList.filter(
-    (barang) =>
-      barang.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      barang.kode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      barang.kategoriBarang.nama
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()),
-  );
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const { toast } = useToast();
+
+  // ... (inside component)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,13 +122,27 @@ export default function DataBarangPage() {
           id: editingBarang.id,
           ...formData,
           kategoriId: parseInt(formData.kategoriId),
+          // satuanId is string in formData, will be parsed in API
           stok: formData.stok,
           stokMinimum: formData.stokMinimum,
+        });
+        toast({
+          title: "Berhasil",
+          description: "Data barang berhasil diperbarui",
+          className: "bg-green-50 text-green-800 border-green-200",
         });
       } else {
         await createBarang.mutateAsync({
           ...formData,
+          // kategoriId converted here, but we should rely on API parsing too for safety.
+          // passing it as is (string from formData) since my API update now handles parseInt.
+          // But to be consistent with Typescript interface if it expects number:
           kategoriId: parseInt(formData.kategoriId),
+        });
+        toast({
+          title: "Berhasil",
+          description: "Barang berhasil ditambahkan",
+          className: "bg-green-50 text-green-800 border-green-200",
         });
       }
 
@@ -113,9 +157,15 @@ export default function DataBarangPage() {
       setEditingBarang(null);
       setIsDialogOpen(false);
       refetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save barang", error);
-      alert("Gagal menyimpan barang");
+      toast({
+        title: "Gagal",
+        description:
+          error?.response?.data?.error ||
+          "Terjadi kesalahan saat menyimpan barang",
+        variant: "destructive",
+      });
     }
   };
 
@@ -145,9 +195,18 @@ export default function DataBarangPage() {
       refetch();
       setIsDeleteModalOpen(false);
       setDeletingBarang(null);
-    } catch (error) {
+      toast({
+        title: "Berhasil",
+        description: "Barang berhasil dihapus",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+    } catch (error: any) {
       console.error("Failed to delete barang", error);
-      alert("Gagal menghapus barang");
+      toast({
+        title: "Gagal",
+        description: error?.response?.data?.error || "Gagal menghapus barang",
+        variant: "destructive",
+      });
     }
   };
 
@@ -223,16 +282,23 @@ export default function DataBarangPage() {
                     </Label>
                     <Input
                       id="kode"
-                      value={formData.kode}
+                      value={!editingBarang ? "" : formData.kode}
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
                           kode: e.target.value,
                         }))
                       }
-                      className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                      placeholder="Contoh: BRG001"
-                      required
+                      className={`rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 ${
+                        !editingBarang ? "bg-slate-100 text-slate-500" : ""
+                      }`}
+                      placeholder={
+                        !editingBarang
+                          ? "Otomatis (dibuat sistem)"
+                          : "Contoh: BRG001"
+                      }
+                      disabled={!editingBarang}
+                      required={!!editingBarang}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -272,7 +338,7 @@ export default function DataBarangPage() {
                             kategoriId: value,
                           }))
                         }
-                        options={kategoriList.map((cat) => ({
+                        options={kategoriList.map((cat: any) => ({
                           value: cat.id.toString(),
                           label: cat.nama,
                         }))}
@@ -292,7 +358,7 @@ export default function DataBarangPage() {
                         onChange={(value) =>
                           setFormData((prev) => ({ ...prev, satuanId: value }))
                         }
-                        options={satuanList.map((sat) => ({
+                        options={satuanList.map((sat: any) => ({
                           value: sat.id,
                           label: sat.nama,
                         }))}
@@ -380,7 +446,10 @@ export default function DataBarangPage() {
                 <Input
                   placeholder="Cari barang..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
@@ -390,11 +459,26 @@ export default function DataBarangPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Kode
+                  <TableHead className="w-[50px] text-center font-semibold text-slate-500">
+                    No
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Nama Barang
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("kode")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Kode
+                      {sortBy === "kode" && <ArrowUpDown className="w-3 h-3" />}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("nama")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Nama Barang
+                      {sortBy === "nama" && <ArrowUpDown className="w-3 h-3" />}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Kategori
@@ -402,8 +486,14 @@ export default function DataBarangPage() {
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Satuan
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Stok
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("stok")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Stok
+                      {sortBy === "stok" && <ArrowUpDown className="w-3 h-3" />}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Status
@@ -414,8 +504,17 @@ export default function DataBarangPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {barangList.length > 0 ? (
-                  barangList.map((barang) => {
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="h-24 text-center text-slate-500"
+                    >
+                      Memuat data...
+                    </TableCell>
+                  </TableRow>
+                ) : barangList.length > 0 ? (
+                  barangList.map((barang: any, index: number) => {
                     const stockStatus = getStockStatus(
                       barang.stok,
                       barang.stokMinimum,
@@ -427,6 +526,9 @@ export default function DataBarangPage() {
                         key={barang.id}
                         className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
                       >
+                        <TableCell className="px-6 text-center text-slate-500">
+                          {index + 1 + (page - 1) * limit}
+                        </TableCell>
                         <TableCell className="px-6 font-medium text-slate-700">
                           {barang.kode}
                         </TableCell>
@@ -438,11 +540,11 @@ export default function DataBarangPage() {
                             variant="outline"
                             className="border-slate-200 text-slate-600 font-normal"
                           >
-                            {barang.kategoriBarang.nama}
+                            {barang.kategoriBarang?.nama}
                           </Badge>
                         </TableCell>
                         <TableCell className="px-6 text-slate-500">
-                          {barang.satuanBarang.nama}
+                          {barang.satuanBarang?.nama}
                         </TableCell>
                         <TableCell className="px-6">
                           <span
@@ -486,16 +588,30 @@ export default function DataBarangPage() {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="px-6 h-24 text-center text-slate-500"
-                    >
-                      Data tidak ditemukan.
-                    </TableCell>
+                    <TableRow>
+                      <TableCell
+                        colSpan={8}
+                        className="px-6 h-24 text-center text-slate-500"
+                      >
+                        Data tidak ditemukan.
+                      </TableCell>
+                    </TableRow>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+
+            {/* Pagination Controls */}
+            {pagination && (
+              <PaginationControls
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalData={pagination.total}
+                limit={pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            )}
           </CardContent>
         </Card>
       </div>

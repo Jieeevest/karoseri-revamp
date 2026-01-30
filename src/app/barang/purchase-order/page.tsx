@@ -40,8 +40,10 @@ import {
   Send,
   Check,
   X,
+  ArrowUpDown,
 } from "lucide-react";
 import { useState } from "react";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useSession } from "next-auth/react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
@@ -65,7 +67,22 @@ export default function PurchaseOrderPage() {
   const { data: barangList = [] } = useBarang();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: poList = [], isLoading } = usePurchaseOrder(searchTerm);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const { data: queryData, isLoading } = usePurchaseOrder({
+    search: searchTerm,
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+  });
+
+  const poList = (queryData as any)?.data || [];
+  const pagination = (queryData as any)?.pagination;
+
   const createPO = useCreatePurchaseOrder();
   const updatePO = useUpdatePurchaseOrder();
   const deletePO = useDeletePurchaseOrder();
@@ -85,7 +102,16 @@ export default function PurchaseOrderPage() {
   const [deletingPO, setDeletingPO] = useState<PurchaseOrder | null>(null);
 
   // No local filter needed as hook handles search, using direct list
-  const filteredPO = poList; // or just use poList directly in render
+  // const filteredPO = poList; // Removed unused variable
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -508,7 +534,10 @@ export default function PurchaseOrderPage() {
                 <Input
                   placeholder="Cari PO..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
@@ -518,17 +547,41 @@ export default function PurchaseOrderPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Nomor PO
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("nomor")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Nomor PO
+                      {sortBy === "nomor" && (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Tanggal
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("tanggal")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Tanggal
+                      {sortBy === "tanggal" && (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Supplier
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Total
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("total")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Total
+                      {sortBy === "total" && (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Status
@@ -612,6 +665,18 @@ export default function PurchaseOrderPage() {
               </TableBody>
             </Table>
           </CardContent>
+          {pagination && (
+            <div className="pb-4 px-4 border-t border-slate-100">
+              <PaginationControls
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalData={pagination.total}
+                limit={pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            </div>
+          )}
         </Card>
 
         {/* Detail Dialog */}

@@ -34,8 +34,10 @@ import {
   Phone,
   Mail,
   MapPin,
+  ArrowUpDown,
 } from "lucide-react";
 import { useState } from "react";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -48,6 +50,11 @@ import {
 
 export default function SupplierPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [formData, setFormData] = useState({
@@ -63,16 +70,30 @@ export default function SupplierPage() {
     null,
   );
 
-  const { data: supplierList = [], isLoading } = useSupplier(searchTerm);
+  const { data: queryData, isLoading } = useSupplier({
+    search: searchTerm,
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+  });
+
+  const supplierList = (queryData as any)?.data || [];
+  const pagination = (queryData as any)?.pagination;
+
   const createSupplier = useCreateSupplier();
   const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
   const { toast } = useToast();
 
-  // Filter handled by API search parameter, but keeping local filter for fallback/instant feedback if needed
-  // In this case, we rely on the API hook's search param, so we can use the list directly.
-  // However, since the hook might be debounced or relying on button press in some implementations (though here it's direct),
-  // we'll treat supplierList as the source of truth.
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -329,7 +350,10 @@ export default function SupplierPage() {
                 <Input
                   placeholder="Cari supplier..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
@@ -339,11 +363,23 @@ export default function SupplierPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="font-semibold text-slate-500">
-                    Kode
+                  <TableHead
+                    className="font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("kode")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Kode
+                      {sortBy === "kode" && <ArrowUpDown className="w-3 h-3" />}
+                    </div>
                   </TableHead>
-                  <TableHead className="font-semibold text-slate-500">
-                    Nama Supplier
+                  <TableHead
+                    className="font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
+                    onClick={() => handleSort("nama")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Nama Supplier
+                      {sortBy === "nama" && <ArrowUpDown className="w-3 h-3" />}
+                    </div>
                   </TableHead>
                   <TableHead className="font-semibold text-slate-500">
                     Kontak
@@ -447,6 +483,17 @@ export default function SupplierPage() {
                 )}
               </TableBody>
             </Table>
+            {/* Pagination Controls */}
+            {pagination && (
+              <PaginationControls
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalData={pagination.total}
+                limit={pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            )}
           </CardContent>
         </Card>
       </div>

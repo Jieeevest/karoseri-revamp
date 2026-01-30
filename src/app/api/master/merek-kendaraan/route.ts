@@ -71,6 +71,28 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    const { id, nama } = await request.json();
+    if (!id || !nama)
+      return NextResponse.json(
+        { success: false, error: "ID and Nama required" },
+        { status: 400 },
+      );
+
+    const updatedItem = await db.merekKendaraan.update({
+      where: { id },
+      data: { nama },
+    });
+    return NextResponse.json({ success: true, data: updatedItem });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: "Failed to update merek" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

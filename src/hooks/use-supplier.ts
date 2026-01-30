@@ -11,16 +11,34 @@ export interface Supplier {
   createdAt: string;
 }
 
-export function useSupplier(search?: string) {
+export interface SupplierParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export function useSupplier(params?: SupplierParams | string) {
+  const queryParams = new URLSearchParams();
+
+  if (typeof params === "string") {
+    if (params) queryParams.append("search", params);
+  } else if (params) {
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+    if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+  }
+
   return useQuery({
-    queryKey: ["supplier", search],
+    queryKey: ["supplier", params],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (search) params.append("search", search);
       const { data } = await axios.get(
-        `/api/barang/supplier?${params.toString()}`,
+        `/api/barang/supplier?${queryParams.toString()}`,
       );
-      return data.data as Supplier[];
+      return data;
     },
   });
 }
