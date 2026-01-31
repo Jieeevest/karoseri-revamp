@@ -22,15 +22,19 @@ import { usePurchaseOrder } from "@/hooks/use-purchase-order";
 export default function Home() {
   const router = useRouter();
 
-  const { data: barangList = [] } = useBarang();
+  const { data: barangQuery } = useBarang({ limit: 100 }); // Fetch more for dashboard
   const { data: kendaraanList = [] } = useKendaraan();
   const { data: karyawanList = [] } = useKaryawan();
-  const { data: poList = [] } = usePurchaseOrder();
+  const { data: poQuery } = usePurchaseOrder({ limit: 20 });
+
+  const barangList = (barangQuery as any)?.data || [];
+  const totalBarang = (barangQuery as any)?.pagination?.total || 0;
+  const poList = (poQuery as any)?.data || [];
 
   const stats = [
     {
       title: "Total Barang",
-      value: barangList.length.toLocaleString(),
+      value: totalBarang.toLocaleString(),
       icon: Package,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
@@ -53,7 +57,7 @@ export default function Home() {
     },
     {
       title: "PO Pending",
-      value: (poList as any[])
+      value: poList
         .filter((p: any) => p.status === "DIAJUKAN" || p.status === "DRAFT")
         .length.toLocaleString(),
       icon: ShoppingCart,
@@ -63,14 +67,14 @@ export default function Home() {
   ];
 
   // Filter low stock items (stok <= stokMinimum)
-  const lowStockItems = (barangList as any[])
+  const lowStockItems = barangList
     .filter((item: any) => item.stok <= (item.stokMinimum || 10))
     .slice(0, 5);
 
   // Recent Activities (Mocked for now as we need better backend support for aggregated feed)
   // Ideally, this should fetch from a dedicated /api/dashboard/activities endpoint
   const recentActivities = [
-    ...(poList as any[]).slice(0, 2).map((po: any) => ({
+    ...poList.slice(0, 2).map((po: any) => ({
       id: `po-${po.id}`,
       type: "purchase_order",
       description: `Purchase Order ${po.nomor} ${po.status.toLowerCase()}`,

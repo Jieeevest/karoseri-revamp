@@ -100,7 +100,7 @@ export default function PriceMonitoringPage() {
                     setSearchTerm(e.target.value);
                     setPage(1);
                   }}
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-slate-50"
+                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
             </div>
@@ -111,7 +111,7 @@ export default function PriceMonitoringPage() {
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
                   <TableHead
-                    className="w-[150px] cursor-pointer hover:bg-slate-100"
+                    className="px-6 w-[150px] font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
                     onClick={() => handleSort("createdAt")}
                   >
                     <div className="flex items-center gap-2">
@@ -122,7 +122,7 @@ export default function PriceMonitoringPage() {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-slate-100"
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
                     onClick={() => handleSort("barang.nama")}
                   >
                     <div className="flex items-center gap-2">
@@ -133,7 +133,7 @@ export default function PriceMonitoringPage() {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-slate-100"
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
                     onClick={() => handleSort("supplier.nama")}
                   >
                     <div className="flex items-center gap-2">
@@ -143,9 +143,11 @@ export default function PriceMonitoringPage() {
                       )}
                     </div>
                   </TableHead>
-                  <TableHead className="text-right">Harga Lama</TableHead>
+                  <TableHead className="px-6 text-right font-semibold text-slate-500">
+                    Harga Lama
+                  </TableHead>
                   <TableHead
-                    className="text-right cursor-pointer hover:bg-slate-100"
+                    className="px-6 text-right font-semibold text-slate-500 cursor-pointer hover:bg-slate-100"
                     onClick={() => handleSort("hargaBaru")}
                   >
                     <div className="flex items-center justify-end gap-2">
@@ -155,8 +157,12 @@ export default function PriceMonitoringPage() {
                       )}
                     </div>
                   </TableHead>
-                  <TableHead className="text-right">Selisih</TableHead>
-                  <TableHead className="text-center w-[100px]">Trend</TableHead>
+                  <TableHead className="px-6 text-right font-semibold text-slate-500">
+                    Selisih
+                  </TableHead>
+                  <TableHead className="px-6 text-center w-[100px] font-semibold text-slate-500">
+                    Trend
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -164,7 +170,7 @@ export default function PriceMonitoringPage() {
                   <TableRow>
                     <TableCell
                       colSpan={7}
-                      className="text-center py-10 text-slate-500"
+                      className="h-24 text-center text-slate-500"
                     >
                       Memuat data riwayat...
                     </TableCell>
@@ -173,7 +179,7 @@ export default function PriceMonitoringPage() {
                   <TableRow>
                     <TableCell
                       colSpan={7}
-                      className="text-center py-10 text-slate-500"
+                      className="px-6 h-24 text-center text-slate-500"
                     >
                       Tidak ada riwayat perubahan harga.
                     </TableCell>
@@ -191,9 +197,9 @@ export default function PriceMonitoringPage() {
                     return (
                       <TableRow
                         key={log.id}
-                        className="hover:bg-slate-50 border-slate-100"
+                        className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
                       >
-                        <TableCell className="text-slate-500 text-sm">
+                        <TableCell className="px-6 text-slate-500 text-sm">
                           {new Date(log.tanggal).toLocaleDateString("id-ID", {
                             day: "numeric",
                             month: "short",
@@ -202,7 +208,7 @@ export default function PriceMonitoringPage() {
                             minute: "2-digit",
                           })}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-6">
                           <div className="font-medium text-slate-900">
                             {log.barang.nama}
                           </div>
@@ -210,16 +216,16 @@ export default function PriceMonitoringPage() {
                             {log.barang.kode}
                           </div>
                         </TableCell>
-                        <TableCell className="text-slate-600">
+                        <TableCell className="px-6 text-slate-600">
                           {log.supplier.nama}
                         </TableCell>
-                        <TableCell className="text-right text-slate-500">
+                        <TableCell className="px-6 text-right text-slate-500">
                           {isNew ? "-" : formatIDR(log.hargaLama)}
                         </TableCell>
-                        <TableCell className="text-right font-medium text-slate-900">
+                        <TableCell className="px-6 text-right font-medium text-slate-900">
                           {formatIDR(log.hargaBaru)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="px-6 text-right">
                           <span
                             className={
                               isIncrease
@@ -236,7 +242,7 @@ export default function PriceMonitoringPage() {
                             {isNew ? "Baru" : `${percent.toFixed(1)}%`}
                           </div>
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="px-6 text-center">
                           {isNew ? (
                             <Badge
                               variant="outline"
