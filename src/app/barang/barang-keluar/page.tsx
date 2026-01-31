@@ -41,7 +41,11 @@ import {
   Briefcase,
   Wrench,
   Edit,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
@@ -60,13 +64,46 @@ import {
 } from "@/hooks/use-barang-keluar";
 
 export default function BarangKeluarPage() {
-  const { data: barangList = [] } = useBarang();
+  const { data: barangQuery } = useBarang();
+  const barangList: any[] = (barangQuery as any)?.data || [];
   const { data: karyawanList = [] } = useKaryawan();
   const { data: kendaraanList = [] } = useKendaraan();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: barangKeluarList = [], isLoading } =
-    useBarangKeluar(searchTerm);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const { data: queryData, isLoading } = useBarangKeluar({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+
+  const barangKeluarList: BarangKeluar[] = (queryData as any)?.data || [];
+  const pagination = (queryData as any)?.pagination;
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field)
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-slate-400" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />
+    );
+  };
   const createBarangKeluar = useCreateBarangKeluar();
   const updateBarangKeluar = useUpdateBarangKeluar();
   const deleteBarangKeluar = useDeleteBarangKeluar();
@@ -89,16 +126,7 @@ export default function BarangKeluarPage() {
   const [deletingBarangKeluar, setDeletingBarangKeluar] =
     useState<BarangKeluar | null>(null);
 
-  const filteredBarangKeluar = barangKeluarList.filter(
-    (bk) =>
-      bk.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bk.jenis.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bk.barang.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bk.karyawan.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bk.kendaraan?.nomorPolisi
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()),
-  );
+  const filteredBarangKeluar = barangKeluarList; // Filter handled by backend
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -619,20 +647,44 @@ export default function BarangKeluarPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="font-semibold text-slate-500">
-                    Nomor
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("nomor")}
+                  >
+                    <div className="flex items-center">
+                      Nomor
+                      {renderSortIcon("nomor")}
+                    </div>
                   </TableHead>
-                  <TableHead className="font-semibold text-slate-500">
-                    Tanggal
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("tanggal")}
+                  >
+                    <div className="flex items-center">
+                      Tanggal
+                      {renderSortIcon("tanggal")}
+                    </div>
                   </TableHead>
-                  <TableHead className="font-semibold text-slate-500">
-                    Jenis
-                  </TableHead>
-                  <TableHead className="font-semibold text-slate-500">
-                    Barang
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("jenis")}
+                  >
+                    <div className="flex items-center">
+                      Jenis
+                      {renderSortIcon("jenis")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    Jumlah
+                    Barang
+                  </TableHead>
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("jumlah")}
+                  >
+                    <div className="flex items-center">
+                      Jumlah
+                      {renderSortIcon("jumlah")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Karyawan
@@ -659,7 +711,14 @@ export default function BarangKeluarPage() {
                         {barangKeluar.nomor}
                       </TableCell>
                       <TableCell className="px-6 text-slate-600">
-                        {barangKeluar.tanggal}
+                        {new Date(barangKeluar.tanggal).toLocaleDateString(
+                          "id-ID",
+                          {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          },
+                        )}
                       </TableCell>
                       <TableCell className="px-6">
                         <Badge
@@ -766,6 +825,16 @@ export default function BarangKeluarPage() {
               </TableBody>
             </Table>
           </CardContent>
+          <div className="p-4 border-t border-slate-100">
+            <PaginationControls
+              currentPage={page}
+              totalPages={pagination?.totalPages || 1}
+              totalData={pagination?.total || 0}
+              limit={limit}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+            />
+          </div>
         </Card>
       </div>
 

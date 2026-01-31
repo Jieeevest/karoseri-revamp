@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Plus,
   Edit,
@@ -41,6 +42,7 @@ import {
   Check,
   X,
   ArrowUpDown,
+  Info,
 } from "lucide-react";
 import { useState } from "react";
 import { PaginationControls } from "@/components/ui/pagination-controls";
@@ -522,6 +524,17 @@ export default function PurchaseOrderPage() {
             </Dialog>
           ) : null}
         </div>
+
+        <Alert className="bg-white border-slate-200 text-slate-900 shadow-sm rounded-xl flex items-center p-3">
+          <Info className="h-4 w-4 text-slate-900 mr-3 shrink-0" />
+          <AlertDescription className="text-slate-900 mt-0 block">
+            <span className="inline">
+              <span className="font-semibold">Informasi:</span> Purchase Order
+              (PO) hanya dapat dibuat oleh pengguna dengan akses{" "}
+              <span className="font-semibold">Gudang</span>.
+            </span>
+          </AlertDescription>
+        </Alert>
 
         <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
           <CardHeader className="border-b border-slate-100 pb-4">

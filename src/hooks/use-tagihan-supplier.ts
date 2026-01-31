@@ -18,16 +18,36 @@ export interface TagihanSupplier {
   createdAt: string;
 }
 
-export function useTagihanSupplier(search?: string) {
+export interface TagihanSupplierParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  status?: string;
+}
+
+export function useTagihanSupplier(params?: TagihanSupplierParams | string) {
+  const queryParams = new URLSearchParams();
+
+  if (typeof params === "string") {
+    if (params) queryParams.append("search", params);
+  } else if (params) {
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+    if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+    if (params.status) queryParams.append("status", params.status);
+  }
+
   return useQuery({
-    queryKey: ["tagihan-supplier", search],
+    queryKey: ["tagihan-supplier", params],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (search) params.append("search", search);
       const { data } = await axios.get(
-        `/api/barang/tagihan-supplier?${params.toString()}`,
+        `/api/barang/tagihan-supplier?${queryParams.toString()}`,
       );
-      return data.data as TagihanSupplier[];
+      return data;
     },
   });
 }

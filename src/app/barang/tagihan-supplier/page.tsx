@@ -39,7 +39,11 @@ import {
   Upload,
   FileText,
   CreditCard,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -51,7 +55,40 @@ import {
 
 export default function TagihanSupplierPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: tagihanList = [], isLoading } = useTagihanSupplier(searchTerm);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("tanggalJatuhTempo");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const { data: queryData, isLoading } = useTagihanSupplier({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+
+  const tagihanList: TagihanSupplier[] = (queryData as any)?.data || [];
+  const pagination = (queryData as any)?.pagination;
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field)
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-slate-400" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />
+    );
+  };
   const updateTagihan = useUpdateTagihanSupplier();
   const { toast } = useToast();
 
@@ -63,14 +100,7 @@ export default function TagihanSupplierPage() {
     buktiPembayaran: "",
   });
 
-  const filteredTagihan = tagihanList.filter(
-    (tagihan) =>
-      tagihan.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tagihan.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tagihan.purchaseOrder.nomor
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()),
-  );
+  const filteredTagihan = tagihanList; // Filter handled by backend
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -320,8 +350,14 @@ export default function TagihanSupplierPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Nomor Tagihan
+                  <TableHead
+                    className="px-6 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("nomorInvoice")}
+                  >
+                    <div className="flex items-center">
+                      Nomor Tagihan
+                      {renderSortIcon("nomorInvoice")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     PO Reference
@@ -329,14 +365,32 @@ export default function TagihanSupplierPage() {
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Supplier
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Jumlah
+                  <TableHead
+                    className="px-6 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("jumlahTagihan")}
+                  >
+                    <div className="flex items-center">
+                      Jumlah
+                      {renderSortIcon("jumlahTagihan")}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Jatuh Tempo
+                  <TableHead
+                    className="px-6 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("tanggalJatuhTempo")}
+                  >
+                    <div className="flex items-center">
+                      Jatuh Tempo
+                      {renderSortIcon("tanggalJatuhTempo")}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Status
+                  <TableHead
+                    className="px-6 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("status")}
+                  >
+                    <div className="flex items-center">
+                      Status
+                      {renderSortIcon("status")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Metode
@@ -444,6 +498,16 @@ export default function TagihanSupplierPage() {
               </TableBody>
             </Table>
           </CardContent>
+          <div className="p-4 border-t border-slate-100">
+            <PaginationControls
+              currentPage={page}
+              totalPages={pagination?.totalPages || 1}
+              totalData={pagination?.total || 0}
+              limit={limit}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+            />
+          </div>
         </Card>
 
         {/* Payment Dialog */}

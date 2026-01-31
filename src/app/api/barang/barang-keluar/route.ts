@@ -8,6 +8,9 @@ export async function GET(request: NextRequest) {
 
     const pageParam = searchParams.get("page");
     const limitParam = searchParams.get("limit");
+    const sortBy = searchParams.get("sortBy") || "tanggal";
+    const sortOrder =
+      (searchParams.get("sortOrder") as "asc" | "desc") || "desc";
 
     const where = search
       ? {
@@ -38,7 +41,7 @@ export async function GET(request: NextRequest) {
           barang: true,
           karyawan: true,
         },
-        orderBy: { tanggal: "desc" },
+        orderBy: { [sortBy]: sortOrder },
       });
       return NextResponse.json({ success: true, data: barangKeluarList });
     }
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
           barang: true,
           karyawan: true,
         },
-        orderBy: { tanggal: "desc" },
+        orderBy: { [sortBy]: sortOrder },
       }),
       db.barangKeluar.count({ where: where as any }),
     ]);

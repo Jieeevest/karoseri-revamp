@@ -9,6 +9,9 @@ export async function GET(request: NextRequest) {
 
     const pageParam = searchParams.get("page");
     const limitParam = searchParams.get("limit");
+    const sortBy = searchParams.get("sortBy") || "tanggalJatuhTempo";
+    const sortOrder =
+      (searchParams.get("sortOrder") as "asc" | "desc") || "asc";
 
     const where: any = {};
 
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
           supplier: true,
           purchaseOrder: true,
         },
-        orderBy: { tanggalJatuhTempo: "asc" },
+        orderBy: { [sortBy]: sortOrder },
       });
       return NextResponse.json({ success: true, data: bills });
     }
@@ -49,7 +52,7 @@ export async function GET(request: NextRequest) {
           supplier: true,
           purchaseOrder: true,
         },
-        orderBy: { tanggalJatuhTempo: "asc" },
+        orderBy: { [sortBy]: sortOrder },
       }),
       db.tagihanSupplier.count({ where }),
     ]);

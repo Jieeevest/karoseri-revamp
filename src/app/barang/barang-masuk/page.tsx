@@ -37,7 +37,11 @@ import {
   Truck,
   CheckCircle,
   AlertTriangle,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
@@ -61,13 +65,47 @@ export default function BarangMasukPage() {
   const { data: barangList = [] } = useBarang();
   const { data: supplierList = [] } = useSupplier();
   // Fetch POs to link with Incoming Goods, filtering for approved ones ideally
-  const { data: purchaseOrderListRaw = [] } = usePurchaseOrder();
+  const { data: poQueryData } = usePurchaseOrder();
+  const purchaseOrderListRaw = (poQueryData as any)?.data || [];
   const purchaseOrderList = purchaseOrderListRaw.filter(
-    (po) => po.status === "DISETUJUI",
+    (po: any) => po.status === "DISETUJUI",
   );
 
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: barangMasukList = [], isLoading } = useBarangMasuk(searchTerm);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const { data: queryData, isLoading } = useBarangMasuk({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+
+  const barangMasukList: BarangMasuk[] = (queryData as any)?.data || [];
+  const pagination = (queryData as any)?.pagination;
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field)
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-slate-400" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />
+    );
+  };
   const createBarangMasuk = useCreateBarangMasuk();
   const updateBarangMasuk = useUpdateBarangMasuk();
   const deleteBarangMasuk = useDeleteBarangMasuk();
@@ -89,13 +127,7 @@ export default function BarangMasukPage() {
   const [deletingBarangMasuk, setDeletingBarangMasuk] =
     useState<BarangMasuk | null>(null);
 
-  const filteredBarangMasuk = barangMasukList.filter(
-    (bm) =>
-      bm.nomor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bm.barang.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bm.supplier.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bm.kondisi.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredBarangMasuk = barangMasukList; // Filtering is now done on backend via searchTerm
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -587,11 +619,23 @@ export default function BarangMasukPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Nomor
+                  <TableHead
+                    className="px-6 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("nomor")}
+                  >
+                    <div className="flex items-center">
+                      Nomor
+                      {renderSortIcon("nomor")}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Tanggal
+                  <TableHead
+                    className="px-6 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("tanggal")}
+                  >
+                    <div className="flex items-center">
+                      Tanggal
+                      {renderSortIcon("tanggal")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Supplier
@@ -599,11 +643,23 @@ export default function BarangMasukPage() {
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Barang
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Jumlah
+                  <TableHead
+                    className="px-6 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("jumlah")}
+                  >
+                    <div className="flex items-center">
+                      Jumlah
+                      {renderSortIcon("jumlah")}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Kondisi
+                  <TableHead
+                    className="px-6 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("kondisi")}
+                  >
+                    <div className="flex items-center">
+                      Kondisi
+                      {renderSortIcon("kondisi")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     PO Reference
@@ -716,6 +772,16 @@ export default function BarangMasukPage() {
               </TableBody>
             </Table>
           </CardContent>
+          <div className="p-4 border-t border-slate-100">
+            <PaginationControls
+              currentPage={page}
+              totalPages={pagination?.totalPages || 1}
+              totalData={pagination?.total || 0}
+              limit={limit}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+            />
+          </div>
         </Card>
       </div>
 

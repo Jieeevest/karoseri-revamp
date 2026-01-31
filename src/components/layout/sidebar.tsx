@@ -82,7 +82,7 @@ export function Sidebar() {
     menuItems.forEach((item) => {
       if (item.submenus) {
         const hasActiveChild = item.submenus.some(
-          (sub) => pathname === sub.href
+          (sub) => pathname === sub.href,
         );
         if (hasActiveChild && !expandedMenus.includes(item.title)) {
           setExpandedMenus((prev) => [...prev, item.title]);
@@ -95,7 +95,7 @@ export function Sidebar() {
     setExpandedMenus((prev) =>
       prev.includes(title)
         ? prev.filter((item) => item !== title)
-        : [...prev, title]
+        : [...prev, title],
     );
   };
 
@@ -139,15 +139,15 @@ export function Sidebar() {
                     "cursor-pointer group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ease-in-out relative overflow-hidden",
                     active
                       ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50",
                   )}
                 >
                   <Icon
                     className={cn(
-                      "mr-3 h-5 w-5 transition-colors shrink-0",
+                      "mr-3 h-5 w-5 transition-colors shrink-0 relative z-10",
                       active
                         ? "text-white"
-                        : "text-slate-400 group-hover:text-blue-600"
+                        : "text-slate-400 group-hover:text-blue-600",
                     )}
                   />
                   <span className="relative z-10">{item.title}</span>
@@ -162,7 +162,7 @@ export function Sidebar() {
                   className={cn(
                     "cursor-pointer group flex items-center justify-between w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ease-in-out",
                     "text-slate-600 hover:text-slate-900 hover:bg-slate-50",
-                    isExpanded && "bg-slate-50 text-slate-900"
+                    isExpanded && "bg-slate-50 text-slate-900",
                   )}
                 >
                   <div className="flex items-center">
@@ -171,7 +171,7 @@ export function Sidebar() {
                         "mr-3 h-5 w-5 transition-colors",
                         active || isExpanded
                           ? "text-blue-600"
-                          : "text-slate-400 group-hover:text-blue-600"
+                          : "text-slate-400 group-hover:text-blue-600",
                       )}
                     />
                     {item.title}
@@ -190,7 +190,7 @@ export function Sidebar() {
                   "overflow-hidden transition-all duration-300 ease-in-out",
                   isExpanded && hasSubmenu
                     ? "max-h-[500px] opacity-100 mt-1"
-                    : "max-h-0 opacity-0"
+                    : "max-h-0 opacity-0",
                 )}
               >
                 <div className="ml-4 pl-4 border-l border-slate-200 space-y-1 py-1">
@@ -202,7 +202,7 @@ export function Sidebar() {
                         "cursor-pointer flex items-center px-3 py-2 text-sm rounded-lg transition-all duration-200",
                         isActive(submenu.href)
                           ? "text-blue-700 bg-blue-50 font-medium"
-                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-50",
                       )}
                     >
                       <span
@@ -210,7 +210,7 @@ export function Sidebar() {
                           "w-1.5 h-1.5 rounded-full mr-3 transition-colors",
                           isActive(submenu.href)
                             ? "bg-blue-600"
-                            : "bg-slate-300 group-hover:bg-slate-400"
+                            : "bg-slate-300 group-hover:bg-slate-400",
                         )}
                       />
                       {submenu.title}

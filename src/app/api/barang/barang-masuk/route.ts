@@ -9,6 +9,9 @@ export async function GET(request: NextRequest) {
     // Check if pagination parameters exist, otherwise return all
     const pageParam = searchParams.get("page");
     const limitParam = searchParams.get("limit");
+    const sortBy = searchParams.get("sortBy") || "tanggal";
+    const sortOrder =
+      (searchParams.get("sortOrder") as "asc" | "desc") || "desc";
 
     const where = search
       ? {
@@ -37,7 +40,7 @@ export async function GET(request: NextRequest) {
           barang: true,
           supplier: true,
         },
-        orderBy: { tanggal: "desc" },
+        orderBy: { [sortBy]: sortOrder },
       });
       return NextResponse.json({ success: true, data: barangMasukList });
     }
@@ -55,7 +58,7 @@ export async function GET(request: NextRequest) {
           barang: true,
           supplier: true,
         },
-        orderBy: { tanggal: "desc" },
+        orderBy: { [sortBy]: sortOrder },
       }),
       db.barangMasuk.count({ where: where as any }),
     ]);

@@ -43,14 +43,51 @@ import {
   useUpdatePurchaseOrder, // For status updates (approve/reject)
 } from "@/hooks/use-purchase-order";
 
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+
 export default function KonfirmasiPOPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
 
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: purchaseOrderList = [] } = usePurchaseOrder(searchTerm);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const { data: queryData, isLoading } = usePurchaseOrder({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+
+  const purchaseOrderList: PurchaseOrder[] = (queryData as any)?.data || [];
+  const pagination = (queryData as any)?.pagination;
+
   const updatePO = useUpdatePurchaseOrder();
   const { toast } = useToast();
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field)
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-slate-400" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />
+    );
+  };
 
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -320,25 +357,49 @@ export default function KonfirmasiPOPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                    <TableHead className="px-6 font-semibold text-slate-500">
-                      Nomor PO
+                    <TableHead
+                      className="cursor-pointer hover:bg-slate-50 transition-colors"
+                      onClick={() => handleSort("nomor")}
+                    >
+                      <div className="flex items-center">
+                        No. PO
+                        {renderSortIcon("nomor")}
+                      </div>
                     </TableHead>
-                    <TableHead className="px-6 font-semibold text-slate-500">
-                      Tanggal
+                    <TableHead
+                      className="cursor-pointer hover:bg-slate-50 transition-colors"
+                      onClick={() => handleSort("tanggal")}
+                    >
+                      <div className="flex items-center">
+                        Tanggal
+                        {renderSortIcon("tanggal")}
+                      </div>
                     </TableHead>
-                    <TableHead className="px-6 font-semibold text-slate-500">
+                    <TableHead className="font-semibold text-slate-500">
                       Supplier
                     </TableHead>
-                    <TableHead className="px-6 font-semibold text-slate-500">
-                      Total Item
+                    <TableHead className="font-semibold text-slate-500">
+                      Item
                     </TableHead>
-                    <TableHead className="px-6 font-semibold text-slate-500">
-                      Total Nilai
+                    <TableHead
+                      className="cursor-pointer hover:bg-slate-50 transition-colors"
+                      onClick={() => handleSort("total")}
+                    >
+                      <div className="flex items-center">
+                        Total Nilai
+                        {renderSortIcon("total")}
+                      </div>
                     </TableHead>
-                    <TableHead className="px-6 font-semibold text-slate-500">
-                      Status
+                    <TableHead
+                      className="cursor-pointer hover:bg-slate-50 transition-colors"
+                      onClick={() => handleSort("status")}
+                    >
+                      <div className="flex items-center">
+                        Status
+                        {renderSortIcon("status")}
+                      </div>
                     </TableHead>
-                    <TableHead className="px-6 text-center font-semibold text-slate-500">
+                    <TableHead className="text-center font-semibold text-slate-500">
                       Aksi
                     </TableHead>
                   </TableRow>
@@ -415,6 +476,16 @@ export default function KonfirmasiPOPage() {
               </Table>
             )}
           </CardContent>
+          <div className="p-4 border-t border-slate-100">
+            <PaginationControls
+              currentPage={page}
+              totalPages={pagination?.totalPages || 1}
+              totalData={pagination?.total || 0}
+              limit={limit}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+            />
+          </div>
         </Card>
 
         {/* Detail Dialog */}

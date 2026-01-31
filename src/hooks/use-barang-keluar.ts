@@ -28,16 +28,34 @@ import { useKendaraan } from "./use-kendaraan";
 
 export { useKaryawan, useKendaraan };
 
-export function useBarangKeluar(search?: string) {
+export interface BarangKeluarParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export function useBarangKeluar(params?: BarangKeluarParams | string) {
+  const queryParams = new URLSearchParams();
+
+  if (typeof params === "string") {
+    if (params) queryParams.append("search", params);
+  } else if (params) {
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+    if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+  }
+
   return useQuery({
-    queryKey: ["barang-keluar", search],
+    queryKey: ["barang-keluar", params],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (search) params.append("search", search);
       const { data } = await axios.get(
-        `/api/barang/barang-keluar?${params.toString()}`,
+        `/api/barang/barang-keluar?${queryParams.toString()}`,
       );
-      return data.data as BarangKeluar[];
+      return data;
     },
   });
 }
