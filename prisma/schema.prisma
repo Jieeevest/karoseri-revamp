@@ -465,3 +465,44 @@ enum ProjectStatus {
   DONE
   CANCELLED
 }
+
+// Adaptive Invoice System Models
+model Invoice {
+  id              String   @id @default(cuid())
+  nomor           String   @unique
+  totalTagihan    Float
+  sisaTagihan     Float
+  status          InvoiceStatus @default(UNPAID)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  references      InvoiceReference[]
+  payments        PaymentTransaction[]
+}
+
+model InvoiceReference {
+  id              String  @id @default(cuid())
+  invoiceId       String
+  invoice         Invoice @relation(fields: [invoiceId], references: [id])
+  referenceId     String  // ID of the source document (e.g. PurchaseOrderId)
+  referenceType   String  // e.g. "PURCHASE_ORDER", "WORK_ORDER"
+  amount          Float
+}
+
+model PaymentTransaction {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id])
+  amount          Float
+  paymentDate     DateTime @default(now())
+  method          String   // TRANSFER, CASH, GIRO
+  proof           String?
+  notes           String?
+  createdAt       DateTime @default(now())
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
