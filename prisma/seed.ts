@@ -8,21 +8,63 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("admin123", 10);
 
-  const user = await prisma.user.upsert({
+  // Create Admin
+  const admin = await prisma.user.upsert({
     where: { username: "admin" },
-    update: {},
+    update: { role: "ADMIN" },
     create: {
       username: "admin",
       email: "admin@karoseri.com",
       password: hashedPassword,
       name: "Administrator",
+      role: "ADMIN",
     },
   });
 
-  console.log("✅ Test user created successfully!");
-  console.log("Username: admin");
-  console.log("Password: admin123");
-  console.log("User ID:", user.id);
+  // Create Gudang User
+  await prisma.user.upsert({
+    where: { username: "gudang" },
+    update: { role: "GUDANG" },
+    create: {
+      username: "gudang",
+      email: "gudang@karoseri.com",
+      password: await bcrypt.hash("gudang123", 10),
+      name: "Staff Gudang",
+      role: "GUDANG",
+    },
+  });
+
+  // Create Purchasing User
+  await prisma.user.upsert({
+    where: { username: "purchasing" },
+    update: { role: "PURCHASING" },
+    create: {
+      username: "purchasing",
+      email: "purchasing@karoseri.com",
+      password: await bcrypt.hash("purchasing123", 10),
+      name: "Staff Purchasing",
+      role: "PURCHASING",
+    },
+  });
+
+  // Create Produksi User
+  await prisma.user.upsert({
+    where: { username: "produksi" },
+    update: { role: "PRODUKSI" },
+    create: {
+      username: "produksi",
+      email: "produksi@karoseri.com",
+      password: await bcrypt.hash("produksi123", 10),
+      name: "Staff Produksi",
+      role: "PRODUKSI",
+    },
+  });
+
+  console.log("✅ Users created successfully:");
+  console.log(" - admin / admin123 (ADMIN)");
+  console.log(" - gudang / gudang123 (GUDANG)");
+  console.log(" - purchasing / purchasing123 (PURCHASING)");
+  console.log(" - produksi / produksi123 (PRODUKSI)");
 }
 
 main()
