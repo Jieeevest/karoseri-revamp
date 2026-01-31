@@ -41,23 +41,41 @@ import {
   useDeleteKendaraan,
   Kendaraan,
 } from "@/hooks/use-kendaraan";
-import {
-  useMerekKendaraan,
-  useTipeKendaraan,
-  MerekKendaraan,
-  TipeKendaraan,
-} from "@/hooks/use-master";
+import { useMerekKendaraan, useTipeKendaraan } from "@/hooks/use-master";
 import { useCustomer, Customer } from "@/hooks/use-customer";
 import { useToast } from "@/hooks/use-toast";
 
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+
 export default function DataKendaraanPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Hooks
-  const { data: kendaraanList = [], refetch } = useKendaraan(searchTerm);
-  const { data: merekList = [] } = useMerekKendaraan();
-  const { data: tipeList = [] } = useTipeKendaraan(); // Fetch all types
-  const { data: customerList = [] } = useCustomer();
+  const { data: kendaraanData, refetch } = useKendaraan({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+  const kendaraanList = kendaraanData?.data || [];
+  const pagination = kendaraanData?.pagination || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  };
+  const { data: merekData } = useMerekKendaraan();
+  const merekList = merekData?.data || [];
+  const { data: tipeData } = useTipeKendaraan(); // Fetch all types
+  const tipeList = tipeData?.data || [];
+  const { data: customerData } = useCustomer();
+  const customerList = customerData?.data || [];
   const createKendaraan = useCreateKendaraan();
   const updateKendaraan = useUpdateKendaraan();
   const deleteKendaraan = useDeleteKendaraan();
@@ -89,6 +107,25 @@ export default function DataKendaraanPage() {
   const filteredTipeList = formData.merekId
     ? tipeList.filter((t) => t.merekId === formData.merekId)
     : [];
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field)
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-slate-400" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />
+    );
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: any = {
@@ -537,8 +574,14 @@ export default function DataKendaraanPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Nomor Polisi
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("nomorPolisi")}
+                  >
+                    <div className="flex items-center">
+                      Nomor Polisi
+                      {renderSortIcon("nomorPolisi")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Merek & Tipe
@@ -546,11 +589,23 @@ export default function DataKendaraanPage() {
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Customer
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Nomor Chasis
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("nomorChasis")}
+                  >
+                    <div className="flex items-center">
+                      Nomor Chasis
+                      {renderSortIcon("nomorChasis")}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Status
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("status")}
+                  >
+                    <div className="flex items-center">
+                      Status
+                      {renderSortIcon("status")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 text-center font-semibold text-slate-500">
                     Aksi
@@ -636,6 +691,18 @@ export default function DataKendaraanPage() {
               </TableBody>
             </Table>
           </CardContent>
+          {pagination && (
+            <div className="pb-4 px-4 border-t border-slate-100">
+              <PaginationControls
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalData={pagination.total}
+                limit={pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            </div>
+          )}
         </Card>
 
         {/* Detail Dialog */}

@@ -43,9 +43,31 @@ import { useCustomer } from "@/hooks/use-customer";
 import { useToast } from "@/hooks/use-toast";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
+import { PaginationControls } from "@/components/ui/pagination-controls"; // Import Added
+
 export default function ProjectPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: projects = [], refetch } = useProject(searchTerm);
+  // Pagination & Sort State
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("tanggal");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const { data: projectData, refetch } = useProject({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+
+  const projects = projectData?.data || [];
+  const pagination = projectData?.pagination || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  };
   const { data: customers = [] } = useCustomer();
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
@@ -458,16 +480,88 @@ export default function ProjectPage() {
                     No. SPK / Penawaran
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    Customer
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        if (sortBy === "customer.nama") {
+                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                        } else {
+                          setSortBy("customer.nama");
+                          setSortOrder("asc");
+                        }
+                      }}
+                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
+                    >
+                      Customer
+                      {sortBy === "customer.nama" && (
+                        <span className="ml-1 text-slate-400">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </Button>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    Deskripsi
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        if (sortBy === "deskripsi") {
+                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                        } else {
+                          setSortBy("deskripsi");
+                          setSortOrder("asc");
+                        }
+                      }}
+                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
+                    >
+                      Deskripsi
+                      {sortBy === "deskripsi" && (
+                        <span className="ml-1 text-slate-400">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </Button>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    Nilai Project
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        if (sortBy === "totalHarga") {
+                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                        } else {
+                          setSortBy("totalHarga");
+                          setSortOrder("asc");
+                        }
+                      }}
+                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
+                    >
+                      Nilai Project
+                      {sortBy === "totalHarga" && (
+                        <span className="ml-1 text-slate-400">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </Button>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    Status
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        if (sortBy === "status") {
+                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                        } else {
+                          setSortBy("status");
+                          setSortOrder("asc");
+                        }
+                      }}
+                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
+                    >
+                      Status
+                      {sortBy === "status" && (
+                        <span className="ml-1 text-slate-400">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </Button>
                   </TableHead>
                   <TableHead className="px-6 text-center font-semibold text-slate-500">
                     Aksi
@@ -553,6 +647,14 @@ export default function ProjectPage() {
                 )}
               </TableBody>
             </Table>
+            <PaginationControls
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalData={pagination.total}
+              limit={pagination.limit}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+            />
           </CardContent>
         </Card>
       </div>

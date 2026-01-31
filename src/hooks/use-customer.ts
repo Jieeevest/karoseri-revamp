@@ -11,14 +11,39 @@ export interface Customer {
   createdAt: string;
 }
 
-export function useCustomer(search?: string) {
+export interface CustomerParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface CustomerResponse {
+  data: Customer[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export function useCustomer(params?: CustomerParams) {
   return useQuery({
-    queryKey: ["customer", search],
+    queryKey: ["customer", params],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (search) params.append("search", search);
-      const { data } = await axios.get(`/api/customer?${params.toString()}`);
-      return data.data as Customer[];
+      const searchParams = new URLSearchParams();
+      if (params?.search) searchParams.append("search", params.search);
+      if (params?.page) searchParams.append("page", params.page.toString());
+      if (params?.limit) searchParams.append("limit", params.limit.toString());
+      if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
+      if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
+
+      const { data } = await axios.get(
+        `/api/customer?${searchParams.toString()}`,
+      );
+      return data as CustomerResponse;
     },
   });
 }

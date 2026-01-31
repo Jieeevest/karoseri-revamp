@@ -66,7 +66,8 @@ import {
 export default function BarangKeluarPage() {
   const { data: barangQuery } = useBarang();
   const barangList: any[] = (barangQuery as any)?.data || [];
-  const { data: karyawanList = [] } = useKaryawan();
+  const { data: karyawanData } = useKaryawan();
+  const karyawanList = karyawanData?.data || [];
   const { data: kendaraanList = [] } = useKendaraan();
 
   const [searchTerm, setSearchTerm] = useState("");

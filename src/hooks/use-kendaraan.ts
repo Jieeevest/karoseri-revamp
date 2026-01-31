@@ -24,14 +24,44 @@ export interface Kendaraan {
   createdAt: string;
 }
 
-export function useKendaraan(search?: string) {
+export interface KendaraanParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface KendaraanResponse {
+  data: Kendaraan[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export function useKendaraan(params?: KendaraanParams | string) {
+  const queryParams = new URLSearchParams();
+
+  if (typeof params === "string") {
+    if (params) queryParams.append("search", params);
+  } else if (params) {
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+    if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+  }
+
   return useQuery({
-    queryKey: ["kendaraan", search],
+    queryKey: ["kendaraan", params],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (search) params.append("search", search);
-      const { data } = await axios.get(`/api/kendaraan?${params.toString()}`);
-      return data.data as Kendaraan[];
+      const { data } = await axios.get(
+        `/api/kendaraan?${queryParams.toString()}`,
+      );
+      return data as KendaraanResponse;
     },
   });
 }

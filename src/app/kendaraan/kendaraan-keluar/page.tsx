@@ -55,7 +55,8 @@ import {
 } from "@/hooks/use-kendaraan-keluar";
 import { useKendaraan } from "@/hooks/use-kendaraan";
 import { useToast } from "@/hooks/use-toast";
-
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 interface QCChecklist {
   id: string;
   area: string;
@@ -66,6 +67,11 @@ interface QCChecklist {
 
 export default function KendaraanKeluarPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isQCDialogOpen, setIsQCDialogOpen] = useState(false);
   const [isSuratDialogOpen, setIsSuratDialogOpen] = useState(false);
@@ -178,9 +184,22 @@ export default function KendaraanKeluarPage() {
     { id: "16", area: "Keamanan", item: "APAR", kondisi: "BAIK", catatan: "" },
   ]);
 
-  const { data: kendaraanKeluarList = [] } = useKendaraanKeluar(searchTerm);
+  const { data: kendaraanKeluarData } = useKendaraanKeluar({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+  const kendaraanKeluarList = kendaraanKeluarData?.data || [];
+  const pagination = kendaraanKeluarData?.pagination || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  };
   const { data: allKendaraanData } = useKendaraan();
-  const kendaraanList = (allKendaraanData as any[]) || [];
+  const kendaraanList = allKendaraanData?.data || [];
 
   const createKendaraanKeluar = useCreateKendaraanKeluar();
   const updateKendaraanKeluar = useUpdateKendaraanKeluar();
@@ -351,6 +370,25 @@ export default function KendaraanKeluarPage() {
   };
 
   const todayStats = getTodayStats();
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field)
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-slate-400" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />
+    );
+  };
 
   return (
     <DashboardLayout>
@@ -617,8 +655,14 @@ export default function KendaraanKeluarPage() {
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Nomor
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Tanggal
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("tanggalKeluar")}
+                  >
+                    <div className="flex items-center">
+                      Tanggal
+                      {renderSortIcon("tanggalKeluar")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Kendaraan
@@ -766,6 +810,19 @@ export default function KendaraanKeluarPage() {
               </TableBody>
             </Table>
           </CardContent>
+
+          {pagination && (
+            <div className="pb-4 px-4 border-t border-slate-100">
+              <PaginationControls
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalData={pagination.total}
+                limit={pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            </div>
+          )}
         </Card>
 
         {/* QC Dialog */}

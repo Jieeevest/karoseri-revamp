@@ -114,6 +114,49 @@ export async function GET(request: NextRequest) {
           status: "Aktif", // Default
         }));
         break;
+      case "dashboard":
+        // 1. Total Transaksi: Active Projects + Active POs
+        const totalProjects = await db.project.count({
+          where: { status: { in: ["ON_PROGRESS", "DEAL"] } },
+        });
+        const totalPOs = await db.purchaseOrder.count({
+          where: { status: { in: ["DIAJUKAN", "DISETUJUI"] } },
+        });
+        const totalTransaksi = totalProjects + totalPOs;
+
+        // 2. Total Pendapatan: Sum of dealings (simple version: sum of all Deal/Done/OnProgress projects)
+        const revenueAggregation = await db.project.aggregate({
+          _sum: { totalHarga: true },
+          where: { status: { in: ["DEAL", "ON_PROGRESS", "DONE"] } },
+        });
+        const totalPendapatan = revenueAggregation._sum.totalHarga || 0;
+
+        // 3. Kendaraan Selesai (This Month)
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const kendaraanSelesai = await db.kendaraan.count({
+          where: {
+            status: "SELESAI",
+            updatedAt: { gte: firstDayOfMonth },
+          },
+        });
+
+        // 4. Stok Menipis (stok <= stokMinimum)
+        // Comparing two columns requires raw query in Prisma or separating logic
+        const stokMenipisResult: any = await db.$queryRaw`
+          SELECT COUNT(*)::int as count FROM "Barang" WHERE stok <= "stokMinimum"
+        `;
+        const stokMenipis = stokMenipisResult[0]?.count || 0;
+
+        data = [
+          {
+            totalTransaksi,
+            totalPendapatan,
+            kendaraanSelesai,
+            stokMenipis,
+          },
+        ];
+        break;
     }
 
     return NextResponse.json({

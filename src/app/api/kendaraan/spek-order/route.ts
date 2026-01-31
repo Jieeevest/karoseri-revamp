@@ -5,6 +5,11 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+    const skip = (page - 1) * limit;
 
     const where: any = {};
     if (search) {
@@ -18,22 +23,38 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const list = await db.spekOrder.findMany({
-      where,
-      include: {
-        kendaraan: {
-          include: {
-            merekKendaraan: true,
-            tipeKendaraan: true,
+    const [list, total] = await Promise.all([
+      db.spekOrder.findMany({
+        where,
+        include: {
+          kendaraan: {
+            include: {
+              merekKendaraan: true,
+              tipeKendaraan: true,
+            },
           },
+          karyawan: true,
+          pembayaran: true,
         },
-        karyawan: true,
-        pembayaran: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip,
+        take: limit,
+      }),
+      db.spekOrder.count({ where }),
+    ]);
 
-    return NextResponse.json({ success: true, data: list });
+    return NextResponse.json({
+      success: true,
+      data: list,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetch spek order:", error);
     return NextResponse.json(

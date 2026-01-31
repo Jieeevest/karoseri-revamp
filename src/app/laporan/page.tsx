@@ -37,6 +37,16 @@ export default function LaporanPage() {
   });
 
   const { data: laporanData = [] } = useLaporan(selectedReport, dateRange);
+  const { data: dashboardData } = useLaporan("dashboard", {
+    start: "",
+    end: "",
+  });
+  const uniqueDashboardData = dashboardData?.[0] || {
+    totalTransaksi: 0,
+    totalPendapatan: 0,
+    kendaraanSelesai: 0,
+    stokMenipis: 0,
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -577,13 +587,13 @@ export default function LaporanPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-500">
-                      Total Transaksi
+                      Total Transaksi Aktif
                     </p>
                     <p className="text-2xl font-bold text-slate-900 mt-1">
-                      247
+                      {uniqueDashboardData.totalTransaksi}
                     </p>
-                    <p className="text-xs text-green-600 font-medium">
-                      +12% dari bulan lalu
+                    <p className="text-xs text-blue-600 font-medium">
+                      Project & PO Berjalan
                     </p>
                   </div>
                   <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
@@ -600,11 +610,16 @@ export default function LaporanPage() {
                     <p className="text-sm font-medium text-slate-500">
                       Total Pendapatan
                     </p>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">
-                      Rp 45.2M
+                    <p
+                      className="text-xl font-bold text-slate-900 mt-1 truncate"
+                      title={formatCurrency(
+                        uniqueDashboardData.totalPendapatan,
+                      )}
+                    >
+                      {formatCurrency(uniqueDashboardData.totalPendapatan)}
                     </p>
                     <p className="text-xs text-green-600 font-medium">
-                      +8% dari bulan lalu
+                      Semua Project Deal
                     </p>
                   </div>
                   <div className="p-3 rounded-xl bg-green-50 border border-green-100">
@@ -621,8 +636,10 @@ export default function LaporanPage() {
                     <p className="text-sm font-medium text-slate-500">
                       Kendaraan Selesai
                     </p>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">18</p>
-                    <p className="text-xs text-green-600 font-medium">
+                    <p className="text-2xl font-bold text-slate-900 mt-1">
+                      {uniqueDashboardData.kendaraanSelesai}
+                    </p>
+                    <p className="text-xs text-purple-600 font-medium">
                       Bulan ini
                     </p>
                   </div>
@@ -640,7 +657,9 @@ export default function LaporanPage() {
                     <p className="text-sm font-medium text-slate-500">
                       Stok Menipis
                     </p>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">5</p>
+                    <p className="text-2xl font-bold text-slate-900 mt-1">
+                      {uniqueDashboardData.stokMenipis}
+                    </p>
                     <p className="text-xs text-red-600 font-medium">
                       Perlu restock
                     </p>

@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
     const jabatan = searchParams.get("jabatan") || "";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -41,7 +43,7 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: {
-          createdAt: "desc",
+          [sortBy]: sortOrder,
         },
         skip,
         take: limit,

@@ -55,9 +55,31 @@ import {
 } from "@/hooks/use-karyawan";
 import { useToast } from "@/hooks/use-toast";
 
+import { PaginationControls } from "@/components/ui/pagination-controls"; // Import Added
+
 export default function KaryawanPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: karyawanList = [], refetch } = useKaryawan(searchTerm);
+  // Pagination & Sort State
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const { data: karyawanData, refetch } = useKaryawan({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+
+  const karyawanList = karyawanData?.data || [];
+  const pagination = karyawanData?.pagination || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  };
   const createKaryawan = useCreateKaryawan();
   const updateKaryawan = useUpdateKaryawan();
   const deleteKaryawan = useDeleteKaryawan();
@@ -828,13 +850,67 @@ export default function KaryawanPage() {
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    NIK
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        if (sortBy === "nik") {
+                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                        } else {
+                          setSortBy("nik");
+                          setSortOrder("asc");
+                        }
+                      }}
+                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
+                    >
+                      NIK
+                      {sortBy === "nik" && (
+                        <span className="ml-1 text-slate-400">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </Button>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    Nama
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        if (sortBy === "nama") {
+                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                        } else {
+                          setSortBy("nama");
+                          setSortOrder("asc");
+                        }
+                      }}
+                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
+                    >
+                      Nama
+                      {sortBy === "nama" && (
+                        <span className="ml-1 text-slate-400">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </Button>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    Jabatan
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        if (sortBy === "jabatan") {
+                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                        } else {
+                          setSortBy("jabatan");
+                          setSortOrder("asc");
+                        }
+                      }}
+                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
+                    >
+                      Jabatan
+                      {sortBy === "jabatan" && (
+                        <span className="ml-1 text-slate-400">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </Button>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Kontak
@@ -943,6 +1019,14 @@ export default function KaryawanPage() {
                 )}
               </TableBody>
             </Table>
+            <PaginationControls
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalData={pagination.total}
+              limit={pagination.limit}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+            />
           </CardContent>
         </Card>
       </div>

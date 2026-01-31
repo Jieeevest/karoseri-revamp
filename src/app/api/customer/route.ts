@@ -6,6 +6,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
 
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+    const skip = (page - 1) * limit;
+
     const where: any = {};
     if (search) {
       where.OR = [
@@ -15,14 +21,27 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const customers = await db.customer.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-    });
+    const [customers, total] = await Promise.all([
+      db.customer.findMany({
+        where,
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip,
+        take: limit,
+      }),
+      db.customer.count({ where }),
+    ]);
 
     return NextResponse.json({
       success: true,
       data: customers,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("Error fetching customers:", error);

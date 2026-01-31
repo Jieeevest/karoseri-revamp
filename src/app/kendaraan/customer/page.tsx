@@ -45,9 +45,50 @@ import {
 } from "@/hooks/use-customer";
 import { useToast } from "@/hooks/use-toast";
 
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+
 export default function CustomerPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: customerList = [], refetch } = useCustomer(searchTerm);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const { data: customerData, refetch } = useCustomer({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+
+  const customerList = customerData?.data || [];
+  const pagination = customerData?.pagination || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  };
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field)
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-slate-400" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />
+    );
+  };
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
@@ -391,11 +432,23 @@ export default function CustomerPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Kode
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("kode")}
+                  >
+                    <div className="flex items-center">
+                      Kode
+                      {renderSortIcon("kode")}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Nama Customer
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("nama")}
+                  >
+                    <div className="flex items-center">
+                      Nama Customer
+                      {renderSortIcon("nama")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Kontak
@@ -403,8 +456,14 @@ export default function CustomerPage() {
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Alamat
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Tanggal Dibuat
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("createdAt")}
+                  >
+                    <div className="flex items-center">
+                      Tanggal Dibuat
+                      {renderSortIcon("createdAt")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 text-center font-semibold text-slate-500">
                     Aksi
@@ -508,6 +567,18 @@ export default function CustomerPage() {
               </TableBody>
             </Table>
           </CardContent>
+          {pagination && (
+            <div className="pb-4 px-4 border-t border-slate-100">
+              <PaginationControls
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalData={pagination.total}
+                limit={pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            </div>
+          )}
         </Card>
       </div>
 

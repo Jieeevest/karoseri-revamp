@@ -4,12 +4,42 @@ import axios from "axios";
 const API_URL = "/api/kendaraan/spek-order";
 const PAYMENT_API_URL = "/api/kendaraan/spek-order/payment";
 
-export const useSpekOrder = (search: string = "") => {
+export interface SpekOrderParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface SpekOrderResponse {
+  data: any[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export const useSpekOrder = (params?: SpekOrderParams | string) => {
+  const queryParams = new URLSearchParams();
+
+  if (typeof params === "string") {
+    if (params) queryParams.append("search", params);
+  } else if (params) {
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+    if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+  }
+
   return useQuery({
-    queryKey: ["spek-order", search],
+    queryKey: ["spek-order", params],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}?search=${search}`);
-      return response.data.data;
+      const response = await axios.get(`${API_URL}?${queryParams.toString()}`);
+      return response.data as SpekOrderResponse;
     },
   });
 };

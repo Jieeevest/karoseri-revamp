@@ -43,10 +43,14 @@ import {
   Briefcase,
   DollarSign,
   Edit,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   useSpekOrder,
   useCreateSpekOrder,
@@ -60,6 +64,11 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function SpekOrderPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -86,10 +95,24 @@ export default function SpekOrderPage() {
   });
 
   // Queries
-  const { data: spekOrderList = [] } = useSpekOrder(searchTerm);
+  const { data: spekOrderData } = useSpekOrder({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+  const spekOrderList = spekOrderData?.data || [];
+  const pagination = spekOrderData?.pagination || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  };
   const { data: allKendaraanData } = useKendaraan();
-  const kendaraanList = (allKendaraanData as any[]) || [];
-  const { data: karyawanList = [] } = useKaryawan();
+  const kendaraanList = allKendaraanData?.data || [];
+  const { data: karyawanData } = useKaryawan();
+  const karyawanList = karyawanData?.data || [];
 
   // Mutations
   const createSpekOrder = useCreateSpekOrder();
@@ -296,6 +319,25 @@ export default function SpekOrderPage() {
       >
         {jenis}
       </Badge>
+    );
+  };
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field)
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-slate-400" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />
     );
   };
 
@@ -603,8 +645,14 @@ export default function SpekOrderPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Nomor
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("nomor")}
+                  >
+                    <div className="flex items-center">
+                      Nomor
+                      {renderSortIcon("nomor")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Kendaraan
@@ -618,8 +666,14 @@ export default function SpekOrderPage() {
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Upah
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Status
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("status")}
+                  >
+                    <div className="flex items-center">
+                      Status
+                      {renderSortIcon("status")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 text-center font-semibold text-slate-500">
                     Aksi
@@ -735,6 +789,19 @@ export default function SpekOrderPage() {
               </TableBody>
             </Table>
           </CardContent>
+
+          {pagination && (
+            <div className="pb-4 px-4 border-t border-slate-100">
+              <PaginationControls
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalData={pagination.total}
+                limit={pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            </div>
+          )}
         </Card>
 
         {/* Detail Dialog */}

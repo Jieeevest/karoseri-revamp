@@ -55,7 +55,8 @@ import {
 } from "@/hooks/use-kendaraan-masuk";
 import { useMerekKendaraan, useTipeKendaraan } from "@/hooks/use-master";
 import { useToast } from "@/hooks/use-toast";
-
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 const pengerjaanOptions = [
   "Wing Box",
   "Wing Box + Topi Kabin Fiber",
@@ -217,6 +218,11 @@ const kelengkapanTemplate = [
 
 export default function KendaraanMasukPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [viewingKendaraanMasuk, setViewingKendaraanMasuk] = useState<
@@ -245,11 +251,32 @@ export default function KendaraanMasukPage() {
   });
 
   // Queries
-  const { data: kendaraanMasukList = [] } = useKendaraanMasuk(searchTerm);
-  const { data: customerList = [] } = useCustomer();
-  const { data: projectList = [] } = useProject();
-  const { data: merekList = [] } = useMerekKendaraan();
-  const { data: tipeList = [] } = useTipeKendaraan(formData.merekId);
+  const { data: kendaraanMasukData } = useKendaraanMasuk({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+  const kendaraanMasukList = kendaraanMasukData?.data || [];
+  const pagination = kendaraanMasukData?.pagination || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  };
+  const { data: customerData } = useCustomer();
+  const customerList = customerData?.data || [];
+  const { data: projectData } = useProject();
+  const projectList = projectData?.data || [];
+  const { data: merekData } = useMerekKendaraan();
+  const merekList = merekData?.data || [];
+  const { data: tipeData } = useTipeKendaraan(
+    typeof formData.merekId === "string"
+      ? { merekId: formData.merekId }
+      : undefined,
+  );
+  const tipeList = tipeData?.data || [];
 
   // Mutations
   const createKendaraanMasuk = useCreateKendaraanMasuk();
@@ -400,6 +427,25 @@ export default function KendaraanMasukPage() {
       <Badge variant="outline" className={cn("font-medium", config.color)}>
         {config.label}
       </Badge>
+    );
+  };
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field)
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-slate-400" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />
     );
   };
 
@@ -980,6 +1026,19 @@ export default function KendaraanMasukPage() {
               </TableBody>
             </Table>
           </CardContent>
+
+          {pagination && (
+            <div className="pb-4 px-4 border-t border-slate-100">
+              <PaginationControls
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalData={pagination.total}
+                limit={pagination.limit}
+                onPageChange={setPage}
+                onLimitChange={setLimit}
+              />
+            </div>
+          )}
         </Card>
 
         {/* Detail Dialog */}

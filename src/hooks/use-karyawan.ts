@@ -40,14 +40,39 @@ export interface Karyawan {
   totalSpekOrder?: number;
 }
 
-export function useKaryawan(search?: string) {
+export interface KaryawanParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface KaryawanResponse {
+  data: Karyawan[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export function useKaryawan(params?: KaryawanParams) {
   return useQuery({
-    queryKey: ["karyawan", search],
+    queryKey: ["karyawan", params],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (search) params.append("search", search);
-      const { data } = await axios.get(`/api/karyawan?${params.toString()}`);
-      return data.data as Karyawan[];
+      const searchParams = new URLSearchParams();
+      if (params?.search) searchParams.append("search", params.search);
+      if (params?.page) searchParams.append("page", params.page.toString());
+      if (params?.limit) searchParams.append("limit", params.limit.toString());
+      if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
+      if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
+
+      const { data } = await axios.get(
+        `/api/karyawan?${searchParams.toString()}`,
+      );
+      return data as KaryawanResponse; // return the full response for pagination
     },
   });
 }

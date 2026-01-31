@@ -23,13 +23,16 @@ export default function Home() {
   const router = useRouter();
 
   const { data: barangQuery } = useBarang({ limit: 100 }); // Fetch more for dashboard
-  const { data: kendaraanList = [] } = useKendaraan();
-  const { data: karyawanList = [] } = useKaryawan();
+  const { data: kendaraanQuery } = useKendaraan({ limit: 100 });
+  const { data: karyawanQuery } = useKaryawan({ limit: 100 });
   const { data: poQuery } = usePurchaseOrder({ limit: 20 });
 
   const barangList = (barangQuery as any)?.data || [];
   const totalBarang = (barangQuery as any)?.pagination?.total || 0;
+  const kendaraanList = (kendaraanQuery as any)?.data || [];
+  const karyawanList = (karyawanQuery as any)?.data || [];
   const poList = (poQuery as any)?.data || [];
+  const totalKaryawan = (karyawanQuery as any)?.pagination?.total || 0;
 
   const stats = [
     {
@@ -50,7 +53,7 @@ export default function Home() {
     },
     {
       title: "Total Karyawan",
-      value: karyawanList.length.toLocaleString(),
+      value: totalKaryawan.toLocaleString(),
       icon: Users,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
