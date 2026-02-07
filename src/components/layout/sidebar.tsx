@@ -13,17 +13,53 @@ import {
   ChevronRight,
   LayoutDashboard,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 
-const menuItems = [
+// Define roles string constraints to match Prisma Enum
+type Role =
+  | "USER"
+  | "ADMIN"
+  | "GUDANG"
+  | "PURCHASING"
+  | "PRODUKSI"
+  | "HR"
+  | "SALES"
+  | "OWNER";
+
+interface MenuItem {
+  title: string;
+  icon: any;
+  href?: string;
+  roles?: Role[]; // Roles that can access this item
+  submenus?: {
+    title: string;
+    href: string;
+    roles?: Role[]; // Roles that can access this submenu
+  }[];
+}
+
+const ROLES = {
+  ADMIN: "ADMIN" as Role,
+  GUDANG: "GUDANG" as Role,
+  PURCHASING: "PURCHASING" as Role,
+  PRODUKSI: "PRODUKSI" as Role,
+  HR: "HR" as Role,
+  SALES: "SALES" as Role,
+  OWNER: "OWNER" as Role,
+};
+
+const menuItemsRaw: MenuItem[] = [
   {
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/",
+    // All roles can access
   },
   {
     title: "Menu Master",
     icon: Settings,
+    roles: [ROLES.ADMIN],
     submenus: [
       { title: "Kategori Barang", href: "/master/kategori-barang" },
       { title: "Satuan Barang", href: "/master/satuan-barang" },
@@ -35,47 +71,138 @@ const menuItems = [
     title: "Manajemen Barang",
     icon: Package,
     submenus: [
-      { title: "Data Barang", href: "/barang/data-barang" },
-      { title: "Harga Barang", href: "/barang/harga-barang" },
-      { title: "Data Supplier", href: "/barang/supplier" },
-      { title: "Purchase Order", href: "/barang/purchase-order" },
-      { title: "Konfirmasi PO", href: "/barang/konfirmasi-po" },
-      { title: "Barang Masuk", href: "/barang/barang-masuk" },
-      { title: "Barang Keluar", href: "/barang/barang-keluar" },
-      { title: "Tagihan Supplier", href: "/barang/tagihan-supplier" },
+      {
+        title: "Data Barang",
+        href: "/barang/data-barang",
+        roles: [ROLES.ADMIN, ROLES.GUDANG, ROLES.PURCHASING],
+      },
+      {
+        title: "Harga Barang",
+        href: "/barang/harga-barang",
+        roles: [ROLES.ADMIN, ROLES.GUDANG, ROLES.PURCHASING],
+      },
+      {
+        title: "Data Supplier",
+        href: "/barang/supplier",
+        roles: [ROLES.ADMIN, ROLES.PURCHASING],
+      },
+      {
+        title: "Purchase Order",
+        href: "/barang/purchase-order",
+        roles: [ROLES.ADMIN, ROLES.PURCHASING],
+      },
+      {
+        title: "Konfirmasi PO",
+        href: "/barang/konfirmasi-po",
+        roles: [ROLES.ADMIN, ROLES.PURCHASING],
+      },
+      {
+        title: "Barang Masuk",
+        href: "/barang/barang-masuk",
+        roles: [ROLES.ADMIN, ROLES.GUDANG],
+      },
+      {
+        title: "Barang Keluar",
+        href: "/barang/barang-keluar",
+        roles: [ROLES.ADMIN, ROLES.GUDANG, ROLES.PRODUKSI],
+      },
+      {
+        title: "Tagihan Supplier",
+        href: "/barang/tagihan-supplier",
+        roles: [ROLES.ADMIN, ROLES.PURCHASING],
+      },
     ],
   },
   {
     title: "Manajemen Karyawan",
     icon: Users,
     href: "/karyawan",
+    roles: [ROLES.HR, ROLES.ADMIN],
   },
   {
     title: "Project / Penawaran",
     icon: FileText,
     href: "/project",
+    roles: [ROLES.SALES, ROLES.ADMIN],
   },
   {
     title: "Manajemen Kendaraan",
     icon: Car,
     submenus: [
-      { title: "Data Kendaraan", href: "/kendaraan/data-kendaraan" },
-      { title: "Data Customer", href: "/kendaraan/customer" },
-      { title: "Form Kendaraan Masuk", href: "/kendaraan/kendaraan-masuk" },
-      { title: "Form Kendaraan Keluar", href: "/kendaraan/kendaraan-keluar" },
-      { title: "Data Spek Order", href: "/kendaraan/spek-order" },
+      {
+        title: "Data Kendaraan",
+        href: "/kendaraan/data-kendaraan",
+        roles: [ROLES.ADMIN, ROLES.PRODUKSI],
+      },
+      {
+        title: "Data Customer",
+        href: "/kendaraan/customer",
+        roles: [ROLES.ADMIN, ROLES.PRODUKSI],
+      },
+      {
+        title: "Form Kendaraan Masuk",
+        href: "/kendaraan/kendaraan-masuk",
+        roles: [ROLES.ADMIN, ROLES.PRODUKSI],
+      },
+      {
+        title: "Form Kendaraan Keluar",
+        href: "/kendaraan/kendaraan-keluar",
+        roles: [ROLES.ADMIN, ROLES.PRODUKSI],
+      },
+      {
+        title: "Data Spek Order",
+        href: "/kendaraan/spek-order",
+        roles: [ROLES.ADMIN, ROLES.PRODUKSI],
+      },
     ],
   },
   {
     title: "Laporan",
     icon: FileText,
     href: "/laporan",
+    roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.PURCHASING],
   },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role as Role | undefined;
+
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+
+  // Filter menu items based on user role
+  const menuItems = useMemo(() => {
+    if (!userRole) return []; // Or return empty, or default items for guests
+
+    return menuItemsRaw
+      .map((item) => {
+        // If item has specific roles, check access
+        if (item.roles && !item.roles.includes(userRole)) {
+          return null;
+        }
+
+        // If item has submenus, filter them
+        if (item.submenus) {
+          const filteredSubmenus = item.submenus.filter((sub) => {
+            if (sub.roles && !sub.roles.includes(userRole)) {
+              return false;
+            }
+            return true;
+          });
+
+          // If no submenus remain visible, hide the parent item
+          if (filteredSubmenus.length === 0) {
+            return null;
+          }
+
+          return { ...item, submenus: filteredSubmenus };
+        }
+
+        return item;
+      })
+      .filter(Boolean) as MenuItem[];
+  }, [userRole]);
 
   // Auto-expand menu based on active route
   useEffect(() => {
@@ -89,7 +216,7 @@ export function Sidebar() {
         }
       }
     });
-  }, [pathname]);
+  }, [pathname, menuItems]);
 
   const toggleMenu = (title: string) => {
     setExpandedMenus((prev) =>
@@ -102,6 +229,8 @@ export function Sidebar() {
   const isActive = (href: string) => pathname === href;
   const isChildActive = (item: any) =>
     item.submenus?.some((sub: any) => pathname === sub.href);
+
+  if (!session) return null; // Or a loading skeleton
 
   return (
     <div className="flex h-full w-72 flex-col bg-white text-slate-900 shadow-xl relative overflow-hidden font-sans border-r border-slate-200">
@@ -116,7 +245,7 @@ export function Sidebar() {
               Karoseri<span className="text-blue-600">Sys</span>
             </h1>
             <p className="text-[10px] font-medium text-slate-500 mt-1 uppercase tracking-wider">
-              Enterprise Solution
+              {userRole}
             </p>
           </div>
         </div>

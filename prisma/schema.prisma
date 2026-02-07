@@ -33,6 +33,9 @@ enum Role {
   GUDANG
   PURCHASING
   PRODUKSI
+  HR
+  SALES
+  OWNER
 }
 
 model Account {

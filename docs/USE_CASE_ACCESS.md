@@ -31,7 +31,7 @@ _Note: Currently, the frontend Sidebar displays all menus. Below is the **logica
 | **Manajemen Karyawan**  | /karyawan                     | **HR** (if exists), **ADMIN**         |
 | **Project / Penawaran** | /project                      | **SALES** (if exists), **ADMIN**      |
 | **Manajemen Kendaraan** | Data Kendaraan, Customer      | **ADMIN**, **PRODUKSI**               |
-|                         | Kendaraan Masuk / Keluar      | **PRODUKSI**, **GUDANG**, **ADMIN**   |
+|                         | Kendaraan Masuk / Keluar      | **PRODUKSI**, **ADMIN**               |
 |                         | Spek Order                    | **PRODUKSI**, **ADMIN**               |
 | **Laporan**             | /laporan                      | **ADMIN**, **OWNER**, **PURCHASING**  |
 
