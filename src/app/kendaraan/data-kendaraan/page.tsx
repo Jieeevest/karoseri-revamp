@@ -47,6 +47,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 export default function DataKendaraanPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,6 +55,9 @@ export default function DataKendaraanPage() {
   const [limit, setLimit] = useState(10);
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const { data: session } = useSession();
+  const isQC = (session?.user?.role as any) === "QC";
 
   // Hooks
   const { data: kendaraanData, refetch } = useKendaraan({
@@ -283,15 +287,17 @@ export default function DataKendaraanPage() {
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                onClick={openAddDialog}
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Tambah Kendaraan
-              </Button>
-            </DialogTrigger>
+            {!isQC && (
+              <DialogTrigger asChild>
+                <Button
+                  onClick={openAddDialog}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Tambah Kendaraan
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-[600px] rounded-xl border-slate-100 shadow-2xl">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
@@ -658,22 +664,26 @@ export default function DataKendaraanPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(kendaraan)}
-                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteClick(kendaraan)}
-                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {!isQC && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(kendaraan)}
+                                className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteClick(kendaraan)}
+                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
