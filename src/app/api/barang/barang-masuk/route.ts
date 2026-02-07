@@ -108,11 +108,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generate Number (BM-YYYY-XXX)
+    const year = new Date().getFullYear();
+    const lastRecord = await db.barangMasuk.findFirst({
+      where: {
+        nomor: {
+          startsWith: `BM-${year}-`,
+        },
+      },
+      orderBy: {
+        nomor: "desc",
+      },
+    });
+
+    let sequence = 1;
+    if (lastRecord) {
+      const parts = lastRecord.nomor.split("-");
+      if (parts.length === 3) {
+        sequence = parseInt(parts[2]) + 1;
+      }
+    }
+    const nomor = `BM-${year}-${String(sequence).padStart(3, "0")}`;
+
     const result = await db.$transaction(async (prisma) => {
       // Create BarangMasuk record
       const barangMasuk = await prisma.barangMasuk.create({
         data: {
-          tanggal,
+          nomor,
+          tanggal: new Date(tanggal),
           barangId,
           supplierId,
           purchaseOrderId: purchaseOrderId || null,
@@ -121,6 +144,7 @@ export async function POST(request: NextRequest) {
           totalHarga: parseFloat(totalHarga) || 0,
           nomorSuratJalan: nomorSuratJalan || "",
           keterangan: keterangan || "",
+          kondisi: "BAIK",
         },
         include: {
           barang: true,

@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
               id: true,
             },
           },
+          dokumen: true,
         },
         orderBy: {
           [sortBy]: sortOrder,
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
       kontakDaruratNama,
       kontakDaruratHubungan,
       kontakDaruratTelepon,
+      dokumen,
     } = body;
 
     // Validation
@@ -151,6 +153,14 @@ export async function POST(request: NextRequest) {
         kontakDaruratNama: kontakDaruratNama?.trim() || null,
         kontakDaruratHubungan: kontakDaruratHubungan?.trim() || null,
         kontakDaruratTelepon: kontakDaruratTelepon?.trim() || null,
+        dokumen: {
+          create:
+            dokumen?.map((d: any) => ({
+              jenis: d.jenis,
+              nama: d.nama,
+              url: d.url,
+            })) || [],
+        },
       },
     });
 
@@ -194,6 +204,7 @@ export async function PUT(request: NextRequest) {
       kontakDaruratNama,
       kontakDaruratHubungan,
       kontakDaruratTelepon,
+      dokumen,
     } = body;
 
     if (!id || !nik || !nama || !jabatan) {
@@ -241,6 +252,15 @@ export async function PUT(request: NextRequest) {
         kontakDaruratNama: kontakDaruratNama?.trim() || null,
         kontakDaruratHubungan: kontakDaruratHubungan?.trim() || null,
         kontakDaruratTelepon: kontakDaruratTelepon?.trim() || null,
+        dokumen: {
+          deleteMany: {},
+          create:
+            dokumen?.map((d: any) => ({
+              jenis: d.jenis,
+              nama: d.nama,
+              url: d.url,
+            })) || [],
+        },
       },
     });
 

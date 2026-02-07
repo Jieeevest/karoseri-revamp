@@ -208,7 +208,11 @@ model BarangMasuk {
   barangId        String
   barang          Barang              @relation(fields: [barangId], references: [id])
   jumlah          Int
-  kondisi         String
+  hargaSatuan     Float               @default(0)
+  totalHarga      Float               @default(0)
+  nomorSuratJalan String?
+  keterangan      String?
+  kondisi         String              @default("BAIK") // 'BAIK', 'RUSAK', 'RETUR'
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 }
@@ -290,6 +294,17 @@ model Karyawan {
   updatedAt       DateTime            @updatedAt
   barangKeluar    BarangKeluar[]
   spekOrder       SpekOrder[]
+  dokumen         KaryawanDokumen[]
+}
+
+model KaryawanDokumen {
+  id          String   @id @default(cuid())
+  karyawanId  String
+  karyawan    Karyawan @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
+  jenis       String   // 'FOTO', 'KTP', 'KK', 'IJASAH', 'LAINNYA'
+  nama        String   // Display name
+  url         String   // Path to file
+  createdAt   DateTime @default(now())
 }
 
 // Vehicle Management

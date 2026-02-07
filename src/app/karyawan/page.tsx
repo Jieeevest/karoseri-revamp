@@ -43,6 +43,10 @@ import {
   Phone,
   MapPin,
   Briefcase,
+  Upload,
+  FileText,
+  X,
+  ExternalLink,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -52,6 +56,7 @@ import {
   useUpdateKaryawan,
   useDeleteKaryawan,
   type Karyawan,
+  type KaryawanDokumen,
 } from "@/hooks/use-karyawan";
 import { useToast } from "@/hooks/use-toast";
 
@@ -109,6 +114,7 @@ export default function KaryawanPage() {
     kontakDaruratNama: "",
     kontakDaruratHubungan: "",
     kontakDaruratTelepon: "",
+    dokumen: [] as Partial<KaryawanDokumen>[],
   });
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -128,6 +134,62 @@ export default function KaryawanPage() {
 
   /* Filtering done via hook */
 
+  /* Filtering done via hook */
+
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    jenis: string,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const uploadFormData = new FormData();
+    uploadFormData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadFormData,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setFormData((prev) => ({
+          ...prev,
+          dokumen: [
+            ...(prev.dokumen || []),
+            {
+              jenis,
+              nama: file.name,
+              url: data.url,
+            },
+          ],
+        }));
+        toast({ title: "Berhasil upload dokumen" });
+      } else {
+        toast({
+          title: "Gagal upload",
+          description: data.error,
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Upload error", err);
+      toast({
+        title: "Gagal upload",
+        description: "Terjadi kesalahan sistem",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeDocument = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      dokumen: prev.dokumen.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -145,11 +207,11 @@ export default function KaryawanPage() {
       if (editingKaryawan) {
         await updateKaryawan.mutateAsync({
           id: editingKaryawan.id,
-          ...formData,
+          ...(formData as any),
         });
       } else {
         await createKaryawan.mutateAsync({
-          ...formData,
+          ...(formData as any),
         });
       }
 
@@ -175,6 +237,7 @@ export default function KaryawanPage() {
         kontakDaruratNama: "",
         kontakDaruratHubungan: "",
         kontakDaruratTelepon: "",
+        dokumen: [],
       });
       setEditingKaryawan(null);
       setIsDialogOpen(false);
@@ -228,6 +291,7 @@ export default function KaryawanPage() {
       kontakDaruratNama: karyawan.kontakDaruratNama || "",
       kontakDaruratHubungan: karyawan.kontakDaruratHubungan || "",
       kontakDaruratTelepon: karyawan.kontakDaruratTelepon || "",
+      dokumen: karyawan.dokumen || [],
     });
     setIsDialogOpen(true);
   };
@@ -285,6 +349,7 @@ export default function KaryawanPage() {
       kontakDaruratNama: "",
       kontakDaruratHubungan: "",
       kontakDaruratTelepon: "",
+      dokumen: [],
     });
     setIsDialogOpen(true);
   };
@@ -361,6 +426,7 @@ export default function KaryawanPage() {
                       <TabsTrigger value="pribadi">Pribadi</TabsTrigger>
                       <TabsTrigger value="pekerjaan">Pekerjaan</TabsTrigger>
                       <TabsTrigger value="lainnya">Lainnya</TabsTrigger>
+                      <TabsTrigger value="dokumen">Dokumen</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="profil" className="space-y-4 py-2">
@@ -756,6 +822,103 @@ export default function KaryawanPage() {
                               }))
                             }
                           />
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="dokumen" className="space-y-4 py-2">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h4 className="text-sm font-semibold">
+                            Dokumen Karyawan
+                          </h4>
+                        </div>
+
+                        {(!formData.dokumen ||
+                          formData.dokumen.length === 0) && (
+                          <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-50 rounded-lg border border-dashed">
+                            <FileText className="h-10 w-10 text-slate-300 mb-2" />
+                            <p className="text-sm text-slate-500">
+                              Belum ada dokumen yang diupload
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 gap-2">
+                          {formData.dokumen?.map((doc, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-50 rounded-lg">
+                                  <FileText className="h-5 w-5 text-blue-600" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-slate-900">
+                                    {doc.nama}
+                                  </p>
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs bg-slate-50 mt-1"
+                                  >
+                                    {doc.jenis}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {doc.url && (
+                                  <a
+                                    href={doc.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600 transition-colors"
+                                    title="Lihat Dokumen"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </a>
+                                )}
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeDocument(idx)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 pt-6 border-t mt-4">
+                        <h4 className="text-sm font-semibold">
+                          Upload Dokumen Baru
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {["FOTO", "KTP", "KK", "IJASAH", "LAINNYA"].map(
+                            (type) => (
+                              <div key={type} className="relative">
+                                <Input
+                                  type="file"
+                                  id={`upload-${type}`}
+                                  className="hidden"
+                                  onChange={(e) => handleFileUpload(e, type)}
+                                />
+                                <Label
+                                  htmlFor={`upload-${type}`}
+                                  className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-300 rounded-xl hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all cursor-pointer group text-center bg-white h-full"
+                                >
+                                  <Upload className="h-5 w-5 text-slate-400 group-hover:text-blue-600 mb-2" />
+                                  <span className="text-xs font-semibold text-slate-600 group-hover:text-blue-700">
+                                    {type}
+                                  </span>
+                                </Label>
+                              </div>
+                            ),
+                          )}
                         </div>
                       </div>
                     </TabsContent>

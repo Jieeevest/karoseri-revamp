@@ -30,7 +30,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Calculator, Edit, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Calculator,
+  Edit,
+  Trash2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { useState } from "react";
 import {
   useProject,
@@ -68,7 +76,8 @@ export default function ProjectPage() {
     total: 0,
     totalPages: 1,
   };
-  const { data: customers = [] } = useCustomer();
+  const { data: customerData } = useCustomer();
+  const customers = customerData?.data || [];
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
@@ -93,7 +102,17 @@ export default function ProjectPage() {
     },
   });
 
-  // Smart Planning Calculation
+  // Helper for Sort Icon matching CustomerPage
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field)
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-slate-400" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />
+    );
+  };
+
   const calculateMaterials = () => {
     // Basic logic for demonstration
     // Assume 1 sheet of plat for every 3m^2 surface area
@@ -214,6 +233,16 @@ export default function ProjectPage() {
   const openAddDialog = () => {
     resetForm();
     setIsDialogOpen(true);
+  };
+
+  // Helper handling sort click
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
   };
 
   return (
@@ -457,7 +486,7 @@ export default function ProjectPage() {
 
         {/* Projects Table */}
         <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
-          <CardHeader className="border-b border-slate-100 pb-4 bg-white">
+          <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle className="text-lg font-bold text-slate-900">
                 Daftar Project Active
@@ -479,89 +508,41 @@ export default function ProjectPage() {
                   <TableHead className="px-6 font-semibold text-slate-500">
                     No. SPK / Penawaran
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        if (sortBy === "customer.nama") {
-                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                        } else {
-                          setSortBy("customer.nama");
-                          setSortOrder("asc");
-                        }
-                      }}
-                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
-                    >
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("customer.nama")}
+                  >
+                    <div className="flex items-center">
                       Customer
-                      {sortBy === "customer.nama" && (
-                        <span className="ml-1 text-slate-400">
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </Button>
+                      {renderSortIcon("customer.nama")}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        if (sortBy === "deskripsi") {
-                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                        } else {
-                          setSortBy("deskripsi");
-                          setSortOrder("asc");
-                        }
-                      }}
-                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
-                    >
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("deskripsi")}
+                  >
+                    <div className="flex items-center">
                       Deskripsi
-                      {sortBy === "deskripsi" && (
-                        <span className="ml-1 text-slate-400">
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </Button>
+                      {renderSortIcon("deskripsi")}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        if (sortBy === "totalHarga") {
-                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                        } else {
-                          setSortBy("totalHarga");
-                          setSortOrder("asc");
-                        }
-                      }}
-                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
-                    >
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("totalHarga")}
+                  >
+                    <div className="flex items-center">
                       Nilai Project
-                      {sortBy === "totalHarga" && (
-                        <span className="ml-1 text-slate-400">
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </Button>
+                      {renderSortIcon("totalHarga")}
+                    </div>
                   </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        if (sortBy === "status") {
-                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                        } else {
-                          setSortBy("status");
-                          setSortOrder("asc");
-                        }
-                      }}
-                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
-                    >
+                  <TableHead
+                    className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => handleSort("status")}
+                  >
+                    <div className="flex items-center">
                       Status
-                      {sortBy === "status" && (
-                        <span className="ml-1 text-slate-400">
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </Button>
+                      {renderSortIcon("status")}
+                    </div>
                   </TableHead>
                   <TableHead className="px-6 text-center font-semibold text-slate-500">
                     Aksi

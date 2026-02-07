@@ -38,6 +38,15 @@ export interface Karyawan {
   createdAt: string;
   totalBarangKeluar?: number;
   totalSpekOrder?: number;
+  dokumen?: KaryawanDokumen[];
+}
+
+export interface KaryawanDokumen {
+  id: string;
+  jenis: string;
+  nama: string;
+  url: string;
+  createdAt: string;
 }
 
 export interface KaryawanParams {
