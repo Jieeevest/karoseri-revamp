@@ -18,6 +18,7 @@ import { useSession } from "next-auth/react";
 
 // Define roles string constraints to match Prisma Enum
 type Role =
+  | "SUPERADMIN"
   | "USER"
   | "ADMIN"
   | "GUDANG"
@@ -25,7 +26,8 @@ type Role =
   | "PRODUKSI"
   | "HR"
   | "SALES"
-  | "OWNER";
+  | "OWNER"
+  | "QC";
 
 interface MenuItem {
   title: string;
@@ -40,6 +42,7 @@ interface MenuItem {
 }
 
 const ROLES = {
+  SUPERADMIN: "SUPERADMIN" as Role,
   ADMIN: "ADMIN" as Role,
   GUDANG: "GUDANG" as Role,
   PURCHASING: "PURCHASING" as Role,
@@ -47,6 +50,7 @@ const ROLES = {
   HR: "HR" as Role,
   SALES: "SALES" as Role,
   OWNER: "OWNER" as Role,
+  QC: "QC" as Role,
 };
 
 const menuItemsRaw: MenuItem[] = [
@@ -59,7 +63,7 @@ const menuItemsRaw: MenuItem[] = [
   {
     title: "Menu Master",
     icon: Settings,
-    roles: [ROLES.ADMIN],
+    roles: [ROLES.SUPERADMIN],
     submenus: [
       { title: "Kategori Barang", href: "/master/kategori-barang" },
       { title: "Satuan Barang", href: "/master/satuan-barang" },
@@ -74,42 +78,42 @@ const menuItemsRaw: MenuItem[] = [
       {
         title: "Data Barang",
         href: "/barang/data-barang",
-        roles: [ROLES.ADMIN, ROLES.GUDANG, ROLES.PURCHASING],
+        roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.GUDANG, ROLES.PURCHASING],
       },
       {
         title: "Harga Barang",
         href: "/barang/harga-barang",
-        roles: [ROLES.ADMIN, ROLES.GUDANG, ROLES.PURCHASING],
+        roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.GUDANG, ROLES.PURCHASING],
       },
       {
         title: "Data Supplier",
         href: "/barang/supplier",
-        roles: [ROLES.ADMIN, ROLES.PURCHASING],
+        roles: [ROLES.SUPERADMIN, ROLES.GUDANG, ROLES.PURCHASING],
       },
       {
         title: "Purchase Order",
         href: "/barang/purchase-order",
-        roles: [ROLES.ADMIN, ROLES.PURCHASING],
+        roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.GUDANG, ROLES.PURCHASING],
       },
       {
         title: "Konfirmasi PO",
         href: "/barang/konfirmasi-po",
-        roles: [ROLES.ADMIN, ROLES.PURCHASING],
+        roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PURCHASING],
       },
       {
         title: "Barang Masuk",
         href: "/barang/barang-masuk",
-        roles: [ROLES.ADMIN, ROLES.GUDANG],
+        roles: [ROLES.SUPERADMIN, ROLES.GUDANG],
       },
       {
         title: "Barang Keluar",
         href: "/barang/barang-keluar",
-        roles: [ROLES.ADMIN, ROLES.GUDANG, ROLES.PRODUKSI],
+        roles: [ROLES.SUPERADMIN, ROLES.GUDANG, ROLES.PRODUKSI],
       },
       {
         title: "Tagihan Supplier",
         href: "/barang/tagihan-supplier",
-        roles: [ROLES.ADMIN, ROLES.PURCHASING],
+        roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PURCHASING],
       },
     ],
   },
@@ -117,13 +121,13 @@ const menuItemsRaw: MenuItem[] = [
     title: "Manajemen Karyawan",
     icon: Users,
     href: "/karyawan",
-    roles: [ROLES.HR, ROLES.ADMIN],
+    roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.HR],
   },
   {
     title: "Project / Penawaran",
     icon: FileText,
     href: "/project",
-    roles: [ROLES.SALES, ROLES.ADMIN],
+    roles: [ROLES.SUPERADMIN, ROLES.SALES, ROLES.OWNER],
   },
   {
     title: "Manajemen Kendaraan",
@@ -132,27 +136,27 @@ const menuItemsRaw: MenuItem[] = [
       {
         title: "Data Kendaraan",
         href: "/kendaraan/data-kendaraan",
-        roles: [ROLES.ADMIN, ROLES.PRODUKSI],
+        roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.QC, ROLES.PRODUKSI],
       },
       {
         title: "Data Customer",
         href: "/kendaraan/customer",
-        roles: [ROLES.ADMIN, ROLES.PRODUKSI],
+        roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRODUKSI],
       },
       {
         title: "Form Kendaraan Masuk",
         href: "/kendaraan/kendaraan-masuk",
-        roles: [ROLES.ADMIN, ROLES.PRODUKSI],
+        roles: [ROLES.SUPERADMIN, ROLES.QC, ROLES.PRODUKSI],
       },
       {
         title: "Form Kendaraan Keluar",
         href: "/kendaraan/kendaraan-keluar",
-        roles: [ROLES.ADMIN, ROLES.PRODUKSI],
+        roles: [ROLES.SUPERADMIN, ROLES.QC, ROLES.PRODUKSI],
       },
       {
         title: "Data Spek Order",
         href: "/kendaraan/spek-order",
-        roles: [ROLES.ADMIN, ROLES.PRODUKSI],
+        roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRODUKSI],
       },
     ],
   },
@@ -160,7 +164,7 @@ const menuItemsRaw: MenuItem[] = [
     title: "Laporan",
     icon: FileText,
     href: "/laporan",
-    roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.PURCHASING],
+    roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.OWNER, ROLES.PURCHASING],
   },
 ];
 

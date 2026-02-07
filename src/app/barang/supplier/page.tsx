@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { useSession } from "next-auth/react";
 
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -49,6 +50,9 @@ import {
 } from "@/hooks/use-supplier";
 
 export default function SupplierPage() {
+  const { data: session } = useSession();
+  const isGudang = session?.user?.role === "GUDANG";
+
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -189,15 +193,17 @@ export default function SupplierPage() {
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                onClick={openAddDialog}
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Tambah Supplier
-              </Button>
-            </DialogTrigger>
+            {!isGudang && (
+              <DialogTrigger asChild>
+                <Button
+                  onClick={openAddDialog}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Tambah Supplier
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-[550px] rounded-xl border-slate-100 shadow-2xl">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
@@ -390,9 +396,11 @@ export default function SupplierPage() {
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Tanggal Dibuat
                   </TableHead>
-                  <TableHead className="px-6 text-center font-semibold text-slate-500">
-                    Aksi
-                  </TableHead>
+                  {!isGudang && (
+                    <TableHead className="px-6 text-center font-semibold text-slate-500">
+                      Aksi
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -449,26 +457,28 @@ export default function SupplierPage() {
                       <TableCell className="px-6 text-slate-600">
                         {supplier.createdAt}
                       </TableCell>
-                      <TableCell className="px-6 text-center">
-                        <div className="flex justify-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(supplier)}
-                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteClick(supplier)}
-                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                      {!isGudang && (
+                        <TableCell className="px-6 text-center">
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(supplier)}
+                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteClick(supplier)}
+                              className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 ) : (

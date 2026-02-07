@@ -53,8 +53,12 @@ import { useKategoriBarang, useSatuanBarang } from "@/hooks/use-master";
 
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { ArrowUpDown } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 export default function DataBarangPage() {
+  const { data: session } = useSession();
+  const isGudang = session?.user?.role === "GUDANG";
+
   const { data: kategoriQuery } = useKategoriBarang({ limit: 100 });
   const { data: satuanQuery } = useSatuanBarang({ limit: 100 });
 
@@ -251,15 +255,17 @@ export default function DataBarangPage() {
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                onClick={openAddDialog}
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Tambah Barang
-              </Button>
-            </DialogTrigger>
+            {!isGudang && (
+              <DialogTrigger asChild>
+                <Button
+                  onClick={openAddDialog}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Tambah Barang
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-[550px] rounded-xl border-slate-100 shadow-2xl">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
@@ -498,9 +504,11 @@ export default function DataBarangPage() {
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Status
                   </TableHead>
-                  <TableHead className="px-6 text-center font-semibold text-slate-500">
-                    Aksi
-                  </TableHead>
+                  {!isGudang && (
+                    <TableHead className="px-6 text-center font-semibold text-slate-500">
+                      Aksi
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -563,26 +571,28 @@ export default function DataBarangPage() {
                             {stockStatus.label}
                           </Badge>
                         </TableCell>
-                        <TableCell className="px-6 text-center">
-                          <div className="flex justify-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(barang)}
-                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteClick(barang)}
-                              className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                        {!isGudang && (
+                          <TableCell className="px-6 text-center">
+                            <div className="flex justify-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(barang)}
+                                className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteClick(barang)}
+                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })

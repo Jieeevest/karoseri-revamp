@@ -65,8 +65,11 @@ export default function PurchaseOrderPage() {
   const { data: session } = useSession();
   const isGudang = session?.user?.role === "GUDANG";
 
-  const { data: supplierList = [] } = useSupplier();
-  const { data: barangList = [] } = useBarang();
+  const { data: supplierQuery } = useSupplier();
+  const supplierList = (supplierQuery as any)?.data || [];
+
+  const { data: barangQuery } = useBarang();
+  const barangList = (barangQuery as any)?.data || [];
 
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);

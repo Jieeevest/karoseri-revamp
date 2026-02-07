@@ -62,8 +62,11 @@ export default function BarangMasukPage() {
   const { data: session } = useSession();
   const isGudang = session?.user?.role === "GUDANG";
 
-  const { data: barangList = [] } = useBarang();
-  const { data: supplierList = [] } = useSupplier();
+  const { data: barangQuery } = useBarang();
+  const barangList = (barangQuery as any)?.data || [];
+
+  const { data: supplierQuery } = useSupplier();
+  const supplierList = (supplierQuery as any)?.data || [];
   // Fetch POs to link with Incoming Goods, filtering for approved ones ideally
   const { data: poQueryData } = usePurchaseOrder();
   const purchaseOrderListRaw = (poQueryData as any)?.data || [];

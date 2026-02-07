@@ -60,11 +60,39 @@ async function main() {
     },
   });
 
+  // Create Superadmin
+  await prisma.user.upsert({
+    where: { username: "superadmin" },
+    update: { role: "SUPERADMIN" },
+    create: {
+      username: "superadmin",
+      email: "superadmin@karoseri.com",
+      password: await bcrypt.hash("superadmin123", 10),
+      name: "Super Administrator",
+      role: "SUPERADMIN",
+    },
+  });
+
+  // Create QC User
+  await prisma.user.upsert({
+    where: { username: "qc" },
+    update: { role: "QC" },
+    create: {
+      username: "qc",
+      email: "qc@karoseri.com",
+      password: await bcrypt.hash("qc123", 10),
+      name: "Staff QC",
+      role: "QC",
+    },
+  });
+
   console.log("✅ Users created successfully:");
+  console.log(" - superadmin / superadmin123 (SUPERADMIN)");
   console.log(" - admin / admin123 (ADMIN)");
   console.log(" - gudang / gudang123 (GUDANG)");
   console.log(" - purchasing / purchasing123 (PURCHASING)");
   console.log(" - produksi / produksi123 (PRODUKSI)");
+  console.log(" - qc / qc123 (QC)");
 }
 
 main()

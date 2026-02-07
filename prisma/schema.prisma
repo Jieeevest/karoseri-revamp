@@ -28,6 +28,7 @@ model User {
 }
 
 enum Role {
+  SUPERADMIN
   USER
   ADMIN
   GUDANG
@@ -36,6 +37,7 @@ enum Role {
   HR
   SALES
   OWNER
+  QC
 }
 
 model Account {
