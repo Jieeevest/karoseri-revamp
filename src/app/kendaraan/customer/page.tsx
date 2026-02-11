@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -186,10 +187,31 @@ export default function CustomerPage() {
     }
   };
 
-  const openAddDialog = () => {
+  const openAddDialog = async () => {
     setEditingCustomer(null);
-    setFormData({ kode: "", nama: "", alamat: "", telepon: "", email: "" });
+    setFormData({
+      kode: "Loading...",
+      nama: "",
+      alamat: "",
+      telepon: "",
+      email: "",
+    });
     setIsDialogOpen(true);
+
+    try {
+      const { data } = await axios.get("/api/customer/next-code");
+      if (data.code) {
+        setFormData((prev) => ({ ...prev, kode: data.code }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch next code", error);
+      toast({
+        title: "Gagal mengambil kode",
+        description: "Gagal menghasilkan kode otomatis.",
+        variant: "destructive",
+      });
+      setFormData((prev) => ({ ...prev, kode: "" }));
+    }
   };
 
   return (
@@ -243,9 +265,10 @@ export default function CustomerPage() {
                           kode: e.target.value,
                         }))
                       }
-                      className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                      className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 bg-slate-50 text-slate-500"
                       placeholder="Contoh: CUS001"
                       required
+                      readOnly
                     />
                   </div>
                   <div className="grid gap-2">

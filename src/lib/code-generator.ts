@@ -12,7 +12,7 @@ import { db } from "@/lib/db";
  */
 export async function generateNextCode(
   prefix: string,
-  modelName: "barang" | "supplier" | "karyawan",
+  modelName: "barang" | "supplier" | "karyawan" | "customer",
   codeField: string = "kode",
   digits: number = 4,
 ): Promise<string> {
