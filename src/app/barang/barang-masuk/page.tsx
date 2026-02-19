@@ -60,7 +60,8 @@ import {
 
 export default function BarangMasukPage() {
   const { data: session } = useSession();
-  const isGudang = session?.user?.role === "GUDANG";
+  const canManageBarangMasuk =
+    session?.user?.role === "GUDANG" || session?.user?.role === "SUPERADMIN";
 
   const { data: barangQuery } = useBarang();
   const barangList = (barangQuery as any)?.data || [];
@@ -282,7 +283,7 @@ export default function BarangMasukPage() {
             </p>
           </div>
 
-          {isGudang ? (
+          {canManageBarangMasuk ? (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button
@@ -729,7 +730,7 @@ export default function BarangMasukPage() {
                       </TableCell>
                       <TableCell className="px-6 text-center">
                         {/* Only add edit/delete if role is GUDANG? Assuming yes based on top check */}
-                        {isGudang && (
+                        {canManageBarangMasuk && (
                           <div className="flex justify-center gap-2">
                             {/* Logic to allow edit/delete only if recent or other rules? For now allow all */}
                             {/* Actually Edit icon was imported as Edit but not used in map, check original code... 

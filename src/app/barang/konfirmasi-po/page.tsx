@@ -48,7 +48,8 @@ import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 export default function KonfirmasiPOPage() {
   const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "ADMIN";
+  const canConfirmPO =
+    session?.user?.role === "ADMIN" || session?.user?.role === "SUPERADMIN";
 
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
@@ -446,7 +447,7 @@ export default function KonfirmasiPOPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {isAdmin && (
+                          {canConfirmPO && (
                             <>
                               <Button
                                 variant="ghost"

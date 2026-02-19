@@ -405,7 +405,7 @@ export default function PurchaseOrderPage() {
                             key={item.id}
                             className="grid grid-cols-12 gap-3 items-end p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-slate-300 transition-colors"
                           >
-                            <div className="col-span-5">
+                            <div className="col-span-4">
                               <Label className="text-xs text-slate-500 mb-1.5 block">
                                 Barang
                               </Label>
@@ -469,7 +469,7 @@ export default function PurchaseOrderPage() {
                                 className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                               />
                             </div>
-                            <div className="col-span-2 flex gap-2">
+                            <div className="col-span-3 flex gap-2">
                               <div className="flex-1">
                                 <Label className="text-xs text-slate-500 mb-1.5 block">
                                   Subtotal
@@ -477,7 +477,7 @@ export default function PurchaseOrderPage() {
                                 <Input
                                   value={formatCurrency(item.subtotal)}
                                   readOnly
-                                  className="bg-slate-50 rounded-xl border-slate-200 text-slate-600 text-xs font-medium"
+                                  className="bg-slate-50 rounded-xl border-slate-200 text-slate-600 text-xs font-medium w-full text-right"
                                 />
                               </div>
                               <Button
