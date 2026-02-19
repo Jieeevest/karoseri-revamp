@@ -63,7 +63,9 @@ import {
 
 export default function PurchaseOrderPage() {
   const { data: session } = useSession();
-  const isGudang = session?.user?.role === "GUDANG";
+
+  const canCreatePO =
+    session?.user?.role === "GUDANG" || session?.user?.role === "SUPERADMIN";
 
   const { data: supplierQuery } = useSupplier();
   const supplierList = (supplierQuery as any)?.data || [];
@@ -300,7 +302,7 @@ export default function PurchaseOrderPage() {
             </p>
           </div>
 
-          {isGudang ? (
+          {canCreatePO ? (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer">
@@ -534,7 +536,8 @@ export default function PurchaseOrderPage() {
             <span className="inline">
               <span className="font-semibold">Informasi:</span> Purchase Order
               (PO) hanya dapat dibuat oleh pengguna dengan akses{" "}
-              <span className="font-semibold">Gudang</span>.
+              <span className="font-semibold">Gudang</span> atau
+              <span className="font-semibold"> Super Admin</span>.
             </span>
           </AlertDescription>
         </Alert>
