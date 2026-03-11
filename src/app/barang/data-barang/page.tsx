@@ -59,8 +59,16 @@ export default function DataBarangPage() {
   const { data: session } = useSession();
   const isGudang = session?.user?.role === "GUDANG";
 
-  const { data: kategoriQuery } = useKategoriBarang({ limit: 100 });
-  const { data: satuanQuery } = useSatuanBarang({ limit: 100 });
+  const { data: kategoriQuery } = useKategoriBarang({
+    limit: 1000,
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
+  const { data: satuanQuery } = useSatuanBarang({
+    limit: 1000,
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
 
   const kategoriList = kategoriQuery?.data || [];
   const satuanList = satuanQuery?.data || [];
