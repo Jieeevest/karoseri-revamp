@@ -43,7 +43,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { PaginationControls } from "@/components/ui/pagination-controls";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { useToast } from "@/hooks/use-toast"; // Make sure to use toast for feedback
@@ -175,17 +175,23 @@ export default function BarangMasukPage() {
     useState<BarangMasuk | null>(null);
 
   const filteredBarangMasuk = barangMasukList; // Filtering is now done on backend via searchTerm
+  const lastPOIdRef = useRef<string>("");
 
   useEffect(() => {
     if (formData.mode !== "PO") return;
+    const currentPOId = formData.purchaseOrderId || "";
+    if (currentPOId === lastPOIdRef.current) return;
+    lastPOIdRef.current = currentPOId;
+
     if (!selectedPO) {
       setPoItemsInput([]);
       return;
     }
-    setFormData((prev) => ({
-      ...prev,
-      supplierId: selectedPO.supplierId,
-    }));
+    setFormData((prev) =>
+      prev.supplierId === selectedPO.supplierId
+        ? prev
+        : { ...prev, supplierId: selectedPO.supplierId },
+    );
     const nextItems = selectedPO.items.map((item: any) => {
       const receivedQty = receivedByBarangId.get(item.barangId) || 0;
       const remaining = Math.max(item.jumlah - receivedQty, 0);
@@ -202,7 +208,7 @@ export default function BarangMasukPage() {
       };
     });
     setPoItemsInput(nextItems);
-  }, [selectedPO, receivedByBarangId, formData.mode]);
+  }, [selectedPO, receivedByBarangId, formData.mode, formData.purchaseOrderId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
