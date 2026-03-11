@@ -124,6 +124,22 @@ export default function SpekOrderPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      if (
+        !formData.kendaraanId ||
+        !formData.karyawanId ||
+        !formData.jenis ||
+        !formData.deskripsi ||
+        !formData.upah
+      ) {
+        toast({
+          title: "Data belum lengkap",
+          description:
+            "Kendaraan, karyawan, jenis pekerjaan, deskripsi, dan upah wajib diisi.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (editingSpekOrder) {
         await updateSpekOrder.mutateAsync({
           id: editingSpekOrder.id,

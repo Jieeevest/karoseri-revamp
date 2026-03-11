@@ -69,6 +69,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { kendaraanId, karyawanId, jenis, deskripsi, upah } = body;
 
+    if (!kendaraanId || !karyawanId || !jenis || !deskripsi || upah === null || upah === undefined) {
+      return NextResponse.json(
+        { success: false, error: "Field wajib harus diisi" },
+        { status: 400 },
+      );
+    }
+
+    const parsedUpah = parseFloat(upah);
+    if (Number.isNaN(parsedUpah) || parsedUpah <= 0) {
+      return NextResponse.json(
+        { success: false, error: "Nominal upah tidak valid" },
+        { status: 400 },
+      );
+    }
+
     // Robust Number Generation
     const year = new Date().getFullYear();
     const lastRecord = await db.spekOrder.findFirst({
@@ -98,7 +113,7 @@ export async function POST(request: NextRequest) {
         karyawanId,
         jenis,
         deskripsi,
-        upah: parseFloat(upah),
+        upah: parsedUpah,
         status: "BELUM_DIBAYAR",
       },
     });
@@ -125,6 +140,21 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    if (!kendaraanId || !karyawanId || !jenis || !deskripsi || upah === null || upah === undefined) {
+      return NextResponse.json(
+        { success: false, error: "Field wajib harus diisi" },
+        { status: 400 },
+      );
+    }
+
+    const parsedUpah = parseFloat(upah);
+    if (Number.isNaN(parsedUpah) || parsedUpah <= 0) {
+      return NextResponse.json(
+        { success: false, error: "Nominal upah tidak valid" },
+        { status: 400 },
+      );
+    }
+
     const updatedItem = await db.spekOrder.update({
       where: { id },
       data: {
@@ -132,7 +162,7 @@ export async function PUT(request: NextRequest) {
         karyawanId,
         jenis,
         deskripsi,
-        upah: parseFloat(upah),
+        upah: parsedUpah,
       },
     });
 
