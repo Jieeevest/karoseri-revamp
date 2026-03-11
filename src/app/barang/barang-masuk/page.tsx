@@ -75,25 +75,6 @@ export default function BarangMasukPage() {
   const purchaseOrderList = purchaseOrderListRaw.filter(
     (po: any) => po.status === "DISETUJUI",
   );
-  const selectedPO = useMemo(
-    () => purchaseOrderList.find((po: any) => po.id === formData.purchaseOrderId),
-    [purchaseOrderList, formData.purchaseOrderId],
-  );
-
-  const { data: poBarangMasukData } = useBarangMasuk(
-    formData.purchaseOrderId
-      ? { purchaseOrderId: formData.purchaseOrderId }
-      : undefined,
-  );
-  const poBarangMasukList = (poBarangMasukData as any)?.data || [];
-
-  const receivedByBarangId = useMemo(() => {
-    const map = new Map<string, number>();
-    poBarangMasukList.forEach((bm: any) => {
-      map.set(bm.barangId, (map.get(bm.barangId) || 0) + bm.jumlah);
-    });
-    return map;
-  }, [poBarangMasukList]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
@@ -145,6 +126,26 @@ export default function BarangMasukPage() {
     nomorSuratJalan: "",
     keterangan: "",
   });
+  const selectedPO = useMemo(
+    () =>
+      purchaseOrderList.find((po: any) => po.id === formData.purchaseOrderId),
+    [purchaseOrderList, formData.purchaseOrderId],
+  );
+
+  const { data: poBarangMasukData } = useBarangMasuk(
+    formData.purchaseOrderId
+      ? { purchaseOrderId: formData.purchaseOrderId }
+      : undefined,
+  );
+  const poBarangMasukList = (poBarangMasukData as any)?.data || [];
+
+  const receivedByBarangId = useMemo(() => {
+    const map = new Map<string, number>();
+    poBarangMasukList.forEach((bm: any) => {
+      map.set(bm.barangId, (map.get(bm.barangId) || 0) + bm.jumlah);
+    });
+    return map;
+  }, [poBarangMasukList]);
   const [poItemsInput, setPoItemsInput] = useState<
     {
       barangId: string;
