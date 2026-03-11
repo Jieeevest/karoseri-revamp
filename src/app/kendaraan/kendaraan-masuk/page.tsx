@@ -53,6 +53,7 @@ import {
   useCreateKendaraanMasuk,
   useDeleteKendaraanMasuk,
 } from "@/hooks/use-kendaraan-masuk";
+import { useKendaraan } from "@/hooks/use-kendaraan";
 import { useMerekKendaraan, useTipeKendaraan } from "@/hooks/use-master";
 import { useToast } from "@/hooks/use-toast";
 import { PaginationControls } from "@/components/ui/pagination-controls";
@@ -235,6 +236,8 @@ export default function KendaraanMasukPage() {
   >(null);
 
   const [formData, setFormData] = useState({
+    jenisMasuk: "PASANG_BARU",
+    kendaraanId: "",
     tanggalMasuk: "",
     showroom: "",
     customerId: "",
@@ -249,6 +252,7 @@ export default function KendaraanMasukPage() {
       deskripsi: "",
     })),
   });
+  const [serviceSearch, setServiceSearch] = useState("");
 
   // Queries
   const { data: kendaraanMasukData } = useKendaraanMasuk({
@@ -277,6 +281,14 @@ export default function KendaraanMasukPage() {
       : undefined,
   );
   const tipeList = tipeData?.data || [];
+  const { data: kendaraanSearchData } = useKendaraan({
+    page: 1,
+    limit: 20,
+    search: serviceSearch,
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
+  const kendaraanSearchList = kendaraanSearchData?.data || [];
 
   // Mutations
   const createKendaraanMasuk = useCreateKendaraanMasuk();
@@ -295,11 +307,39 @@ export default function KendaraanMasukPage() {
     }));
   }, []);
 
+  const isService = formData.jenisMasuk === "SERVICE";
+  const selectedServiceKendaraan = kendaraanSearchList.find(
+    (item) => item.id === formData.kendaraanId,
+  );
+
+  const handleSelectExistingKendaraan = (kendaraanId: string) => {
+    const selected = kendaraanSearchList.find((item) => item.id === kendaraanId);
+    setFormData((prev) => ({
+      ...prev,
+      kendaraanId,
+      nomorPolisi: selected?.nomorPolisi || "",
+      merekId: selected?.merekId || "",
+      tipeId: selected?.tipeId || "",
+      customerId: selected?.customerId || "",
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
+      if (isService && !formData.kendaraanId) {
+        toast({
+          title: "Kendaraan belum dipilih",
+          description: "Pilih kendaraan yang sudah terdaftar untuk service.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const payload = {
+        jenisMasuk: formData.jenisMasuk,
+        kendaraanId: isService ? formData.kendaraanId : undefined,
         tanggalMasuk: formData.tanggalMasuk,
         showroom: formData.showroom,
         customerId: formData.customerId,
@@ -341,6 +381,8 @@ export default function KendaraanMasukPage() {
 
   const resetForm = () => {
     setFormData({
+      jenisMasuk: "PASANG_BARU",
+      kendaraanId: "",
       tanggalMasuk: new Date().toISOString().split("T")[0],
       showroom: "",
       customerId: "",
@@ -355,6 +397,7 @@ export default function KendaraanMasukPage() {
         deskripsi: "",
       })),
     });
+    setServiceSearch("");
   };
 
   const handleView = (kendaraanMasuk: any) => {
@@ -491,6 +534,38 @@ export default function KendaraanMasukPage() {
                     <div className="grid grid-cols-2 gap-6">
                       <div className="grid items-center gap-2">
                         <Label
+                          htmlFor="jenisMasuk"
+                          className="text-slate-700 font-medium"
+                        >
+                          Jenis Kendaraan Masuk
+                        </Label>
+                        <Select
+                          value={formData.jenisMasuk}
+                          onValueChange={(value) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              jenisMasuk: value,
+                              kendaraanId: "",
+                              nomorPolisi: "",
+                              merekId: "",
+                              tipeId: "",
+                              customerId: "",
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                            <SelectValue placeholder="Pilih jenis" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                            <SelectItem value="PASANG_BARU">
+                              Pasang Baru
+                            </SelectItem>
+                            <SelectItem value="SERVICE">Service</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid items-center gap-2">
+                        <Label
                           htmlFor="tanggalMasuk"
                           className="text-slate-700 font-medium"
                         >
@@ -546,6 +621,7 @@ export default function KendaraanMasukPage() {
                               customerId: value,
                             }))
                           }
+                          disabled={isService}
                         >
                           <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
                             <SelectValue placeholder="Pilih customer" />
@@ -592,86 +668,173 @@ export default function KendaraanMasukPage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="grid items-center gap-2">
-                        <Label
-                          htmlFor="nomorPolisi"
-                          className="text-slate-700 font-medium"
-                        >
-                          Nomor Polisi
-                        </Label>
-                        <Input
-                          id="nomorPolisi"
-                          value={formData.nomorPolisi}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              nomorPolisi: e.target.value,
-                            }))
-                          }
-                          placeholder="Contoh: B 1234 ABC"
-                          className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                          required
-                        />
-                      </div>
-                      <div className="grid items-center gap-2">
-                        <Label
-                          htmlFor="merek"
-                          className="text-slate-700 font-medium"
-                        >
-                          Merek
-                        </Label>
-                        <Select
-                          value={formData.merekId}
-                          onValueChange={(value) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              merekId: value,
-                              tipeId: "", // Reset tipe when merek changes
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                            <SelectValue placeholder="Pilih Merek" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                            {merekList.map((m: any) => (
-                              <SelectItem key={m.id} value={m.id}>
-                                {m.nama}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid items-center gap-2">
-                        <Label
-                          htmlFor="tipe"
-                          className="text-slate-700 font-medium"
-                        >
-                          Tipe Kendaraan
-                        </Label>
-                        <Select
-                          value={formData.tipeId}
-                          onValueChange={(value) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              tipeId: value,
-                            }))
-                          }
-                          disabled={!formData.merekId}
-                        >
-                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
-                            <SelectValue placeholder="Pilih Tipe" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                            {tipeList.map((t: any) => (
-                              <SelectItem key={t.id} value={t.id}>
-                                {t.nama}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
                     </div>
+
+                    {isService ? (
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="serviceSearch"
+                            className="text-slate-700 font-medium"
+                          >
+                            Cari Nomor Polisi
+                          </Label>
+                          <Input
+                            id="serviceSearch"
+                            value={serviceSearch}
+                            onChange={(e) => setServiceSearch(e.target.value)}
+                            placeholder="Contoh: B 1234 ABC"
+                            className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                          />
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="kendaraanId"
+                            className="text-slate-700 font-medium"
+                          >
+                            Pilih Kendaraan Terdaftar
+                          </Label>
+                          <Select
+                            value={formData.kendaraanId}
+                            onValueChange={handleSelectExistingKendaraan}
+                          >
+                            <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                              <SelectValue placeholder="Pilih kendaraan" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                              {kendaraanSearchList.map((item: any) => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.nomorPolisi} -{" "}
+                                  {item.merekKendaraan?.nama}{" "}
+                                  {item.tipeKendaraan?.nama}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="nomorPolisi"
+                            className="text-slate-700 font-medium"
+                          >
+                            Nomor Polisi
+                          </Label>
+                          <Input
+                            id="nomorPolisi"
+                            value={formData.nomorPolisi}
+                            readOnly
+                            className="rounded-xl border-slate-200 bg-slate-50"
+                          />
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="merekTipe"
+                            className="text-slate-700 font-medium"
+                          >
+                            Merek & Tipe
+                          </Label>
+                          <Input
+                            id="merekTipe"
+                            value={
+                              selectedServiceKendaraan
+                                ? `${selectedServiceKendaraan.merekKendaraan?.nama || "-"} / ${selectedServiceKendaraan.tipeKendaraan?.nama || "-"}`
+                                : ""
+                            }
+                            readOnly
+                            className="rounded-xl border-slate-200 bg-slate-50"
+                          />
+                        </div>
+                        {serviceSearch && kendaraanSearchList.length === 0 && (
+                          <div className="col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                            Kendaraan belum terdata. Gunakan jenis{" "}
+                            <span className="font-semibold">Pasang Baru</span>{" "}
+                            untuk mendaftarkan kendaraan baru.
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="nomorPolisi"
+                            className="text-slate-700 font-medium"
+                          >
+                            Nomor Polisi
+                          </Label>
+                          <Input
+                            id="nomorPolisi"
+                            value={formData.nomorPolisi}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                nomorPolisi: e.target.value,
+                              }))
+                            }
+                            placeholder="Contoh: B 1234 ABC"
+                            className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                            required
+                          />
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="merek"
+                            className="text-slate-700 font-medium"
+                          >
+                            Merek
+                          </Label>
+                          <Select
+                            value={formData.merekId}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                merekId: value,
+                                tipeId: "",
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                              <SelectValue placeholder="Pilih Merek" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                              {merekList.map((m: any) => (
+                                <SelectItem key={m.id} value={m.id}>
+                                  {m.nama}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="tipe"
+                            className="text-slate-700 font-medium"
+                          >
+                            Tipe Kendaraan
+                          </Label>
+                          <Select
+                            value={formData.tipeId}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                tipeId: value,
+                              }))
+                            }
+                            disabled={!formData.merekId}
+                          >
+                            <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                              <SelectValue placeholder="Pilih Tipe" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                              {tipeList.map((t: any) => (
+                                <SelectItem key={t.id} value={t.id}>
+                                  {t.nama}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Pengerjaan */}

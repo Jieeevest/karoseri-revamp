@@ -5,6 +5,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
+    const kategoriId = searchParams.get("kategoriId");
+    const supplierId = searchParams.get("supplierId");
 
     const pageParam = searchParams.get("page");
     const limitParam = searchParams.get("limit");
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest) {
       | "asc"
       | "desc";
 
-    const where = search
+    const where: any = search
       ? {
           OR: [
             {
@@ -29,6 +31,13 @@ export async function GET(request: NextRequest) {
           ],
         }
       : {};
+
+    if (kategoriId) {
+      where.kategoriId = parseInt(kategoriId);
+    }
+    if (supplierId) {
+      where.supplierId = supplierId;
+    }
 
     if (!pageParam && !limitParam) {
       const hargaList = await db.hargaBarang.findMany({
@@ -120,11 +129,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const barang = await db.barang.findUnique({ where: { id: barangId } });
+    if (!barang) {
+      return NextResponse.json(
+        { success: false, error: "Barang tidak ditemukan" },
+        { status: 404 },
+      );
+    }
+
+    const resolvedKategoriId = kategoriId
+      ? parseInt(kategoriId)
+      : barang.kategoriId;
+
     const newHarga = await db.hargaBarang.create({
       data: {
         barangId,
         supplierId,
-        kategoriId: parseInt(kategoriId),
+        kategoriId: resolvedKategoriId,
         harga: parseFloat(harga),
         adalahHargaTerbaik: adalahHargaTerbaik || false,
       },
@@ -206,12 +227,24 @@ export async function PUT(request: NextRequest) {
     const oldPrice = currentHarga ? currentHarga.harga : 0;
     const newPrice = parseFloat(harga);
 
+    const barang = await db.barang.findUnique({ where: { id: barangId } });
+    if (!barang) {
+      return NextResponse.json(
+        { success: false, error: "Barang tidak ditemukan" },
+        { status: 404 },
+      );
+    }
+
+    const resolvedKategoriId = kategoriId
+      ? parseInt(kategoriId)
+      : barang.kategoriId;
+
     const updatedHarga = await db.hargaBarang.update({
       where: { id },
       data: {
         barangId,
         supplierId,
-        kategoriId: parseInt(kategoriId),
+        kategoriId: resolvedKategoriId,
         harga: newPrice,
         adalahHargaTerbaik: adalahHargaTerbaik || false,
       },

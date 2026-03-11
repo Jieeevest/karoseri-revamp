@@ -259,14 +259,14 @@ export default function DataBarangPage() {
               <DialogTrigger asChild>
                 <Button
                   onClick={openAddDialog}
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-lg transition-all duration-200 cursor-pointer"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Tambah Barang
                 </Button>
               </DialogTrigger>
             )}
-            <DialogContent className="sm:max-w-[550px] rounded-xl border-slate-100 shadow-2xl">
+            <DialogContent className="sm:max-w-[550px] rounded-lg border-slate-100 shadow-2xl">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold text-slate-900">
@@ -295,7 +295,7 @@ export default function DataBarangPage() {
                           kode: e.target.value,
                         }))
                       }
-                      className={`rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 ${
+                      className={`rounded-lg border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 ${
                         !editingBarang ? "bg-slate-100 text-slate-500" : ""
                       }`}
                       placeholder={
@@ -323,7 +323,7 @@ export default function DataBarangPage() {
                           nama: e.target.value,
                         }))
                       }
-                      className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                      className="rounded-lg border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                       placeholder="Contoh: Cat Semprot Hitam"
                       required
                     />
@@ -391,7 +391,7 @@ export default function DataBarangPage() {
                             stok: parseInt(e.target.value) || 0,
                           }))
                         }
-                        className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                        className="rounded-lg border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                         min="0"
                         required
                       />
@@ -413,7 +413,7 @@ export default function DataBarangPage() {
                             stokMinimum: parseInt(e.target.value) || 0,
                           }))
                         }
-                        className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                        className="rounded-lg border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                         min="0"
                         required
                       />
@@ -425,13 +425,13 @@ export default function DataBarangPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setIsDialogOpen(false)}
-                    className="rounded-xl cursor-pointer"
+                    className="rounded-lg cursor-pointer"
                   >
                     Batal
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md shadow-blue-200 cursor-pointer"
                   >
                     {editingBarang ? "Simpan Perubahan" : "Buat Barang"}
                   </Button>
@@ -441,7 +441,7 @@ export default function DataBarangPage() {
           </Dialog>
         </div>
 
-        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
+        <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white/50 backdrop-blur-sm">
           <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle className="text-lg font-bold text-slate-900">
@@ -456,7 +456,7 @@ export default function DataBarangPage() {
                     setSearchTerm(e.target.value);
                     setPage(1);
                   }}
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
+                  className="pl-10 rounded-lg border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
             </div>

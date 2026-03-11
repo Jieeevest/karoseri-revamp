@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
+export interface SupplierBankAccount {
+  id?: string;
+  nomorRekening: string;
+  atasNamaRekening: string;
+  namaBank: string;
+}
+
 export interface Supplier {
   id: string;
   kode: string;
@@ -8,6 +15,7 @@ export interface Supplier {
   alamat?: string;
   telepon?: string;
   email?: string;
+  bankAccounts?: SupplierBankAccount[];
   createdAt: string;
 }
 
@@ -50,8 +58,9 @@ export function useCreateSupplier() {
       const { data } = await axios.post("/api/barang/supplier", newSupplier);
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supplier"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["supplier"] });
+      await queryClient.refetchQueries({ queryKey: ["supplier"] });
     },
   });
 }
@@ -63,8 +72,9 @@ export function useUpdateSupplier() {
       const { data } = await axios.put("/api/barang/supplier", supplier);
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supplier"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["supplier"] });
+      await queryClient.refetchQueries({ queryKey: ["supplier"] });
     },
   });
 }
@@ -76,8 +86,9 @@ export function useDeleteSupplier() {
       const { data } = await axios.delete(`/api/barang/supplier?id=${id}`);
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supplier"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["supplier"] });
+      await queryClient.refetchQueries({ queryKey: ["supplier"] });
     },
   });
 }

@@ -52,6 +52,7 @@ import {
   useTagihanSupplier,
   useUpdateTagihanSupplier,
 } from "@/hooks/use-tagihan-supplier";
+import { formatDateIndonesia } from "@/lib/date-format";
 
 export default function TagihanSupplierPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -256,7 +257,7 @@ export default function TagihanSupplierPage() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -267,14 +268,14 @@ export default function TagihanSupplierPage() {
                     {stats.total}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
                   <Receipt className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -285,14 +286,14 @@ export default function TagihanSupplierPage() {
                     {stats.unpaid}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-yellow-50 border border-yellow-100">
+                <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-100">
                   <Clock className="h-6 w-6 text-yellow-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -303,14 +304,14 @@ export default function TagihanSupplierPage() {
                     {stats.overdue}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-red-50 border border-red-100">
+                <div className="p-3 rounded-lg bg-red-50 border border-red-100">
                   <AlertTriangle className="h-6 w-6 text-red-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -321,7 +322,7 @@ export default function TagihanSupplierPage() {
                     {formatCurrency(stats.totalUnpaid)}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
+                <div className="p-3 rounded-lg bg-purple-50 border border-purple-100">
                   <DollarSign className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
@@ -329,7 +330,7 @@ export default function TagihanSupplierPage() {
           </Card>
         </div>
 
-        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
+        <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white/50 backdrop-blur-sm">
           <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle className="text-lg font-bold text-slate-900">
@@ -341,7 +342,7 @@ export default function TagihanSupplierPage() {
                   placeholder="Cari tagihan..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
+                  className="pl-10 rounded-lg border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
             </div>
@@ -436,7 +437,10 @@ export default function TagihanSupplierPage() {
                         <TableCell className="px-6">
                           <div>
                             <p className="text-sm text-slate-900">
-                              {tagihan.tempo}
+                              {formatDateIndonesia(tagihan.tempo, {
+                                withTime: false,
+                                withWibLabel: false,
+                              })}
                             </p>
                             {tagihan.status === "BELUM_DIBAYAR" && (
                               <p
@@ -498,7 +502,7 @@ export default function TagihanSupplierPage() {
               </TableBody>
             </Table>
           </CardContent>
-          <div className="p-4 border-t border-slate-100">
+          <div className="border-t border-slate-100">
             <PaginationControls
               currentPage={page}
               totalPages={pagination?.totalPages || 1}
@@ -515,7 +519,7 @@ export default function TagihanSupplierPage() {
           open={isPaymentDialogOpen}
           onOpenChange={setIsPaymentDialogOpen}
         >
-          <DialogContent className="sm:max-w-[500px] rounded-xl border-slate-100 shadow-2xl">
+          <DialogContent className="sm:max-w-[500px] rounded-lg border-slate-100 shadow-2xl">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold text-slate-900">
                 Bayar Tagihan Supplier
@@ -529,7 +533,7 @@ export default function TagihanSupplierPage() {
             </DialogHeader>
             {selectedTagihan && (
               <div className="space-y-6 py-4">
-                <div className="p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                <div className="p-4 bg-slate-50/50 rounded-lg border border-slate-100">
                   <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                     <div>
                       <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -560,7 +564,10 @@ export default function TagihanSupplierPage() {
                         Jatuh Tempo
                       </Label>
                       <p className="font-medium text-slate-700">
-                        {selectedTagihan.tempo}
+                        {formatDateIndonesia(selectedTagihan.tempo, {
+                          withTime: false,
+                          withWibLabel: false,
+                        })}
                       </p>
                     </div>
                   </div>
@@ -582,10 +589,10 @@ export default function TagihanSupplierPage() {
                       }))
                     }
                   >
-                    <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                    <SelectTrigger className="w-full rounded-lg border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
                       <SelectValue placeholder="Pilih metode pembayaran" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                    <SelectContent className="rounded-lg border-slate-100 shadow-xl">
                       <SelectItem
                         value="TRANSFER"
                         className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
@@ -626,13 +633,13 @@ export default function TagihanSupplierPage() {
                         }))
                       }
                       placeholder="Nama file bukti pembayaran"
-                      className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                      className="rounded-lg border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="rounded-xl shrink-0 cursor-pointer"
+                      className="rounded-lg shrink-0 cursor-pointer"
                     >
                       <Upload className="h-4 w-4" />
                     </Button>
@@ -644,13 +651,13 @@ export default function TagihanSupplierPage() {
               <Button
                 variant="outline"
                 onClick={() => setIsPaymentDialogOpen(false)}
-                className="rounded-xl cursor-pointer"
+                className="rounded-lg cursor-pointer"
               >
                 Batal
               </Button>
               <Button
                 onClick={confirmPayment}
-                className="bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-md shadow-green-200 cursor-pointer"
+                className="bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md shadow-green-200 cursor-pointer"
               >
                 Bayar Sekarang
               </Button>

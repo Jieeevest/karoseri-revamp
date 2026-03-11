@@ -5,6 +5,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
+    const dateFrom = searchParams.get("dateFrom");
+    const dateTo = searchParams.get("dateTo");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const sortBy = searchParams.get("sortBy") || "createdAt";
@@ -26,6 +28,18 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    if (dateFrom || dateTo) {
+      where.tanggalKeluar = {};
+      if (dateFrom) {
+        where.tanggalKeluar.gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        where.tanggalKeluar.lte = end;
+      }
+    }
+
     const [list, total] = await Promise.all([
       db.kendaraanKeluar.findMany({
         where,
@@ -35,6 +49,18 @@ export async function GET(request: NextRequest) {
               merekKendaraan: true,
               tipeKendaraan: true,
               customer: true,
+            },
+          },
+          kendaraanMasuk: {
+            include: {
+              customer: true,
+              kendaraan: {
+                include: {
+                  merekKendaraan: true,
+                  tipeKendaraan: true,
+                  customer: true,
+                },
+              },
             },
           },
         },
@@ -69,23 +95,44 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { tanggalKeluar, kendaraanId, qcResult, layakKeluar, suratJalan } =
-      body;
+    const { tanggalKeluar, kendaraanMasukId, keterangan } = body;
 
-    if (!kendaraanId) {
+    if (!kendaraanMasukId) {
       return NextResponse.json(
-        { success: false, error: "Kendaraan ID required" },
+        { success: false, error: "Kendaraan masuk wajib dipilih" },
         { status: 400 },
       );
     }
 
-    const vehicle = await db.kendaraan.findUnique({
-      where: { id: kendaraanId },
+    const kendaraanMasuk = await db.kendaraanMasuk.findUnique({
+      where: { id: kendaraanMasukId },
+      include: { kendaraan: true },
     });
-    if (!vehicle) {
+    if (!kendaraanMasuk) {
       return NextResponse.json(
-        { success: false, error: "Kendaraan not found" },
+        { success: false, error: "Kendaraan masuk tidak ditemukan" },
         { status: 404 },
+      );
+    }
+
+    const qcRecord = await db.kendaraanQC.findUnique({
+      where: { kendaraanMasukId },
+    });
+
+    if (!qcRecord || !qcRecord.layakKeluar) {
+      return NextResponse.json(
+        { success: false, error: "Kendaraan belum lulus QC" },
+        { status: 400 },
+      );
+    }
+
+    const existingKeluar = await db.kendaraanKeluar.findFirst({
+      where: { kendaraanMasukId },
+    });
+    if (existingKeluar) {
+      return NextResponse.json(
+        { success: false, error: "Kendaraan ini sudah tercatat keluar" },
+        { status: 409 },
       );
     }
 
@@ -115,19 +162,19 @@ export async function POST(request: NextRequest) {
       data: {
         nomor,
         tanggalKeluar: new Date(tanggalKeluar),
-        kendaraanId,
-        qcResult,
-        layakKeluar,
-        suratJalan,
+        kendaraanId: kendaraanMasuk.kendaraanId,
+        kendaraanMasukId,
+        qcResult: qcRecord.hasil,
+        layakKeluar: qcRecord.layakKeluar,
+        suratJalan: null,
+        keterangan: keterangan || null,
       },
     });
 
-    if (layakKeluar) {
-      await db.kendaraan.update({
-        where: { id: kendaraanId },
-        data: { status: "KELUAR" },
-      });
-    }
+    await db.kendaraan.update({
+      where: { id: kendaraanMasuk.kendaraanId },
+      data: { status: "KELUAR" },
+    });
 
     return NextResponse.json({ success: true, data: newEntry });
   } catch (error) {
@@ -142,7 +189,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, tanggalKeluar, qcResult, layakKeluar, suratJalan } = body;
+    const { id, tanggalKeluar, keterangan } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -166,22 +213,9 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data: {
         tanggalKeluar: new Date(tanggalKeluar),
-        qcResult,
-        layakKeluar,
-        suratJalan,
+        keterangan: keterangan || null,
       },
     });
-
-    // Update vehicle status logic
-    // If it WAS layakKeluar and now is NOT, revert to SELESAI
-    // If it WAS NOT layakKeluar and now IS, set to KELUAR
-    if (currentRecord.layakKeluar !== layakKeluar) {
-      const newStatus = layakKeluar ? "KELUAR" : "SELESAI";
-      await db.kendaraan.update({
-        where: { id: currentRecord.kendaraanId },
-        data: { status: newStatus },
-      });
-    }
 
     return NextResponse.json({ success: true, data: updatedEntry });
   } catch (error) {
@@ -208,12 +242,10 @@ export async function DELETE(request: NextRequest) {
     const record = await db.kendaraanKeluar.findUnique({ where: { id } });
     if (record) {
       // Revert vehicle status if it was marked as KELUAR
-      if (record.layakKeluar) {
-        await db.kendaraan.update({
-          where: { id: record.kendaraanId },
-          data: { status: "SELESAI" },
-        });
-      }
+      await db.kendaraan.update({
+        where: { id: record.kendaraanId },
+        data: { status: "SELESAI" },
+      });
       await db.kendaraanKeluar.delete({ where: { id } });
     }
 

@@ -28,7 +28,7 @@ export function PaginationControls({
   onLimitChange,
 }: PaginationControlsProps) {
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between px-2 py-4 gap-4 border-t border-slate-100">
+    <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 gap-4 border-t border-slate-100">
       <div className="flex items-center gap-2 text-sm text-slate-500">
         <span>Show</span>
         <Select

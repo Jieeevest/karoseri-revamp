@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, Car, Loader2, Lock, User } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useLoadingController } from "@/components/ui/loading-provider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { start } = useLoadingController();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -32,6 +34,7 @@ export default function LoginPage() {
       if (result?.error) {
         setError(result.error);
       } else if (result?.ok) {
+        start();
         router.push("/");
         router.refresh();
       }

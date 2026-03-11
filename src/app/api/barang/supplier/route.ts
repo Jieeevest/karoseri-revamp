@@ -2,6 +2,43 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { generateNextCode } from "@/lib/code-generator";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+type SupplierBankAccountPayload = {
+  nomorRekening?: string;
+  atasNamaRekening?: string;
+  namaBank?: string;
+};
+
+function sanitizeBankAccounts(
+  bankAccounts: SupplierBankAccountPayload[] = [],
+): { nomorRekening: string; atasNamaRekening: string; namaBank: string }[] {
+  const cleaned = bankAccounts
+    .map((item) => ({
+      nomorRekening: item.nomorRekening?.trim() || "",
+      atasNamaRekening: item.atasNamaRekening?.trim() || "",
+      namaBank: item.namaBank?.trim() || "",
+    }))
+    .filter(
+      (item) =>
+        item.nomorRekening || item.atasNamaRekening || item.namaBank,
+    );
+
+  const hasIncomplete = cleaned.some(
+    (item) =>
+      !item.nomorRekening || !item.atasNamaRekening || !item.namaBank,
+  );
+
+  if (hasIncomplete) {
+    throw new Error(
+      "Setiap data rekening wajib diisi lengkap: Nomor Rekening, Atas Nama Rekening, dan Nama Bank",
+    );
+  }
+
+  return cleaned;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -30,6 +67,7 @@ export async function GET(request: NextRequest) {
     if (!pageParam && !limitParam) {
       const suppliers = await db.supplier.findMany({
         where: where as any,
+        include: { bankAccounts: true },
         orderBy: { [sortBy]: sortOrder },
       });
       return NextResponse.json({ success: true, data: suppliers });
@@ -44,6 +82,7 @@ export async function GET(request: NextRequest) {
         where: where as any,
         skip,
         take: limit,
+        include: { bankAccounts: true },
         orderBy: { [sortBy]: sortOrder },
       }),
       db.supplier.count({ where: where as any }),
@@ -71,7 +110,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    let { kode, nama, alamat, telepon, email } = body;
+    const { nama, alamat, telepon, email, bankAccounts = [] } = body;
 
     // Validation
     if (!nama) {
@@ -81,9 +120,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!kode) {
-      kode = await generateNextCode("SUP", "supplier", "kode");
-    }
+    const kode = await generateNextCode("SUP", "supplier", "kode");
+    const cleanedBankAccounts = sanitizeBankAccounts(bankAccounts);
 
     // Check if kode already exists
     const existingKode = await db.supplier.findFirst({
@@ -104,7 +142,14 @@ export async function POST(request: NextRequest) {
         alamat: alamat || "",
         telepon: telepon || "",
         email: email || "",
+        bankAccounts:
+          cleanedBankAccounts.length > 0
+            ? {
+                create: cleanedBankAccounts,
+              }
+            : undefined,
       },
+      include: { bankAccounts: true },
     });
 
     return NextResponse.json({
@@ -114,6 +159,15 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error creating supplier:", error);
+    if (
+      error instanceof Error &&
+      error.message.includes("Setiap data rekening wajib diisi lengkap")
+    ) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
       { success: false, error: "Failed to create supplier" },
       { status: 500 },
@@ -124,21 +178,35 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, kode, nama, alamat, telepon, email } = body;
+    const { id, kode, nama, alamat, telepon, email, bankAccounts } = body;
 
-    if (!id || !kode || !nama) {
+    if (!id || !nama) {
       return NextResponse.json(
-        { success: false, error: "ID, Kode, dan Nama wajib diisi" },
+        { success: false, error: "ID dan Nama wajib diisi" },
         { status: 400 },
       );
     }
+
+    const currentSupplier = await db.supplier.findUnique({
+      where: { id },
+      select: { kode: true },
+    });
+
+    if (!currentSupplier) {
+      return NextResponse.json(
+        { success: false, error: "Supplier tidak ditemukan" },
+        { status: 404 },
+      );
+    }
+
+    const finalKode = (kode || currentSupplier.kode).trim();
 
     // Check if kode already exists (excluding current record)
     const existingKode = await db.supplier.findFirst({
       where: {
         AND: [
           { id: { not: id } },
-          { kode: { equals: kode, mode: "insensitive" } },
+          { kode: { equals: finalKode, mode: "insensitive" } },
         ],
       },
     });
@@ -150,15 +218,27 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const cleanedBankAccounts = Array.isArray(bankAccounts)
+      ? sanitizeBankAccounts(bankAccounts)
+      : null;
+
     const updatedSupplier = await db.supplier.update({
       where: { id },
       data: {
-        kode: kode.trim(),
+        kode: finalKode,
         nama: nama.trim(),
         alamat: alamat || "",
         telepon: telepon || "",
         email: email || "",
+        bankAccounts:
+          cleanedBankAccounts !== null
+            ? {
+                deleteMany: {},
+                create: cleanedBankAccounts,
+              }
+            : undefined,
       },
+      include: { bankAccounts: true },
     });
 
     return NextResponse.json({
@@ -168,6 +248,15 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error updating supplier:", error);
+    if (
+      error instanceof Error &&
+      error.message.includes("Setiap data rekening wajib diisi lengkap")
+    ) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
       { success: false, error: "Failed to update supplier" },
       { status: 500 },

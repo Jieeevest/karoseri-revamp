@@ -20,7 +20,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -30,13 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Search, Car, Eye } from "lucide-react";
+import { Edit, Trash2, Search, Car, Eye } from "lucide-react";
 import { useState } from "react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { cn } from "@/lib/utils";
 import {
   useKendaraan,
-  useCreateKendaraan,
   useUpdateKendaraan,
   useDeleteKendaraan,
   Kendaraan,
@@ -57,7 +55,9 @@ export default function DataKendaraanPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const { data: session } = useSession();
-  const isQC = (session?.user?.role as any) === "QC";
+  const userRole = session?.user?.role as string | undefined;
+  const isQC = userRole === "QC";
+  const canDelete = userRole === "SUPERADMIN";
 
   // Hooks
   const { data: kendaraanData, refetch } = useKendaraan({
@@ -80,7 +80,6 @@ export default function DataKendaraanPage() {
   const tipeList = tipeData?.data || [];
   const { data: customerData } = useCustomer();
   const customerList = customerData?.data || [];
-  const createKendaraan = useCreateKendaraan();
   const updateKendaraan = useUpdateKendaraan();
   const deleteKendaraan = useDeleteKendaraan();
   const { toast } = useToast();
@@ -158,20 +157,34 @@ export default function DataKendaraanPage() {
     );
   };
 
+  const formatDateIndonesia = (dateValue?: string | Date) => {
+    if (!dateValue) return "-";
+    const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+    return date.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      if (editingKendaraan) {
-        await updateKendaraan.mutateAsync({
-          id: editingKendaraan.id,
-          ...formData,
+      if (!editingKendaraan) {
+        toast({
+          title: "Aksi dibatasi",
+          description:
+            "Penambahan kendaraan dilakukan melalui Form Kendaraan Masuk.",
+          variant: "destructive",
         });
-      } else {
-        await createKendaraan.mutateAsync({
-          ...formData,
-        });
+        return;
       }
+
+      await updateKendaraan.mutateAsync({
+        id: editingKendaraan.id,
+        ...formData,
+      });
 
       setFormData({
         nomorPolisi: "",
@@ -186,12 +199,8 @@ export default function DataKendaraanPage() {
       refetch();
 
       toast({
-        title: editingKendaraan
-          ? "Kendaraan diperbarui"
-          : "Kendaraan ditambahkan",
-        description: editingKendaraan
-          ? "Data kendaraan berhasil diperbarui."
-          : "Kendaraan baru berhasil ditambahkan.",
+        title: "Kendaraan diperbarui",
+        description: "Data kendaraan berhasil diperbarui.",
         className: "bg-green-50 border-green-200 text-green-800",
       });
     } catch (error) {
@@ -218,6 +227,14 @@ export default function DataKendaraanPage() {
   };
 
   const handleDeleteClick = (kendaraan: Kendaraan) => {
+    if (!canDelete) {
+      toast({
+        title: "Akses ditolak",
+        description: "Hanya SUPERADMIN yang bisa menghapus data kendaraan.",
+        variant: "destructive",
+      });
+      return;
+    }
     setDeletingKendaraan(kendaraan);
     setIsDeleteModalOpen(true);
   };
@@ -251,19 +268,6 @@ export default function DataKendaraanPage() {
     setIsDetailDialogOpen(true);
   };
 
-  const openAddDialog = () => {
-    setEditingKendaraan(null);
-    setFormData({
-      nomorPolisi: "",
-      nomorChasis: "",
-      nomorMesin: "",
-      merekId: "",
-      tipeId: "",
-      customerId: "",
-    });
-    setIsDialogOpen(true);
-  };
-
   const getStatsByStatus = () => {
     const stats: { [key: string]: number } = {};
     kendaraanList.forEach((k) => {
@@ -287,29 +291,14 @@ export default function DataKendaraanPage() {
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            {!isQC && (
-              <DialogTrigger asChild>
-                <Button
-                  onClick={openAddDialog}
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Tambah Kendaraan
-                </Button>
-              </DialogTrigger>
-            )}
             <DialogContent className="sm:max-w-[600px] rounded-xl border-slate-100 shadow-2xl">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold text-slate-900">
-                    {editingKendaraan
-                      ? "Edit Kendaraan"
-                      : "Tambah Kendaraan Baru"}
+                    Edit Kendaraan
                   </DialogTitle>
                   <DialogDescription className="text-slate-500">
-                    {editingKendaraan
-                      ? "Edit data kendaraan yang sudah ada."
-                      : "Isi form berikut untuk menambahkan kendaraan baru."}
+                    Edit data kendaraan yang sudah ada.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-6 py-6">
@@ -486,7 +475,7 @@ export default function DataKendaraanPage() {
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
                   >
-                    {editingKendaraan ? "Simpan Perubahan" : "Simpan Kendaraan"}
+                    Simpan Perubahan
                   </Button>
                 </DialogFooter>
               </form>
@@ -674,14 +663,16 @@ export default function DataKendaraanPage() {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteClick(kendaraan)}
-                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {canDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteClick(kendaraan)}
+                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </>
                           )}
                         </div>
@@ -786,6 +777,35 @@ export default function DataKendaraanPage() {
                     </div>
                   </div>
                 </div>
+
+                <div className="pt-2 border-t border-slate-100">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Riwayat Kendaraan Masuk
+                  </Label>
+                  <div className="mt-3 space-y-2">
+                    {(viewingKendaraan.kendaraanMasuk || []).length > 0 ? (
+                      viewingKendaraan.kendaraanMasuk?.map((riwayat) => (
+                        <div
+                          key={riwayat.id}
+                          className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
+                        >
+                          <span className="font-medium text-slate-800">
+                            {formatDateIndonesia(riwayat.tanggalMasuk)}
+                          </span>
+                          <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                            {riwayat.jenisMasuk === "SERVICE"
+                              ? "Service"
+                              : "Pasang Baru"}
+                          </Badge>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-slate-500">
+                        Belum ada riwayat kendaraan masuk.
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
             <DialogFooter className="pt-4 border-t border-slate-100">
@@ -809,7 +829,14 @@ export default function DataKendaraanPage() {
         onConfirm={handleDeleteConfirm}
         itemName={deletingKendaraan?.nomorPolisi}
         title="Hapus Data Kendaraan"
-        description="Apakah Anda yakin ingin menghapus data kendaraan ini? Tindakan ini tidak dapat dibatalkan."
+        description="Penghapusan kendaraan bersifat permanen. Pastikan kendaraan benar-benar tidak diperlukan."
+        confirmText={
+          deletingKendaraan?.nomorPolisi
+            ? `HAPUS ${deletingKendaraan.nomorPolisi}`
+            : "HAPUS"
+        }
+        confirmLabel="Ketik konfirmasi"
+        confirmPlaceholder="Contoh: HAPUS B 1234 ABC"
       />
     </DashboardLayout>
   );

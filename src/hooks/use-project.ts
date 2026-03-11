@@ -13,6 +13,7 @@ export interface Project {
   tanggal: string;
   customerId: string;
   customer: Customer;
+  jenisPenawaran: "PASANG_BARU" | "SERVICE";
   deskripsi: string;
   quantity: number;
   hargaPerUnit: number;

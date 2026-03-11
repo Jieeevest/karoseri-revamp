@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const jabatan = searchParams.get("jabatan") || "";
+    const aktif = searchParams.get("aktif");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const sortBy = searchParams.get("sortBy") || "createdAt";
@@ -25,6 +26,10 @@ export async function GET(request: NextRequest) {
 
     if (jabatan) {
       where.jabatan = jabatan;
+    }
+
+    if (aktif === "true" || aktif === "false") {
+      where.aktif = aktif === "true";
     }
 
     const [karyawanList, totalCount] = await Promise.all([
@@ -97,6 +102,8 @@ export async function POST(request: NextRequest) {
       tahunLulus,
       tanggalBergabung,
       statusKaryawan,
+      aktif,
+      grupKaryawan,
       namaBank,
       nomorRekening,
       pemilikRekening,
@@ -147,6 +154,8 @@ export async function POST(request: NextRequest) {
         tahunLulus: tahunLulus?.trim() || null,
         tanggalBergabung: tanggalBergabung ? new Date(tanggalBergabung) : null,
         statusKaryawan: statusKaryawan || null,
+        aktif: typeof aktif === "boolean" ? aktif : true,
+        grupKaryawan: grupKaryawan?.trim() || null,
         namaBank: namaBank?.trim() || null,
         nomorRekening: nomorRekening?.trim() || null,
         pemilikRekening: pemilikRekening?.trim() || null,
@@ -198,6 +207,8 @@ export async function PUT(request: NextRequest) {
       tahunLulus,
       tanggalBergabung,
       statusKaryawan,
+      aktif,
+      grupKaryawan,
       namaBank,
       nomorRekening,
       pemilikRekening,
@@ -246,6 +257,8 @@ export async function PUT(request: NextRequest) {
         tahunLulus: tahunLulus?.trim() || null,
         tanggalBergabung: tanggalBergabung ? new Date(tanggalBergabung) : null,
         statusKaryawan: statusKaryawan || null,
+        aktif: typeof aktif === "boolean" ? aktif : true,
+        grupKaryawan: grupKaryawan?.trim() || null,
         namaBank: namaBank?.trim() || null,
         nomorRekening: nomorRekening?.trim() || null,
         pemilikRekening: pemilikRekening?.trim() || null,

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
@@ -28,6 +30,16 @@ export async function GET(request: NextRequest) {
           merekKendaraan: true,
           tipeKendaraan: true,
           customer: true,
+          kendaraanMasuk: {
+            select: {
+              id: true,
+              tanggalMasuk: true,
+              jenisMasuk: true,
+            },
+            orderBy: {
+              tanggalMasuk: "desc",
+            },
+          },
         },
         orderBy: {
           [sortBy]: sortOrder,
@@ -126,6 +138,15 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const role = (session?.user as any)?.role as string | undefined;
+    if (!session || role !== "SUPERADMIN") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 403 },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (!id)

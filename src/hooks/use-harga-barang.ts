@@ -20,6 +20,8 @@ export interface HargaBarangParams {
   page?: number;
   limit?: number;
   search?: string;
+  kategoriId?: string;
+  supplierId?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }
@@ -33,6 +35,8 @@ export function useHargaBarang(params?: HargaBarangParams | string) {
     if (params.page) queryParams.append("page", params.page.toString());
     if (params.limit) queryParams.append("limit", params.limit.toString());
     if (params.search) queryParams.append("search", params.search);
+    if (params.kategoriId) queryParams.append("kategoriId", params.kategoriId);
+    if (params.supplierId) queryParams.append("supplierId", params.supplierId);
     if (params.sortBy) queryParams.append("sortBy", params.sortBy);
     if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
   }

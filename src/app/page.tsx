@@ -18,9 +18,11 @@ import { useBarang } from "@/hooks/use-barang";
 import { useKendaraan } from "@/hooks/use-kendaraan";
 import { useKaryawan } from "@/hooks/use-karyawan";
 import { usePurchaseOrder } from "@/hooks/use-purchase-order";
+import { useLoadingController } from "@/components/ui/loading-provider";
 
 export default function Home() {
   const router = useRouter();
+  const { start } = useLoadingController();
 
   const { data: barangQuery } = useBarang({ limit: 100 }); // Fetch more for dashboard
   const { data: kendaraanQuery } = useKendaraan({ limit: 100 });
@@ -111,6 +113,7 @@ export default function Home() {
   };
 
   const handleNavigation = (path: string) => {
+    start();
     router.push(path);
   };
 

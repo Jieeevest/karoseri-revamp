@@ -21,6 +21,11 @@ export interface Kendaraan {
     | "PROSES_PEMBUATAN_LOGO"
     | "SELESAI"
     | "KELUAR";
+  kendaraanMasuk?: {
+    id: string;
+    tanggalMasuk: string;
+    jenisMasuk: "PASANG_BARU" | "SERVICE";
+  }[];
   createdAt: string;
 }
 

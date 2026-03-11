@@ -24,6 +24,8 @@ export interface Karyawan {
   // Data Kepegawaian
   tanggalBergabung?: string;
   statusKaryawan?: string;
+  aktif?: boolean;
+  grupKaryawan?: string;
 
   // Data Bank
   namaBank?: string;

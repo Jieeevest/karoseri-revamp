@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { LoadingProvider } from "@/components/ui/loading-provider";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,8 +53,13 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthProvider>
-            {children}
-            <Toaster />
+            <Suspense fallback={null}>
+              <LoadingProvider>
+                {children}
+                <LoadingOverlay />
+                <Toaster />
+              </LoadingProvider>
+            </Suspense>
           </AuthProvider>
         </QueryProvider>
       </body>

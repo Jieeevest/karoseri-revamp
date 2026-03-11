@@ -20,7 +20,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -85,11 +84,15 @@ export default function ProjectPage() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [dialogJenis, setDialogJenis] = useState<
+    "PASANG_BARU" | "SERVICE"
+  >("PASANG_BARU");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
 
   const [formData, setFormData] = useState({
     customerId: "",
+    jenisPenawaran: "PASANG_BARU",
     deskripsi: "",
     quantity: 1,
     hargaPerUnit: 0,
@@ -159,7 +162,7 @@ export default function ProjectPage() {
       }
 
       setIsDialogOpen(false);
-      resetForm();
+      resetForm(dialogJenis);
       refetch();
     } catch (error) {
       console.error("Failed to save project", error);
@@ -171,10 +174,11 @@ export default function ProjectPage() {
     }
   };
 
-  const resetForm = () => {
+  const resetForm = (jenis: "PASANG_BARU" | "SERVICE") => {
     setEditingProject(null);
     setFormData({
       customerId: "",
+      jenisPenawaran: jenis,
       deskripsi: "",
       quantity: 1,
       hargaPerUnit: 0,
@@ -185,8 +189,10 @@ export default function ProjectPage() {
 
   const handleEdit = (project: Project) => {
     setEditingProject(project);
+    setDialogJenis(project.jenisPenawaran);
     setFormData({
       customerId: project.customerId,
+      jenisPenawaran: project.jenisPenawaran,
       deskripsi: project.deskripsi,
       quantity: project.quantity,
       hargaPerUnit: project.hargaPerUnit,
@@ -230,8 +236,14 @@ export default function ProjectPage() {
     }
   };
 
-  const openAddDialog = () => {
-    resetForm();
+  const openAddDialog = (jenis: "PASANG_BARU" | "SERVICE") => {
+    setDialogJenis(jenis);
+    resetForm(jenis);
+    setFormData((prev) => ({
+      ...prev,
+      jenisPenawaran: jenis,
+      quantity: jenis === "SERVICE" ? 1 : prev.quantity,
+    }));
     setIsDialogOpen(true);
   };
 
@@ -256,29 +268,45 @@ export default function ProjectPage() {
             <p className="text-sm text-slate-500 mt-1">
               Manajemen penawaran project dan fitur Smart Planning.
             </p>
-          </div>
+        </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
+            <div className="flex flex-wrap gap-2">
               <Button
-                onClick={openAddDialog}
+                onClick={() => openAddDialog("PASANG_BARU")}
                 className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Buat Penawaran Baru
+                Penawaran Pasang Baru
               </Button>
-            </DialogTrigger>
+              <Button
+                onClick={() => openAddDialog("SERVICE")}
+                variant="outline"
+                className="rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Penawaran Service
+              </Button>
+            </div>
             <DialogContent className="sm:max-w-[800px] rounded-xl border-slate-100 shadow-2xl overflow-y-auto max-h-[90vh]">
               <form onSubmit={handleSubmit}>
                 <DialogHeader className="border-b border-slate-100 pb-4">
                   <DialogTitle className="text-xl font-bold text-slate-900">
                     {editingProject
-                      ? "Edit Penawaran"
-                      : "Smart Planning: Penawaran Baru"}
+                      ? `Edit Penawaran ${
+                          formData.jenisPenawaran === "SERVICE"
+                            ? "Service"
+                            : "Pasang Baru"
+                        }`
+                      : `Penawaran ${
+                          dialogJenis === "SERVICE" ? "Service" : "Pasang Baru"
+                        }`}
                   </DialogTitle>
                   <DialogDescription className="text-slate-500">
                     {editingProject
                       ? "Perbarui informasi penawaran project."
-                      : "Masukkan spesifikasi untuk kalkulasi otomatis kebutuhan material."}
+                      : dialogJenis === "SERVICE"
+                        ? "Masukkan detail kebutuhan service kendaraan."
+                        : "Masukkan spesifikasi untuk kalkulasi otomatis kebutuhan material."}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -306,7 +334,11 @@ export default function ProjectPage() {
                       </Select>
                     </div>
                     <div className="grid gap-2">
-                      <Label>Judul Project</Label>
+                      <Label>
+                        {formData.jenisPenawaran === "SERVICE"
+                          ? "Detail Service"
+                          : "Judul Project"}
+                      </Label>
                       <Input
                         value={formData.deskripsi}
                         onChange={(e) =>
@@ -315,7 +347,11 @@ export default function ProjectPage() {
                             deskripsi: e.target.value,
                           })
                         }
-                        placeholder="Contoh: Wing Box Hydraulic"
+                        placeholder={
+                          formData.jenisPenawaran === "SERVICE"
+                            ? "Contoh: Perbaikan pintu samping & cat ulang"
+                            : "Contoh: Wing Box Hydraulic"
+                        }
                         className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                       />
                     </div>
@@ -323,7 +359,11 @@ export default function ProjectPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label>Jumlah Unit</Label>
+                      <Label>
+                        {formData.jenisPenawaran === "SERVICE"
+                          ? "Jumlah Unit Kendaraan"
+                          : "Jumlah Unit"}
+                      </Label>
                       <Input
                         type="number"
                         value={formData.quantity}
@@ -375,68 +415,72 @@ export default function ProjectPage() {
                   </div>
 
                   {/* Specs Input */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
-                    <h3 className="font-semibold text-slate-700 flex items-center">
-                      <Calculator className="w-4 h-4 mr-2" /> Spesifikasi Teknis
-                      (mm)
-                    </h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="grid gap-2">
-                        <Label>Panjang</Label>
-                        <Input
-                          type="number"
-                          value={formData.specs.panjang}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              specs: {
-                                ...formData.specs,
-                                panjang: parseInt(e.target.value) || 0,
-                              },
-                            })
-                          }
-                          className="bg-white rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label>Lebar</Label>
-                        <Input
-                          type="number"
-                          value={formData.specs.lebar}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              specs: {
-                                ...formData.specs,
-                                lebar: parseInt(e.target.value) || 0,
-                              },
-                            })
-                          }
-                          className="bg-white rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label>Tinggi</Label>
-                        <Input
-                          type="number"
-                          value={formData.specs.tinggi}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              specs: {
-                                ...formData.specs,
-                                tinggi: parseInt(e.target.value) || 0,
-                              },
-                            })
-                          }
-                          className="bg-white rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
-                        />
+                  {formData.jenisPenawaran === "PASANG_BARU" && (
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                      <h3 className="font-semibold text-slate-700 flex items-center">
+                        <Calculator className="w-4 h-4 mr-2" /> Spesifikasi
+                        Teknis (mm)
+                      </h3>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="grid gap-2">
+                          <Label>Panjang</Label>
+                          <Input
+                            type="number"
+                            value={formData.specs.panjang}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                specs: {
+                                  ...formData.specs,
+                                  panjang: parseInt(e.target.value) || 0,
+                                },
+                              })
+                            }
+                            className="bg-white rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>Lebar</Label>
+                          <Input
+                            type="number"
+                            value={formData.specs.lebar}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                specs: {
+                                  ...formData.specs,
+                                  lebar: parseInt(e.target.value) || 0,
+                                },
+                              })
+                            }
+                            className="bg-white rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>Tinggi</Label>
+                          <Input
+                            type="number"
+                            value={formData.specs.tinggi}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                specs: {
+                                  ...formData.specs,
+                                  tinggi: parseInt(e.target.value) || 0,
+                                },
+                              })
+                            }
+                            className="bg-white rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Smart Output */}
-                  {formData.specs.panjang > 0 && formData.quantity > 0 && (
+                  {formData.jenisPenawaran === "PASANG_BARU" &&
+                    formData.specs.panjang > 0 &&
+                    formData.quantity > 0 && (
                     <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
                       <h3 className="font-semibold text-blue-800 mb-2">
                         Estimasi Material (Otomatis)
@@ -517,6 +561,9 @@ export default function ProjectPage() {
                       {renderSortIcon("customer.nama")}
                     </div>
                   </TableHead>
+                  <TableHead className="px-6 font-semibold text-slate-500">
+                    Jenis
+                  </TableHead>
                   <TableHead
                     className="px-6 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors"
                     onClick={() => handleSort("deskripsi")}
@@ -561,6 +608,16 @@ export default function ProjectPage() {
                       </TableCell>
                       <TableCell className="px-6">
                         {project.customer.nama}
+                      </TableCell>
+                      <TableCell className="px-6">
+                        <Badge
+                          variant="secondary"
+                          className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200 shadow-none"
+                        >
+                          {project.jenisPenawaran === "SERVICE"
+                            ? "Service"
+                            : "Pasang Baru"}
+                        </Badge>
                       </TableCell>
                       <TableCell className="px-6">
                         <div className="text-slate-900">
@@ -619,7 +676,7 @@ export default function ProjectPage() {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="px-6 h-24 text-center text-slate-500"
                     >
                       Belum ada project.

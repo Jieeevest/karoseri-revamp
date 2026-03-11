@@ -33,33 +33,47 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Plus,
-  Edit,
   Trash2,
   Search,
-  ShoppingCart,
   Eye,
   Send,
-  Check,
-  X,
   ArrowUpDown,
   Info,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useSession } from "next-auth/react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import {
+  AlertDialog as ConfirmDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent as ConfirmDialogContent,
+  AlertDialogDescription as ConfirmDialogDescription,
+  AlertDialogFooter as ConfirmDialogFooter,
+  AlertDialogHeader as ConfirmDialogHeader,
+  AlertDialogTitle as ConfirmDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { formatDateIndonesia } from "@/lib/date-format";
 
 import { useToast } from "@/hooks/use-toast";
 import { useSupplier } from "@/hooks/use-supplier";
-import { useBarang } from "@/hooks/use-barang";
+import { useHargaBarang } from "@/hooks/use-harga-barang";
 import {
   PurchaseOrder,
-  PurchaseOrderItem,
   usePurchaseOrder,
   useCreatePurchaseOrder,
   useUpdatePurchaseOrder, // For status updates
   useDeletePurchaseOrder,
 } from "@/hooks/use-purchase-order";
+
+type POFormItem = {
+  id: string;
+  barangId: string;
+  jumlah: number;
+  harga: number;
+  subtotal: number;
+};
 
 export default function PurchaseOrderPage() {
   const { data: session } = useSession();
@@ -70,8 +84,8 @@ export default function PurchaseOrderPage() {
   const { data: supplierQuery } = useSupplier();
   const supplierList = (supplierQuery as any)?.data || [];
 
-  const { data: barangQuery } = useBarang();
-  const barangList = (barangQuery as any)?.data || [];
+  const { data: hargaBarangQuery } = useHargaBarang();
+  const hargaBarangList = (hargaBarangQuery as any)?.data || [];
 
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
@@ -103,10 +117,40 @@ export default function PurchaseOrderPage() {
     supplierId: "",
     tanggal: new Date().toISOString().split("T")[0],
   });
-  const [items, setItems] = useState<PurchaseOrderItem[]>([]);
+  const [items, setItems] = useState<POFormItem[]>([]);
+
+  const supplierBarangOptions = useMemo(() => {
+    if (!formData.supplierId) return [];
+
+    return hargaBarangList
+      .filter((harga: any) => harga.supplierId === formData.supplierId)
+      .sort((a: any, b: any) =>
+        (a?.barang?.nama || "").localeCompare(b?.barang?.nama || ""),
+      );
+  }, [hargaBarangList, formData.supplierId]);
+
+  const supplierBarangPriceMap = useMemo(() => {
+    const map = new Map<
+      string,
+      { harga: number; barang: any; hargaBarangId: string }
+    >();
+
+    supplierBarangOptions.forEach((harga: any) => {
+      if (harga?.barangId && harga?.barang) {
+        map.set(harga.barangId, {
+          harga: Number(harga.harga) || 0,
+          barang: harga.barang,
+          hargaBarangId: harga.id,
+        });
+      }
+    });
+
+    return map;
+  }, [supplierBarangOptions]);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingPO, setDeletingPO] = useState<PurchaseOrder | null>(null);
+  const [submittingPO, setSubmittingPO] = useState<PurchaseOrder | null>(null);
 
   // No local filter needed as hook handles search, using direct list
   // const filteredPO = poList; // Removed unused variable
@@ -143,20 +187,28 @@ export default function PurchaseOrderPage() {
   };
 
   const addItem = () => {
-    const newItem: PurchaseOrderItem = {
+    if (!formData.supplierId) {
+      toast({
+        title: "Pilih supplier terlebih dahulu",
+        description: "Daftar barang akan muncul setelah supplier dipilih.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (supplierBarangOptions.length === 0) {
+      toast({
+        title: "Data harga barang belum tersedia",
+        description:
+          "Supplier ini belum memiliki daftar harga di menu Harga Barang.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newItem: POFormItem = {
       id: Date.now().toString(),
       barangId: "",
-      barang: {
-        id: "",
-        kode: "",
-        nama: "",
-        kategoriId: 0,
-        kategoriBarang: { id: 0, nama: "" },
-        satuanId: "",
-        satuanBarang: { id: "", nama: "" }, // Adjusted to match Barang interface from hook
-        stok: 0,
-        stokMinimum: 0,
-      },
       jumlah: 1,
       harga: 0,
       subtotal: 0,
@@ -167,14 +219,18 @@ export default function PurchaseOrderPage() {
   const updateItem = (index: number, field: string, value: any) => {
     const updatedItems = [...items];
     if (field === "barangId") {
-      const selectedBarang = barangList.find((b) => b.id === value);
-      if (selectedBarang) {
-        updatedItems[index].barang = selectedBarang;
+      const selectedHarga = supplierBarangPriceMap.get(value);
+      if (selectedHarga) {
         updatedItems[index].barangId = value;
+        updatedItems[index].harga = selectedHarga.harga;
         updatedItems[index].subtotal =
-          updatedItems[index].jumlah * updatedItems[index].harga;
+          updatedItems[index].jumlah * selectedHarga.harga;
+      } else {
+        updatedItems[index].barangId = value;
+        updatedItems[index].harga = 0;
+        updatedItems[index].subtotal = 0;
       }
-    } else if (field === "jumlah" || field === "harga") {
+    } else if (field === "jumlah") {
       updatedItems[index][field] = value;
       updatedItems[index].subtotal =
         updatedItems[index].jumlah * updatedItems[index].harga;
@@ -194,7 +250,25 @@ export default function PurchaseOrderPage() {
     e.preventDefault();
 
     if (items.length === 0) {
-      alert("Silakan tambahkan minimal 1 barang");
+      toast({
+        title: "Barang belum ada",
+        description: "Silakan tambahkan minimal 1 barang.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const hasInvalidItem = items.some(
+      (item) => !item.barangId || item.jumlah <= 0 || item.harga <= 0,
+    );
+
+    if (hasInvalidItem) {
+      toast({
+        title: "Data barang belum lengkap",
+        description:
+          "Pastikan barang terpilih, qty valid, dan harga satuan tersedia dari menu Harga Barang.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -208,11 +282,11 @@ export default function PurchaseOrderPage() {
         tanggal: formData.tanggal,
         supplierId: formData.supplierId,
         items: items.map((item) => ({
-          ...item,
-          barang: undefined, // Avoid sending full object if API expects just IDs, but keeping per your schema design if needed
-          // Assuming backend handles relation creation or just needs IDs
-        })) as any, // Casting for now to bypass strict shape check if needed, but ideally match backend DTO
-        // Actually, let's assume backend takes items with barangId etc.
+          barangId: item.barangId,
+          jumlah: item.jumlah,
+          harga: item.harga,
+          subtotal: item.subtotal,
+        })),
       });
 
       toast({
@@ -242,23 +316,28 @@ export default function PurchaseOrderPage() {
     setIsDetailDialogOpen(true);
   };
 
-  const handleAjukan = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin mengajukan Purchase Order ini?")) {
-      try {
-        await updatePO.mutateAsync({ id, status: "DIAJUKAN" });
-        toast({
-          title: "Berhasil",
-          description: "Status PO berhasil diperbarui",
-          className: "bg-green-50 text-green-800 border-green-200",
-        });
-      } catch (error) {
-        console.error(error);
-        toast({
-          title: "Gagal",
-          description: "Gagal update status PO",
-          variant: "destructive",
-        });
-      }
+  const handleAjukanClick = (po: PurchaseOrder) => {
+    setSubmittingPO(po);
+  };
+
+  const handleAjukanConfirm = async () => {
+    if (!submittingPO) return;
+
+    try {
+      await updatePO.mutateAsync({ id: submittingPO.id, status: "DIAJUKAN" });
+      toast({
+        title: "Berhasil",
+        description: "Status PO berhasil diperbarui",
+        className: "bg-green-50 text-green-800 border-green-200",
+      });
+      setSubmittingPO(null);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Gagal",
+        description: "Gagal update status PO",
+        variant: "destructive",
+      });
     }
   };
 
@@ -305,12 +384,12 @@ export default function PurchaseOrderPage() {
           {canCreatePO ? (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-lg transition-all duration-200 cursor-pointer">
                   <Plus className="mr-2 h-4 w-4" />
                   Buat PO Baru
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto rounded-xl border-slate-100 shadow-2xl">
+              <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto rounded-lg border-slate-100 shadow-2xl">
                 <form onSubmit={handleSubmit}>
                   <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-slate-900">
@@ -322,7 +401,7 @@ export default function PurchaseOrderPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-6 py-6">
-                    <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                    <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-lg border border-slate-100">
                       <div className="grid gap-2">
                         <Label
                           htmlFor="supplierId"
@@ -332,17 +411,19 @@ export default function PurchaseOrderPage() {
                         </Label>
                         <Select
                           value={formData.supplierId}
-                          onValueChange={(value) =>
+                          onValueChange={(value) => {
                             setFormData((prev) => ({
                               ...prev,
                               supplierId: value,
-                            }))
-                          }
+                            }));
+                            // Reset items to avoid mixing products from previous supplier.
+                            setItems([]);
+                          }}
                         >
-                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
+                          <SelectTrigger className="w-full rounded-lg border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
                             <SelectValue placeholder="Pilih supplier" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                          <SelectContent className="rounded-lg border-slate-100 shadow-xl">
                             {supplierList.map((supplier) => (
                               <SelectItem
                                 key={supplier.id}
@@ -372,7 +453,7 @@ export default function PurchaseOrderPage() {
                               tanggal: e.target.value,
                             }))
                           }
-                          className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 bg-white"
+                          className="rounded-lg border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 bg-white"
                           required
                         />
                       </div>
@@ -388,7 +469,7 @@ export default function PurchaseOrderPage() {
                           variant="outline"
                           size="sm"
                           onClick={addItem}
-                          className="rounded-xl border-slate-200 hover:bg-slate-50 text-blue-600 hover:text-blue-700 cursor-pointer"
+                          className="rounded-lg border-slate-200 hover:bg-slate-50 text-blue-600 hover:text-blue-700 cursor-pointer"
                         >
                           <Plus className="mr-2 h-4 w-4" />
                           Tambah Barang
@@ -396,16 +477,18 @@ export default function PurchaseOrderPage() {
                       </div>
 
                       {items.length === 0 ? (
-                        <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500">
-                          Belum ada barang yang ditambahkan
+                        <div className="text-center py-8 bg-slate-50 rounded-lg border border-dashed border-slate-200 text-slate-500">
+                          {formData.supplierId
+                            ? "Belum ada barang yang ditambahkan"
+                            : "Pilih supplier untuk menampilkan daftar barang"}
                         </div>
                       ) : (
                         items.map((item, index) => (
                           <div
                             key={item.id}
-                            className="grid grid-cols-12 gap-3 items-end p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-slate-300 transition-colors"
+                            className="grid grid-cols-12 gap-3 items-end p-4 bg-white rounded-lg border border-slate-200 shadow-sm hover:border-slate-300 transition-colors"
                           >
-                            <div className="col-span-4">
+                            <div className="col-span-5">
                               <Label className="text-xs text-slate-500 mb-1.5 block">
                                 Barang
                               </Label>
@@ -415,19 +498,25 @@ export default function PurchaseOrderPage() {
                                   updateItem(index, "barangId", value)
                                 }
                               >
-                                <SelectTrigger className="rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                                <SelectTrigger className="rounded-lg border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
                                   <SelectValue placeholder="Pilih barang" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                                  {barangList.map((barang) => (
-                                    <SelectItem
-                                      key={barang.id}
-                                      value={barang.id}
-                                      className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                                    >
-                                      {barang.kode} - {barang.nama}
+                                <SelectContent className="rounded-lg border-slate-100 shadow-xl">
+                                  {supplierBarangOptions.length > 0 ? (
+                                    supplierBarangOptions.map((harga: any) => (
+                                      <SelectItem
+                                        key={harga.id}
+                                        value={harga.barangId}
+                                        className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                                      >
+                                        {harga.barang.kode} - {harga.barang.nama}
+                                      </SelectItem>
+                                    ))
+                                  ) : (
+                                    <SelectItem value="__no_item__" disabled>
+                                      Belum ada data harga barang untuk supplier
                                     </SelectItem>
-                                  ))}
+                                  )}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -447,39 +536,30 @@ export default function PurchaseOrderPage() {
                                   )
                                 }
                                 min="1"
-                                className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                                className="rounded-lg border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                               />
                             </div>
-                            <div className="col-span-3">
+                            <div className="col-span-2">
                               <Label className="text-xs text-slate-500 mb-1.5 block">
                                 Harga Satuan
                               </Label>
                               <Input
-                                type="number"
-                                placeholder="0"
-                                value={item.harga || ""}
-                                onChange={(e) =>
-                                  updateItem(
-                                    index,
-                                    "harga",
-                                    parseInt(e.target.value) || 0,
-                                  )
-                                }
-                                min="0"
-                                className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                                value={item.harga ? formatCurrency(item.harga) : "-"}
+                                readOnly
+                                className="bg-slate-50 rounded-lg border-slate-200 text-slate-600 text-xs font-medium w-full"
                               />
                             </div>
-                            <div className="col-span-3 flex gap-2">
-                              <div className="flex-1">
-                                <Label className="text-xs text-slate-500 mb-1.5 block">
-                                  Subtotal
-                                </Label>
-                                <Input
-                                  value={formatCurrency(item.subtotal)}
-                                  readOnly
-                                  className="bg-slate-50 rounded-xl border-slate-200 text-slate-600 text-xs font-medium w-full text-right"
-                                />
-                              </div>
+                            <div className="col-span-2">
+                              <Label className="text-xs text-slate-500 mb-1.5 block">
+                                Subtotal
+                              </Label>
+                              <Input
+                                value={formatCurrency(item.subtotal)}
+                                readOnly
+                                className="bg-slate-50 rounded-lg border-slate-200 text-slate-600 text-xs font-medium w-full text-right"
+                              />
+                            </div>
+                            <div className="col-span-1 flex justify-end">
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -496,7 +576,7 @@ export default function PurchaseOrderPage() {
                     </div>
 
                     <div className="flex justify-end pt-4 border-t border-slate-100">
-                      <div className="bg-slate-50 px-6 py-4 rounded-xl border border-slate-200 w-full sm:w-auto">
+                      <div className="bg-slate-50 px-6 py-4 rounded-lg border border-slate-200 w-full sm:w-auto">
                         <div className="flex justify-between items-center gap-8">
                           <Label className="text-lg font-semibold text-slate-700">
                             Total Keseluruhan
@@ -513,13 +593,13 @@ export default function PurchaseOrderPage() {
                       type="button"
                       variant="outline"
                       onClick={() => setIsDialogOpen(false)}
-                      className="rounded-xl cursor-pointer"
+                      className="rounded-lg cursor-pointer"
                     >
                       Batal
                     </Button>
                     <Button
                       type="submit"
-                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md shadow-blue-200 cursor-pointer"
                     >
                       Simpan PO
                     </Button>
@@ -530,7 +610,7 @@ export default function PurchaseOrderPage() {
           ) : null}
         </div>
 
-        <Alert className="bg-white border-slate-200 text-slate-900 shadow-sm rounded-xl flex items-center p-3">
+        <Alert className="bg-white border-slate-200 text-slate-900 shadow-sm rounded-lg flex items-center p-3">
           <Info className="h-4 w-4 text-slate-900 mr-3 shrink-0" />
           <AlertDescription className="text-slate-900 mt-0 block">
             <span className="inline">
@@ -542,7 +622,7 @@ export default function PurchaseOrderPage() {
           </AlertDescription>
         </Alert>
 
-        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
+        <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white/50 backdrop-blur-sm">
           <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle className="text-lg font-bold text-slate-900">
@@ -557,7 +637,7 @@ export default function PurchaseOrderPage() {
                     setSearchTerm(e.target.value);
                     setPage(1);
                   }}
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
+                  className="pl-10 rounded-lg border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
             </div>
@@ -621,7 +701,7 @@ export default function PurchaseOrderPage() {
                         {po.nomor}
                       </TableCell>
                       <TableCell className="px-6 text-slate-600">
-                        {po.tanggal}
+                        {formatDateIndonesia(po.tanggal, { withTime: false })}
                       </TableCell>
                       <TableCell className="px-6">
                         <div>
@@ -638,6 +718,11 @@ export default function PurchaseOrderPage() {
                       </TableCell>
                       <TableCell className="px-6">
                         {getStatusBadge(po.status)}
+                        {po.status === "DITOLAK" && po.alasanPenolakan && (
+                          <p className="text-xs text-red-600 mt-1 max-w-[220px]">
+                            {po.alasanPenolakan}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell className="px-6 text-center">
                         <div className="flex justify-center gap-2">
@@ -653,20 +738,22 @@ export default function PurchaseOrderPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleAjukan(po.id)}
+                              onClick={() => handleAjukanClick(po)}
                               className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg cursor-pointer"
                             >
                               <Send className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteClick(po)}
-                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {po.status === "DRAFT" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteClick(po)}
+                              className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -685,7 +772,7 @@ export default function PurchaseOrderPage() {
             </Table>
           </CardContent>
           {pagination && (
-            <div className="pb-4 px-4 border-t border-slate-100">
+            <div className="pb-4 border-t border-slate-100">
               <PaginationControls
                 currentPage={pagination.page}
                 totalPages={pagination.totalPages}
@@ -700,7 +787,7 @@ export default function PurchaseOrderPage() {
 
         {/* Detail Dialog */}
         <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-          <DialogContent className="sm:max-w-[650px] rounded-xl border-slate-100 shadow-2xl">
+          <DialogContent className="sm:max-w-[650px] rounded-lg border-slate-100 shadow-2xl">
             <DialogHeader className="border-b border-slate-100 pb-4">
               <DialogTitle className="text-xl font-bold text-slate-900">
                 Detail Purchase Order
@@ -708,7 +795,7 @@ export default function PurchaseOrderPage() {
             </DialogHeader>
             {viewingPO && (
               <div className="space-y-6 pt-4">
-                <div className="grid grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                <div className="grid grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded-lg border border-slate-100">
                   <div>
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       Nomor PO
@@ -730,7 +817,9 @@ export default function PurchaseOrderPage() {
                       Tanggal
                     </Label>
                     <p className="font-medium text-slate-700 mt-1">
-                      {viewingPO.tanggal}
+                      {formatDateIndonesia(viewingPO.tanggal, {
+                        withTime: false,
+                      })}
                     </p>
                   </div>
                   <div>
@@ -751,7 +840,7 @@ export default function PurchaseOrderPage() {
                     {viewingPO.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex justify-between items-center p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors"
+                        className="flex justify-between items-center p-3 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors"
                       >
                         <div>
                           <p className="font-medium text-slate-900">
@@ -771,6 +860,17 @@ export default function PurchaseOrderPage() {
                 </div>
 
                 <div className="border-t border-slate-100 pt-4 mt-2">
+                  {viewingPO.status === "DITOLAK" &&
+                    viewingPO.alasanPenolakan && (
+                      <div className="mb-3 rounded-lg border border-red-100 bg-red-50 px-3 py-2">
+                        <p className="text-xs font-semibold text-red-700">
+                          Alasan Penolakan
+                        </p>
+                        <p className="text-sm text-red-700">
+                          {viewingPO.alasanPenolakan}
+                        </p>
+                      </div>
+                    )}
                   <div className="flex justify-between items-center">
                     <Label className="text-lg font-bold text-slate-700">
                       Total Pembelian
@@ -786,7 +886,7 @@ export default function PurchaseOrderPage() {
               <Button
                 onClick={() => setIsDetailDialogOpen(false)}
                 variant="outline"
-                className="w-full rounded-xl cursor-pointer"
+                className="w-full rounded-lg cursor-pointer"
               >
                 Tutup
               </Button>
@@ -806,6 +906,38 @@ export default function PurchaseOrderPage() {
         title="Hapus Purchase Order"
         description="Apakah Anda yakin ingin menghapus Purchase Order ini? Tindakan ini tidak dapat dibatalkan."
       />
+
+      <ConfirmDialog
+        open={Boolean(submittingPO)}
+        onOpenChange={(open) => {
+          if (!open) setSubmittingPO(null);
+        }}
+      >
+        <ConfirmDialogContent className="rounded-lg">
+          <ConfirmDialogHeader>
+            <ConfirmDialogTitle>Ajukan Purchase Order</ConfirmDialogTitle>
+            <ConfirmDialogDescription>
+              {submittingPO
+                ? `Apakah Anda yakin ingin mengajukan ${submittingPO.nomor} dari ${submittingPO.supplier.nama}?`
+                : "Apakah Anda yakin ingin mengajukan Purchase Order ini?"}
+            </ConfirmDialogDescription>
+          </ConfirmDialogHeader>
+          <ConfirmDialogFooter>
+            <AlertDialogCancel className="rounded-lg cursor-pointer">
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.preventDefault();
+                await handleAjukanConfirm();
+              }}
+              className="rounded-lg cursor-pointer bg-blue-600 hover:bg-blue-700"
+            >
+              Ya, Ajukan
+            </AlertDialogAction>
+          </ConfirmDialogFooter>
+        </ConfirmDialogContent>
+      </ConfirmDialog>
     </DashboardLayout>
   );
 }

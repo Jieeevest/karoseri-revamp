@@ -16,6 +16,12 @@ export interface BarangMasuk {
   barang: Barang;
   jumlah: number;
   kondisi: string;
+  receivedBy?: {
+    id: string;
+    name?: string | null;
+    username?: string | null;
+    role?: string;
+  };
   createdAt: string;
 }
 
@@ -23,6 +29,7 @@ export interface BarangMasukParams {
   page?: number;
   limit?: number;
   search?: string;
+  purchaseOrderId?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }
@@ -36,6 +43,8 @@ export function useBarangMasuk(params?: BarangMasukParams | string) {
     if (params.page) queryParams.append("page", params.page.toString());
     if (params.limit) queryParams.append("limit", params.limit.toString());
     if (params.search) queryParams.append("search", params.search);
+    if (params.purchaseOrderId)
+      queryParams.append("purchaseOrderId", params.purchaseOrderId);
     if (params.sortBy) queryParams.append("sortBy", params.sortBy);
     if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
   }

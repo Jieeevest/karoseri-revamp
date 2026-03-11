@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         include: {
           customer: true,
           kendaraan: true,
+          kendaraanQC: true,
           pengerjaan: true,
           kelengkapan: true,
         },
@@ -67,24 +68,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       tanggalMasuk,
+      jenisMasuk,
       showroom,
       customerId,
+      kendaraanId,
       nomorPolisi,
-      merek,
-      tipe,
+      merekId,
+      tipeId,
       pengerjaan,
       kelengkapan,
     } = body;
 
     // Validation
-    if (
-      !tanggalMasuk ||
-      !showroom ||
-      !customerId ||
-      !nomorPolisi ||
-      !merek ||
-      !tipe
-    ) {
+    if (!tanggalMasuk || !showroom) {
       return NextResponse.json(
         { success: false, error: "Field wajib harus diisi" },
         { status: 400 },
@@ -113,37 +109,89 @@ export async function POST(request: NextRequest) {
 
     const nomor = `KM-${year}-${month}-${String(sequence).padStart(3, "0")}`;
 
-    // Create or get customer
-    const customerRecord = await db.customer.findUnique({
-      where: { id: customerId },
-    });
+    let kendaraanRecord = null;
+    let resolvedCustomerId = customerId;
+    const resolvedJenisMasuk = jenisMasuk || "PASANG_BARU";
 
-    if (!customerRecord) {
-      return NextResponse.json(
-        { success: false, error: "Customer tidak ditemukan" },
-        { status: 404 },
-      );
+    if (resolvedJenisMasuk === "SERVICE") {
+      if (!kendaraanId) {
+        return NextResponse.json(
+          { success: false, error: "Kendaraan wajib dipilih untuk service" },
+          { status: 400 },
+        );
+      }
+
+      kendaraanRecord = await db.kendaraan.findUnique({
+        where: { id: kendaraanId },
+      });
+
+      if (!kendaraanRecord) {
+        return NextResponse.json(
+          { success: false, error: "Kendaraan tidak ditemukan" },
+          { status: 404 },
+        );
+      }
+
+      resolvedCustomerId = kendaraanRecord.customerId;
+
+      await db.kendaraan.update({
+        where: { id: kendaraanRecord.id },
+        data: { status: "MASUK" },
+      });
+    } else {
+      if (!customerId || !nomorPolisi || !merekId || !tipeId) {
+        return NextResponse.json(
+          { success: false, error: "Field wajib harus diisi" },
+          { status: 400 },
+        );
+      }
+
+      const customerRecord = await db.customer.findUnique({
+        where: { id: customerId },
+      });
+
+      if (!customerRecord) {
+        return NextResponse.json(
+          { success: false, error: "Customer tidak ditemukan" },
+          { status: 404 },
+        );
+      }
+
+      const existingVehicle = await db.kendaraan.findUnique({
+        where: { nomorPolisi },
+      });
+
+      if (existingVehicle) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Nomor polisi sudah terdaftar. Gunakan jenis Service untuk kendaraan yang sudah ada.",
+          },
+          { status: 409 },
+        );
+      }
+
+      kendaraanRecord = await db.kendaraan.create({
+        data: {
+          nomorPolisi,
+          nomorChasis: "",
+          nomorMesin: "",
+          merekId,
+          tipeId,
+          customerId,
+          status: "MASUK",
+        },
+      });
     }
-
-    // Create vehicle record
-    const kendaraanRecord = await db.kendaraan.create({
-      data: {
-        nomorPolisi,
-        nomorChasis: "", // Will be filled later
-        nomorMesin: "", // Will be filled later
-        merekId: "", // Will be created if not exists
-        tipeId: "", // Will be created if not exists
-        customerId,
-        status: "MASUK",
-      },
-    });
 
     const newKendaraanMasuk = await db.kendaraanMasuk.create({
       data: {
         nomor,
+        jenisMasuk: resolvedJenisMasuk,
         tanggalMasuk: new Date(tanggalMasuk),
         showroom: showroom.trim(),
-        customerId,
+        customerId: resolvedCustomerId,
         kendaraanId: kendaraanRecord.id,
       },
       include: {

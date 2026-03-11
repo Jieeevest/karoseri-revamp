@@ -105,6 +105,25 @@ export async function POST(request: NextRequest) {
       return sum + item.harga * item.jumlah;
     }, 0);
 
+    const hasInvalidItem = items.some(
+      (item: any) =>
+        !item.barangId ||
+        !Number.isFinite(item.jumlah) ||
+        item.jumlah <= 0 ||
+        !Number.isFinite(item.harga) ||
+        item.harga < 0,
+    );
+
+    if (hasInvalidItem) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Data item PO tidak valid (barang, qty, dan harga wajib benar)",
+        },
+        { status: 400 },
+      );
+    }
+
     const newPO = await db.purchaseOrder.create({
       data: {
         nomor,
@@ -160,7 +179,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, status } = body;
+    const { id, status, alasanPenolakan } = body;
 
     if (!id || !status) {
       return NextResponse.json(
@@ -169,9 +188,24 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    if (status === "DITOLAK" && !alasanPenolakan?.trim()) {
+      return NextResponse.json(
+        { success: false, error: "Alasan penolakan wajib diisi" },
+        { status: 400 },
+      );
+    }
+
     const updatedPO = await db.purchaseOrder.update({
       where: { id },
-      data: { status },
+      data: {
+        status,
+        alasanPenolakan:
+          status === "DITOLAK"
+            ? alasanPenolakan.trim()
+            : status === "DISETUJUI" || status === "DIAJUKAN"
+              ? null
+              : undefined,
+      },
     });
 
     return NextResponse.json({
@@ -222,8 +256,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await db.purchaseOrder.delete({
-      where: { id },
+    await db.$transaction(async (tx) => {
+      await tx.purchaseOrderItem.deleteMany({
+        where: { purchaseOrderId: id },
+      });
+
+      await tx.purchaseOrder.delete({
+        where: { id },
+      });
     });
 
     return NextResponse.json({

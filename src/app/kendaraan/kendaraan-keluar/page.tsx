@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -40,12 +39,10 @@ import {
   FileText,
   Download,
   Calendar,
-  ClipboardCheck,
   Trash2,
   Edit,
 } from "lucide-react";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { useMemo, useState } from "react";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import {
   useKendaraanKeluar,
@@ -53,27 +50,23 @@ import {
   useUpdateKendaraanKeluar,
   useDeleteKendaraanKeluar,
 } from "@/hooks/use-kendaraan-keluar";
-import { useKendaraan } from "@/hooks/use-kendaraan";
+import { useKendaraanQC } from "@/hooks/use-kendaraan-qc";
 import { useToast } from "@/hooks/use-toast";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-interface QCChecklist {
-  id: string;
-  area: string;
-  item: string;
-  kondisi: "BAIK" | "RUSAK" | "PERLU_PERBAIKAN";
-  catatan: string;
-}
-
 export default function KendaraanKeluarPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState<
+    "ALL" | "TODAY" | "WEEK" | "MONTH" | "CUSTOM"
+  >("ALL");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isQCDialogOpen, setIsQCDialogOpen] = useState(false);
   const [isSuratDialogOpen, setIsSuratDialogOpen] = useState(false);
   const [selectedKendaraan, setSelectedKendaraan] = useState<any | null>(null);
   const [editingKendaraanKeluar, setEditingKendaraanKeluar] = useState<
@@ -87,107 +80,47 @@ export default function KendaraanKeluarPage() {
 
   const [formData, setFormData] = useState({
     tanggalKeluar: new Date().toISOString().split("T")[0],
-    kendaraanId: "",
-    qcResult: "",
-    layakKeluar: false,
-    suratJalan: "",
+    kendaraanMasukId: "",
+    keterangan: "",
   });
 
-  const [qcChecklist, setQcChecklist] = useState<QCChecklist[]>([
-    {
-      id: "1",
-      area: "Eksterior",
-      item: "Kondisi Cat Body",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    {
-      id: "2",
-      area: "Eksterior",
-      item: "Kaca Spion",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    {
-      id: "3",
-      area: "Eksterior",
-      item: "Lampu Depan",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    {
-      id: "4",
-      area: "Eksterior",
-      item: "Lampu Belakang",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    {
-      id: "5",
-      area: "Eksterior",
-      item: "Lampu Sen",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    { id: "6", area: "Eksterior", item: "Ban", kondisi: "BAIK", catatan: "" },
-    {
-      id: "7",
-      area: "Interior",
-      item: "Dashboard",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    {
-      id: "8",
-      area: "Interior",
-      item: "Jok Supir",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    {
-      id: "9",
-      area: "Interior",
-      item: "Jok Kenek",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    { id: "10", area: "Interior", item: "AC", kondisi: "BAIK", catatan: "" },
-    {
-      id: "11",
-      area: "Pengerjaan",
-      item: "Wing Box",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    {
-      id: "12",
-      area: "Pengerjaan",
-      item: "Pintu",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    {
-      id: "13",
-      area: "Pengerjaan",
-      item: "Kunci",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    {
-      id: "14",
-      area: "Keamanan",
-      item: "Segitiga Pengaman",
-      kondisi: "BAIK",
-      catatan: "",
-    },
-    { id: "15", area: "Keamanan", item: "P3K", kondisi: "BAIK", catatan: "" },
-    { id: "16", area: "Keamanan", item: "APAR", kondisi: "BAIK", catatan: "" },
-  ]);
+  const dateRange = useMemo(() => {
+    if (dateFilter === "TODAY") {
+      const today = new Date().toISOString().split("T")[0];
+      return { dateFrom: today, dateTo: today };
+    }
+    if (dateFilter === "WEEK") {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - 6);
+      return {
+        dateFrom: start.toISOString().split("T")[0],
+        dateTo: end.toISOString().split("T")[0],
+      };
+    }
+    if (dateFilter === "MONTH") {
+      const end = new Date();
+      const start = new Date(end.getFullYear(), end.getMonth(), 1);
+      return {
+        dateFrom: start.toISOString().split("T")[0],
+        dateTo: end.toISOString().split("T")[0],
+      };
+    }
+    if (dateFilter === "CUSTOM") {
+      return {
+        dateFrom: customFrom || undefined,
+        dateTo: customTo || undefined,
+      };
+    }
+    return { dateFrom: undefined, dateTo: undefined };
+  }, [dateFilter, customFrom, customTo]);
 
-  const { data: kendaraanKeluarData } = useKendaraanKeluar({
+  const { data: kendaraanKeluarData, refetch } = useKendaraanKeluar({
     page,
     limit,
     search: searchTerm,
+    dateFrom: dateRange.dateFrom,
+    dateTo: dateRange.dateTo,
     sortBy,
     sortOrder,
   });
@@ -198,8 +131,15 @@ export default function KendaraanKeluarPage() {
     total: 0,
     totalPages: 1,
   };
-  const { data: allKendaraanData } = useKendaraan();
-  const kendaraanList = allKendaraanData?.data || [];
+  const { data: qcData } = useKendaraanQC({
+    page: 1,
+    limit: 50,
+    layak: true,
+    pending: true,
+    sortBy: "tanggalQC",
+    sortOrder: "desc",
+  });
+  const qcList = qcData?.data || [];
 
   const createKendaraanKeluar = useCreateKendaraanKeluar();
   const updateKendaraanKeluar = useUpdateKendaraanKeluar();
@@ -209,34 +149,14 @@ export default function KendaraanKeluarPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const selectedVeh = kendaraanList.find(
-      (k: any) => k.id === formData.kendaraanId,
-    );
-    if (!selectedVeh) return;
-
-    // Validation: Only "SELESAI" vehicles can leave, or currently edited vehicle (which might be "KELUAR")
-    if (editingKendaraanKeluar) {
-      // If editing, logic is relaxed because it might already be KELUAR
-    } else {
-      if (selectedVeh.status !== "SELESAI") {
-        alert(
-          'Kendaraan harus memiliki status "Selesai" sebelum dapat keluar!',
-        );
-        return;
-      }
-    }
+    if (!editingKendaraanKeluar && !formData.kendaraanMasukId) return;
 
     try {
       if (editingKendaraanKeluar) {
         await updateKendaraanKeluar.mutateAsync({
           id: editingKendaraanKeluar.id,
           tanggalKeluar: formData.tanggalKeluar,
-          // kendaraanId is typically read-only in update to avoid complex state changes
-          qcResult: formData.qcResult,
-          layakKeluar: formData.layakKeluar,
-          suratJalan: formData.layakKeluar
-            ? formData.suratJalan || `surat_jalan_${Date.now()}.pdf`
-            : "",
+          keterangan: formData.keterangan,
         });
         toast({
           title: "Data Diperbarui",
@@ -246,12 +166,8 @@ export default function KendaraanKeluarPage() {
       } else {
         await createKendaraanKeluar.mutateAsync({
           tanggalKeluar: formData.tanggalKeluar,
-          kendaraanId: formData.kendaraanId,
-          qcResult: formData.qcResult,
-          layakKeluar: formData.layakKeluar,
-          suratJalan: formData.layakKeluar
-            ? `surat_jalan_${Date.now()}.pdf`
-            : "",
+          kendaraanMasukId: formData.kendaraanMasukId,
+          keterangan: formData.keterangan,
         });
         toast({
           title: "Kendaraan Keluar",
@@ -276,14 +192,9 @@ export default function KendaraanKeluarPage() {
     setEditingKendaraanKeluar(null);
     setFormData({
       tanggalKeluar: new Date().toISOString().split("T")[0],
-      kendaraanId: "",
-      qcResult: "",
-      layakKeluar: false,
-      suratJalan: "",
+      kendaraanMasukId: "",
+      keterangan: "",
     });
-    setQcChecklist(
-      qcChecklist.map((item) => ({ ...item, kondisi: "BAIK", catatan: "" })),
-    );
   };
 
   const handleEdit = (kendaraanKeluar: any) => {
@@ -292,22 +203,46 @@ export default function KendaraanKeluarPage() {
       tanggalKeluar: new Date(kendaraanKeluar.tanggalKeluar)
         .toISOString()
         .split("T")[0],
-      kendaraanId: kendaraanKeluar.kendaraanId,
-      qcResult: kendaraanKeluar.qcResult || "",
-      layakKeluar: kendaraanKeluar.layakKeluar,
-      suratJalan: kendaraanKeluar.suratJalan || "",
+      kendaraanMasukId: kendaraanKeluar.kendaraanMasukId || "",
+      keterangan: kendaraanKeluar.keterangan || "",
     });
     setIsDialogOpen(true);
-  };
-
-  const handleQC = (kendaraanKeluar: any) => {
-    setSelectedKendaraan(kendaraanKeluar);
-    setIsQCDialogOpen(true);
   };
 
   const handleViewSurat = (kendaraanKeluar: any) => {
     setSelectedKendaraan(kendaraanKeluar);
     setIsSuratDialogOpen(true);
+  };
+
+  const downloadSuratJalan = async (kendaraanKeluar: any) => {
+    try {
+      const response = await fetch("/api/kendaraan/surat-jalan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kendaraanKeluarId: kendaraanKeluar.id }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || "Gagal membuat surat jalan");
+      }
+
+      const link = document.createElement("a");
+      link.href = data.url;
+      link.download = data.url.split("/").pop();
+      link.click();
+
+      setSelectedKendaraan((prev: any) =>
+        prev ? { ...prev, suratJalan: data.url } : prev,
+      );
+      refetch();
+    } catch (error) {
+      console.error("Failed to download surat jalan", error);
+      toast({
+        title: "Gagal download PDF",
+        description: "Tidak bisa membuat surat jalan.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteClick = (kendaraanKeluar: any) => {
@@ -338,23 +273,6 @@ export default function KendaraanKeluarPage() {
     }
   };
 
-  const updateQCChecklist = (id: string, field: string, value: any) => {
-    setQcChecklist((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
-    );
-  };
-
-  const getQCSummary = () => {
-    const baik = qcChecklist.filter((item) => item.kondisi === "BAIK").length;
-    const rusak = qcChecklist.filter((item) => item.kondisi === "RUSAK").length;
-    const perluPerbaikan = qcChecklist.filter(
-      (item) => item.kondisi === "PERLU_PERBAIKAN",
-    ).length;
-
-    return { baik, rusak, perluPerbaikan };
-  };
-
-  const qcSummary = getQCSummary();
 
   const getTodayStats = () => {
     const today = new Date().toISOString().split("T")[0];
@@ -402,6 +320,63 @@ export default function KendaraanKeluarPage() {
               Quality Control dan pencetakan surat jalan
             </p>
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={dateFilter === "ALL" ? "default" : "outline"}
+              onClick={() => {
+                setDateFilter("ALL");
+                setPage(1);
+              }}
+              className="rounded-xl"
+            >
+              Semua
+            </Button>
+            <Button
+              type="button"
+              variant={dateFilter === "TODAY" ? "default" : "outline"}
+              onClick={() => {
+                setDateFilter("TODAY");
+                setPage(1);
+              }}
+              className="rounded-xl"
+            >
+              Hari Ini
+            </Button>
+            <Button
+              type="button"
+              variant={dateFilter === "WEEK" ? "default" : "outline"}
+              onClick={() => {
+                setDateFilter("WEEK");
+                setPage(1);
+              }}
+              className="rounded-xl"
+            >
+              Minggu Ini
+            </Button>
+            <Button
+              type="button"
+              variant={dateFilter === "MONTH" ? "default" : "outline"}
+              onClick={() => {
+                setDateFilter("MONTH");
+                setPage(1);
+              }}
+              className="rounded-xl"
+            >
+              Bulan Ini
+            </Button>
+            <Button
+              type="button"
+              variant={dateFilter === "CUSTOM" ? "default" : "outline"}
+              onClick={() => {
+                setDateFilter("CUSTOM");
+                setPage(1);
+              }}
+              className="rounded-xl"
+            >
+              Custom
+            </Button>
+          </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button
@@ -423,7 +398,7 @@ export default function KendaraanKeluarPage() {
                   <DialogDescription className="text-slate-500">
                     {editingKendaraanKeluar
                       ? "Perbarui data kendaraan keluar"
-                      : "Quality Control dan persetujuan kendaraan untuk keluar"}
+                      : "Pilih kendaraan yang sudah lulus QC"}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-6 py-6">
@@ -451,44 +426,49 @@ export default function KendaraanKeluarPage() {
                     </div>
                     <div className="grid items-center gap-2">
                       <Label
-                        htmlFor="kendaraanId"
+                        htmlFor="kendaraanMasukId"
                         className="text-slate-700 font-medium"
                       >
-                        Kendaraan
+                        Kendaraan (Lulus QC)
                       </Label>
                       <Select
-                        value={formData.kendaraanId}
+                        value={formData.kendaraanMasukId}
                         onValueChange={(value) =>
                           setFormData((prev) => ({
                             ...prev,
-                            kendaraanId: value,
+                            kendaraanMasukId: value,
                           }))
                         }
+                        disabled={!!editingKendaraanKeluar}
                       >
                         <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
                           <SelectValue placeholder="Pilih kendaraan" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                          {kendaraanList
-                            .filter(
-                              (k: any) =>
-                                k.status === "SELESAI" ||
-                                (editingKendaraanKeluar &&
-                                  k.id === editingKendaraanKeluar.kendaraanId),
-                            )
-                            .map((kendaraan: any) => (
+                          {qcList.map((qc: any) => (
+                            <SelectItem
+                              key={qc.id}
+                              value={qc.kendaraanMasukId}
+                              className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                            >
+                              {qc.kendaraan?.nomorPolisi || "-"} -{" "}
+                              {qc.kendaraan?.merekKendaraan?.nama || ""}{" "}
+                              {qc.kendaraan?.tipeKendaraan?.nama || ""}
+                            </SelectItem>
+                          ))}
+                          {editingKendaraanKeluar &&
+                            editingKendaraanKeluar.kendaraan && (
                               <SelectItem
-                                key={kendaraan.id}
-                                value={kendaraan.id}
+                                value={editingKendaraanKeluar.kendaraanMasukId}
                                 className="cursor-pointer focus:bg-blue-50 focus:text-blue-700"
                               >
-                                {kendaraan.nomorPolisi} -{" "}
-                                {kendaraan.merekKendaraan?.nama ||
-                                  kendaraan.merek}{" "}
-                                {kendaraan.tipeKendaraan?.nama ||
-                                  kendaraan.tipe}
+                                {editingKendaraanKeluar.kendaraan.nomorPolisi} -{" "}
+                                {editingKendaraanKeluar.kendaraan
+                                  .merekKendaraan?.nama || ""}{" "}
+                                {editingKendaraanKeluar.kendaraan
+                                  .tipeKendaraan?.nama || ""}
                               </SelectItem>
-                            ))}
+                            )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -496,45 +476,24 @@ export default function KendaraanKeluarPage() {
 
                   <div className="space-y-2">
                     <Label
-                      htmlFor="qcResult"
+                      htmlFor="keterangan"
                       className="text-slate-700 font-medium"
                     >
-                      Hasil QC
+                      Keterangan / Note
                     </Label>
                     <Textarea
-                      id="qcResult"
-                      value={formData.qcResult}
+                      id="keterangan"
+                      value={formData.keterangan}
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          qcResult: e.target.value,
+                          keterangan: e.target.value,
                         }))
                       }
-                      placeholder="Deskripsikan hasil quality control kendaraan"
+                      placeholder="Catatan tambahan untuk kendaraan keluar"
                       rows={3}
                       className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 resize-none"
-                      required
                     />
-                  </div>
-
-                  <div className="flex items-center space-x-2 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <Checkbox
-                      id="layakKeluar"
-                      checked={formData.layakKeluar}
-                      onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          layakKeluar: checked as boolean,
-                        }))
-                      }
-                      className="border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded"
-                    />
-                    <Label
-                      htmlFor="layakKeluar"
-                      className="font-medium text-slate-700 cursor-pointer"
-                    >
-                      Kendaraan layak keluar
-                    </Label>
                   </div>
                 </div>
                 <DialogFooter className="gap-2">
@@ -557,6 +516,33 @@ export default function KendaraanKeluarPage() {
             </DialogContent>
           </Dialog>
         </div>
+
+        {dateFilter === "CUSTOM" && (
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="grid gap-2">
+              <Label className="text-sm font-medium text-slate-600">
+                Dari Tanggal
+              </Label>
+              <Input
+                type="date"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-sm font-medium text-slate-600">
+                Sampai Tanggal
+              </Label>
+              <Input
+                type="date"
+                value={customTo}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -751,7 +737,9 @@ export default function KendaraanKeluarPage() {
                             Generated
                           </Badge>
                         ) : (
-                          <span className="text-slate-400 text-sm">-</span>
+                          <span className="text-slate-400 text-sm">
+                            Belum dibuat
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="px-6 text-center">
@@ -759,23 +747,12 @@ export default function KendaraanKeluarPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleQC(kendaraanKeluar)}
-                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
-                            title="Cek Quality Control"
+                            onClick={() => handleViewSurat(kendaraanKeluar)}
+                            className="h-8 w-8 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg cursor-pointer"
+                            title="Lihat Surat Jalan"
                           >
-                            <ClipboardCheck className="h-4 w-4" />
+                            <FileText className="h-4 w-4" />
                           </Button>
-                          {kendaraanKeluar.suratJalan && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleViewSurat(kendaraanKeluar)}
-                              className="h-8 w-8 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg cursor-pointer"
-                              title="Lihat Surat Jalan"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -824,142 +801,6 @@ export default function KendaraanKeluarPage() {
             </div>
           )}
         </Card>
-
-        {/* QC Dialog */}
-        <Dialog open={isQCDialogOpen} onOpenChange={setIsQCDialogOpen}>
-          <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto rounded-xl border-slate-100 shadow-2xl">
-            <DialogHeader className="border-b border-slate-100 pb-4">
-              <DialogTitle className="text-xl font-bold text-slate-900">
-                Quality Control Checklist
-              </DialogTitle>
-              <DialogDescription className="text-slate-500">
-                Checklist QC untuk kendaraan{" "}
-                <span className="font-semibold text-slate-700">
-                  {selectedKendaraan?.kendaraan?.nomorPolisi}
-                </span>
-              </DialogDescription>
-            </DialogHeader>
-            {selectedKendaraan && (
-              <div className="space-y-6 py-4">
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div className="p-4 bg-green-50 rounded-xl border border-green-100 text-center">
-                    <p className="text-3xl font-bold text-green-600">
-                      {qcSummary.baik}
-                    </p>
-                    <p className="text-sm font-medium text-green-700">Baik</p>
-                  </div>
-                  <div className="p-4 bg-red-50 rounded-xl border border-red-100 text-center">
-                    <p className="text-3xl font-bold text-red-600">
-                      {qcSummary.rusak}
-                    </p>
-                    <p className="text-sm font-medium text-red-700">Rusak</p>
-                  </div>
-                  <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100 text-center">
-                    <p className="text-3xl font-bold text-yellow-600">
-                      {qcSummary.perluPerbaikan}
-                    </p>
-                    <p className="text-sm font-medium text-yellow-700">
-                      Perlu Perbaikan
-                    </p>
-                  </div>
-                </div>
-
-                {["Eksterior", "Interior", "Pengerjaan", "Keamanan"].map(
-                  (area) => (
-                    <div
-                      key={area}
-                      className="border border-slate-200 rounded-xl overflow-hidden shadow-sm"
-                    >
-                      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-                        <h4 className="font-semibold text-slate-800">{area}</h4>
-                      </div>
-                      <div className="p-4 space-y-3 bg-white">
-                        {qcChecklist
-                          .filter((item) => item.area === area)
-                          .map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border border-slate-100 rounded-lg hover:border-blue-200 transition-colors"
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3">
-                                  <span className="font-medium text-slate-700 w-full sm:w-48">
-                                    {item.item}
-                                  </span>
-                                  <Select
-                                    value={item.kondisi}
-                                    onValueChange={(
-                                      value:
-                                        | "BAIK"
-                                        | "RUSAK"
-                                        | "PERLU_PERBAIKAN",
-                                    ) =>
-                                      updateQCChecklist(
-                                        item.id,
-                                        "kondisi",
-                                        value,
-                                      )
-                                    }
-                                  >
-                                    <SelectTrigger
-                                      className={cn(
-                                        "w-36 h-9 rounded-lg border-0 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6",
-                                        item.kondisi === "BAIK"
-                                          ? "bg-green-50 ring-green-200 text-green-700"
-                                          : item.kondisi === "RUSAK"
-                                            ? "bg-red-50 ring-red-200 text-red-700"
-                                            : "bg-yellow-50 ring-yellow-200 text-yellow-700",
-                                      )}
-                                    >
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem
-                                        value="BAIK"
-                                        className="text-green-700 focus:text-green-800 focus:bg-green-50"
-                                      >
-                                        Baik
-                                      </SelectItem>
-                                      <SelectItem
-                                        value="RUSAK"
-                                        className="text-red-700 focus:text-red-800 focus:bg-red-50"
-                                      >
-                                        Rusak
-                                      </SelectItem>
-                                      <SelectItem
-                                        value="PERLU_PERBAIKAN"
-                                        className="text-yellow-700 focus:text-yellow-800 focus:bg-yellow-50"
-                                      >
-                                        Perlu Perbaikan
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 w-full sm:w-auto">
-                                <Input
-                                  placeholder="Catatan (opsional)"
-                                  value={item.catatan}
-                                  onChange={(e) =>
-                                    updateQCChecklist(
-                                      item.id,
-                                      "catatan",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full sm:w-64 h-9 rounded-lg border-slate-200 focus-visible:ring-blue-600"
-                                />
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
 
         {/* Surat Jalan Dialog */}
         <Dialog open={isSuratDialogOpen} onOpenChange={setIsSuratDialogOpen}>
@@ -1044,6 +885,16 @@ export default function KendaraanKeluarPage() {
                           )}
                         </div>
                       </div>
+                      {selectedKendaraan.keterangan && (
+                        <div className="col-span-2 space-y-1 pt-2">
+                          <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
+                            Keterangan
+                          </p>
+                          <p className="text-sm text-slate-700">
+                            {selectedKendaraan.keterangan}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="mt-16 pt-8 border-t border-slate-200">
@@ -1086,11 +937,17 @@ export default function KendaraanKeluarPage() {
                   <Button
                     variant="outline"
                     className="rounded-xl border-slate-200 shadow-sm hover:bg-slate-50"
+                    onClick={() =>
+                      selectedKendaraan && downloadSuratJalan(selectedKendaraan)
+                    }
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
                   </Button>
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md cursor-pointer">
+                  <Button
+                    onClick={() => window.print()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md cursor-pointer"
+                  >
                     <FileText className="mr-2 h-4 w-4" />
                     Cetak Surat Jalan
                   </Button>

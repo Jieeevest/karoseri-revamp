@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
+    const purchaseOrderId = searchParams.get("purchaseOrderId");
 
     // Check if pagination parameters exist, otherwise return all
     const pageParam = searchParams.get("page");
@@ -13,7 +16,7 @@ export async function GET(request: NextRequest) {
     const sortOrder =
       (searchParams.get("sortOrder") as "asc" | "desc") || "desc";
 
-    const where = search
+    const where: any = search
       ? {
           OR: [
             {
@@ -33,12 +36,18 @@ export async function GET(request: NextRequest) {
         }
       : {};
 
+    if (purchaseOrderId) {
+      where.purchaseOrderId = purchaseOrderId;
+    }
+
     if (!pageParam && !limitParam) {
       const barangMasukList = await db.barangMasuk.findMany({
         where: where as any,
         include: {
           barang: true,
           supplier: true,
+          purchaseOrder: true,
+          receivedBy: true,
         },
         orderBy: { [sortBy]: sortOrder },
       });
@@ -57,6 +66,8 @@ export async function GET(request: NextRequest) {
         include: {
           barang: true,
           supplier: true,
+          purchaseOrder: true,
+          receivedBy: true,
         },
         orderBy: { [sortBy]: sortOrder },
       }),
@@ -87,22 +98,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       tanggal,
-      barangId,
       supplierId,
       purchaseOrderId,
-      jumlah,
       hargaSatuan,
       totalHarga,
       nomorSuratJalan,
       keterangan,
+      items,
     } = body;
 
-    // Validation
-    if (!tanggal || !barangId || !supplierId || !jumlah) {
+    const session = await getServerSession(authOptions);
+    const receivedById = (session?.user as any)?.id as string | undefined;
+
+    const hasItems = Array.isArray(items) && items.length > 0;
+    if (!tanggal || !supplierId || !hasItems) {
       return NextResponse.json(
         {
           success: false,
-          error: "Tanggal, Barang, Supplier, dan Jumlah wajib diisi",
+          error: "Tanggal, Supplier, dan item barang wajib diisi",
         },
         { status: 400 },
       );
@@ -128,40 +141,121 @@ export async function POST(request: NextRequest) {
         sequence = parseInt(parts[2]) + 1;
       }
     }
-    const nomor = `BM-${year}-${String(sequence).padStart(3, "0")}`;
+
+    const lastRetur = await db.barangRetur.findFirst({
+      where: {
+        nomor: {
+          startsWith: `BR-${year}-`,
+        },
+      },
+      orderBy: {
+        nomor: "desc",
+      },
+    });
+    let returSeq = 1;
+    if (lastRetur) {
+      const parts = lastRetur.nomor.split("-");
+      if (parts.length === 3) {
+        returSeq = parseInt(parts[2]) + 1;
+      }
+    }
 
     const result = await db.$transaction(async (prisma) => {
-      // Create BarangMasuk record
-      const barangMasuk = await prisma.barangMasuk.create({
-        data: {
-          nomor,
-          tanggal: new Date(tanggal),
-          barangId,
-          supplierId,
-          purchaseOrderId: purchaseOrderId || null,
-          jumlah: parseInt(jumlah),
-          hargaSatuan: parseFloat(hargaSatuan) || 0,
-          totalHarga: parseFloat(totalHarga) || 0,
-          nomorSuratJalan: nomorSuratJalan || "",
-          keterangan: keterangan || "",
-          kondisi: "BAIK",
-        },
-        include: {
-          barang: true,
-        },
-      });
+      const po = purchaseOrderId
+        ? await prisma.purchaseOrder.findUnique({
+            where: { id: purchaseOrderId },
+            include: { items: true },
+          })
+        : null;
 
-      // Update Barang Stock
-      await prisma.barang.update({
-        where: { id: barangId },
-        data: {
-          stok: {
-            increment: parseInt(jumlah),
-          },
-        },
-      });
+      const createdMasuk: any[] = [];
+      const createdRetur: any[] = [];
 
-      return barangMasuk;
+      for (const item of items) {
+        const barangId = item.barangId;
+        const jumlahDiterima = parseInt(item.jumlahDiterima || item.jumlah || 0);
+        const jumlahRetur = parseInt(item.jumlahRetur || 0);
+        const kondisi = item.kondisi || "BAIK";
+
+        if (!barangId || (!jumlahDiterima && !jumlahRetur)) {
+          continue;
+        }
+
+        if (po) {
+          const poItem = po.items.find((pi: any) => pi.barangId === barangId);
+          if (!poItem) {
+            throw new Error("Barang tidak sesuai PO");
+          }
+          if (jumlahDiterima + jumlahRetur > poItem.jumlah) {
+            throw new Error("Jumlah melebihi PO");
+          }
+        }
+
+        if (jumlahDiterima > 0) {
+          const nomor = `BM-${year}-${String(sequence).padStart(3, "0")}`;
+          sequence += 1;
+
+          const hargaItem = Number.isFinite(item.hargaSatuan)
+            ? parseFloat(item.hargaSatuan)
+            : parseFloat(hargaSatuan) || 0;
+          const totalItem =
+            Number.isFinite(item.totalHarga)
+              ? parseFloat(item.totalHarga)
+              : hargaItem * jumlahDiterima;
+
+          const barangMasuk = await prisma.barangMasuk.create({
+            data: {
+              nomor,
+              tanggal: new Date(tanggal),
+              barangId,
+              supplierId,
+              purchaseOrderId: purchaseOrderId || null,
+              jumlah: jumlahDiterima,
+              hargaSatuan: hargaItem || 0,
+              totalHarga: totalItem || 0,
+              nomorSuratJalan: nomorSuratJalan || "",
+              keterangan: keterangan || "",
+              kondisi: kondisi === "BAIK" ? "BAIK" : "RUSAK",
+              receivedById: receivedById || null,
+            },
+            include: {
+              barang: true,
+            },
+          });
+
+          await prisma.barang.update({
+            where: { id: barangId },
+            data: {
+              stok: {
+                increment: jumlahDiterima,
+              },
+            },
+          });
+          createdMasuk.push(barangMasuk);
+        }
+
+        if (jumlahRetur > 0) {
+          const nomorRetur = `BR-${year}-${String(returSeq).padStart(3, "0")}`;
+          returSeq += 1;
+
+          const barangRetur = await prisma.barangRetur.create({
+            data: {
+              nomor: nomorRetur,
+              tanggal: new Date(tanggal),
+              purchaseOrderId: purchaseOrderId || null,
+              supplierId,
+              barangId,
+              jumlah: jumlahRetur,
+              kondisi: kondisi || "RUSAK",
+              alasan: item.alasanRetur || null,
+              createdById: receivedById || null,
+            },
+          });
+          createdRetur.push(barangRetur);
+        }
+      }
+
+      return { barangMasuk: createdMasuk, barangRetur: createdRetur };
     });
 
     return NextResponse.json({

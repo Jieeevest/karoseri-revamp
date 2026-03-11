@@ -58,7 +58,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { customerId, deskripsi, quantity, hargaPerUnit } = body;
+    const {
+      customerId,
+      deskripsi,
+      quantity,
+      hargaPerUnit,
+      jenisPenawaran,
+    } = body;
 
     if (!customerId || !deskripsi) {
       return NextResponse.json(
@@ -76,6 +82,7 @@ export async function POST(request: NextRequest) {
       data: {
         nomor,
         customerId,
+        jenisPenawaran: jenisPenawaran || "PASANG_BARU",
         deskripsi,
         quantity: parseInt(quantity) || 1,
         hargaPerUnit: parseFloat(hargaPerUnit) || 0,
@@ -105,7 +112,15 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, customerId, deskripsi, quantity, hargaPerUnit, status } = body;
+    const {
+      id,
+      customerId,
+      deskripsi,
+      quantity,
+      hargaPerUnit,
+      status,
+      jenisPenawaran,
+    } = body;
 
     if (!id || !customerId) {
       return NextResponse.json(
@@ -118,6 +133,7 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data: {
         customerId,
+        jenisPenawaran: jenisPenawaran || "PASANG_BARU",
         deskripsi,
         quantity: parseInt(quantity) || 1,
         hargaPerUnit: parseFloat(hargaPerUnit) || 0,

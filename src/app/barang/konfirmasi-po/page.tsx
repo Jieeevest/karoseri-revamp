@@ -45,6 +45,7 @@ import {
 
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { formatDateIndonesia } from "@/lib/date-format";
 
 export default function KonfirmasiPOPage() {
   const { data: session } = useSession();
@@ -156,7 +157,11 @@ export default function KonfirmasiPOPage() {
       )
     ) {
       try {
-        await updatePO.mutateAsync({ id: po.id, status: "DISETUJUI" });
+        await updatePO.mutateAsync({
+          id: po.id,
+          status: "DISETUJUI",
+          alasanPenolakan: null,
+        });
         toast({
           title: "Berhasil",
           description: "PO berhasil disetujui",
@@ -189,6 +194,7 @@ export default function KonfirmasiPOPage() {
       await updatePO.mutateAsync({
         id: selectedPO.id,
         status: "DITOLAK",
+        alasanPenolakan: rejectReason.trim(),
       });
       toast({
         title: "Berhasil",
@@ -253,7 +259,7 @@ export default function KonfirmasiPOPage() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -264,14 +270,14 @@ export default function KonfirmasiPOPage() {
                     {stats.submitted}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
                   <Clock className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -282,14 +288,14 @@ export default function KonfirmasiPOPage() {
                     {stats.approved}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-green-50 border border-green-100">
+                <div className="p-3 rounded-lg bg-green-50 border border-green-100">
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -298,14 +304,14 @@ export default function KonfirmasiPOPage() {
                     {stats.rejected}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-red-50 border border-red-100">
+                <div className="p-3 rounded-lg bg-red-50 border border-red-100">
                   <XCircle className="h-6 w-6 text-red-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -316,7 +322,7 @@ export default function KonfirmasiPOPage() {
                     {formatCurrency(stats.totalValue)}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
+                <div className="p-3 rounded-lg bg-purple-50 border border-purple-100">
                   <DollarSign className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
@@ -324,7 +330,7 @@ export default function KonfirmasiPOPage() {
           </Card>
         </div>
 
-        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
+        <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white/50 backdrop-blur-sm">
           <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle className="text-lg font-bold text-slate-900">
@@ -336,7 +342,7 @@ export default function KonfirmasiPOPage() {
                   placeholder="Cari PO..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
+                  className="pl-10 rounded-lg border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
             </div>
@@ -415,7 +421,7 @@ export default function KonfirmasiPOPage() {
                         {po.nomor}
                       </TableCell>
                       <TableCell className="px-6 text-slate-600">
-                        {po.tanggal}
+                        {formatDateIndonesia(po.tanggal, { withTime: false })}
                       </TableCell>
                       <TableCell className="px-6">
                         <div>
@@ -477,7 +483,7 @@ export default function KonfirmasiPOPage() {
               </Table>
             )}
           </CardContent>
-          <div className="p-4 border-t border-slate-100">
+          <div className="border-t border-slate-100">
             <PaginationControls
               currentPage={page}
               totalPages={pagination?.totalPages || 1}
@@ -491,7 +497,7 @@ export default function KonfirmasiPOPage() {
 
         {/* Detail Dialog */}
         <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-          <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto rounded-xl border-slate-100 shadow-2xl">
+          <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto rounded-lg border-slate-100 shadow-2xl">
             <DialogHeader className="border-b border-slate-100 pb-4">
               <DialogTitle className="text-xl font-bold text-slate-900">
                 Detail Purchase Order
@@ -499,7 +505,7 @@ export default function KonfirmasiPOPage() {
             </DialogHeader>
             {selectedPO && (
               <div className="space-y-6 pt-4">
-                <div className="grid grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                <div className="grid grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded-lg border border-slate-100">
                   <div>
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       Nomor PO
@@ -521,7 +527,9 @@ export default function KonfirmasiPOPage() {
                       Tanggal
                     </Label>
                     <p className="font-medium text-slate-700 mt-1">
-                      {selectedPO.tanggal}
+                      {formatDateIndonesia(selectedPO.tanggal, {
+                        withTime: false,
+                      })}
                     </p>
                   </div>
                   <div>
@@ -541,7 +549,7 @@ export default function KonfirmasiPOPage() {
                   <Label className="text-sm font-bold text-slate-900 mb-3 block">
                     Detail Barang
                   </Label>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-200">
@@ -607,7 +615,7 @@ export default function KonfirmasiPOPage() {
               <Button
                 onClick={() => setIsDetailDialogOpen(false)}
                 variant="outline"
-                className="w-full rounded-xl cursor-pointer"
+                className="w-full rounded-lg cursor-pointer"
               >
                 Tutup
               </Button>
@@ -617,7 +625,7 @@ export default function KonfirmasiPOPage() {
 
         {/* Reject Dialog */}
         <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-          <DialogContent className="sm:max-w-[500px] rounded-xl border-slate-100 shadow-2xl">
+          <DialogContent className="sm:max-w-[500px] rounded-lg border-slate-100 shadow-2xl">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-red-500" />
@@ -645,7 +653,7 @@ export default function KonfirmasiPOPage() {
                   onChange={(e) => setRejectReason(e.target.value)}
                   placeholder="Contoh: Stok barang sudah mencukupi, atau harga terlalu tinggi..."
                   rows={4}
-                  className="rounded-xl border-slate-200 focus-visible:ring-red-500 focus-visible:ring-offset-0"
+                  className="rounded-lg border-slate-200 focus-visible:ring-red-500 focus-visible:ring-offset-0"
                   required
                 />
               </div>
@@ -654,14 +662,14 @@ export default function KonfirmasiPOPage() {
               <Button
                 variant="outline"
                 onClick={() => setIsRejectDialogOpen(false)}
-                className="rounded-xl cursor-pointer"
+                className="rounded-lg cursor-pointer"
               >
                 Batal
               </Button>
               <Button
                 variant="destructive"
                 onClick={confirmReject}
-                className="bg-red-600 hover:bg-red-700 rounded-xl shadow-md shadow-red-100 cursor-pointer"
+                className="bg-red-600 hover:bg-red-700 rounded-lg shadow-md shadow-red-100 cursor-pointer"
               >
                 Tolak PO
               </Button>

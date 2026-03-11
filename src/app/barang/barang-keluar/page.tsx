@@ -62,6 +62,7 @@ import {
   useKaryawan,
   useKendaraan,
 } from "@/hooks/use-barang-keluar";
+import { formatDateIndonesia } from "@/lib/date-format";
 
 export default function BarangKeluarPage() {
   const { data: barangQuery } = useBarang();
@@ -284,13 +285,13 @@ export default function BarangKeluarPage() {
             <DialogTrigger asChild>
               <Button
                 onClick={openAddDialog}
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl transition-all duration-200 cursor-pointer"
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-lg transition-all duration-200 cursor-pointer"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Catat Barang Keluar
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[650px] rounded-xl border-slate-100 shadow-2xl">
+            <DialogContent className="sm:max-w-[650px] rounded-lg border-slate-100 shadow-2xl">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold text-slate-900">
@@ -329,7 +330,7 @@ export default function BarangKeluarPage() {
                         />
                         <Label
                           htmlFor="produksi"
-                          className="flex flex-col items-center justify-between rounded-xl border-2 border-slate-100 bg-white p-4 hover:bg-slate-50 peer-data-[state=checked]:border-blue-600 peer-data-[state=checked]:text-blue-600 cursor-pointer transition-all"
+                          className="flex flex-col items-center justify-between rounded-lg border-2 border-slate-100 bg-white p-4 hover:bg-slate-50 peer-data-[state=checked]:border-blue-600 peer-data-[state=checked]:text-blue-600 cursor-pointer transition-all"
                         >
                           <Wrench className="mb-2 h-6 w-6" />
                           <span className="font-semibold">Produksi</span>
@@ -346,7 +347,7 @@ export default function BarangKeluarPage() {
                         />
                         <Label
                           htmlFor="operasional"
-                          className="flex flex-col items-center justify-between rounded-xl border-2 border-slate-100 bg-white p-4 hover:bg-slate-50 peer-data-[state=checked]:border-blue-600 peer-data-[state=checked]:text-blue-600 cursor-pointer transition-all"
+                          className="flex flex-col items-center justify-between rounded-lg border-2 border-slate-100 bg-white p-4 hover:bg-slate-50 peer-data-[state=checked]:border-blue-600 peer-data-[state=checked]:text-blue-600 cursor-pointer transition-all"
                         >
                           <Briefcase className="mb-2 h-6 w-6" />
                           <span className="font-semibold">Operasional</span>
@@ -358,7 +359,7 @@ export default function BarangKeluarPage() {
                     </RadioGroup>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                  <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-lg border border-slate-100">
                     <div className="grid gap-2">
                       <Label
                         htmlFor="tanggal"
@@ -376,7 +377,7 @@ export default function BarangKeluarPage() {
                             tanggal: e.target.value,
                           }))
                         }
-                        className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 bg-white"
+                        className="rounded-lg border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 bg-white"
                         required
                       />
                     </div>
@@ -397,10 +398,10 @@ export default function BarangKeluarPage() {
                             }))
                           }
                         >
-                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
+                          <SelectTrigger className="w-full rounded-lg border-slate-200 focus:ring-blue-600 focus:ring-offset-0 bg-white">
                             <SelectValue placeholder="Pilih kendaraan" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                          <SelectContent className="rounded-lg border-slate-100 shadow-xl">
                             {kendaraanList.map((kendaraan) => (
                               <SelectItem
                                 key={kendaraan.id}
@@ -436,10 +437,10 @@ export default function BarangKeluarPage() {
                             }))
                           }
                         >
-                          <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                          <SelectTrigger className="w-full rounded-lg border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
                             <SelectValue placeholder="Pilih karyawan" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                          <SelectContent className="rounded-lg border-slate-100 shadow-xl">
                             {karyawanList.map((karyawan) => (
                               <SelectItem
                                 key={karyawan.id}
@@ -471,7 +472,7 @@ export default function BarangKeluarPage() {
                           }
                           placeholder="0"
                           min="1"
-                          className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                          className="rounded-lg border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                           required
                         />
                       </div>
@@ -490,10 +491,10 @@ export default function BarangKeluarPage() {
                           setFormData((prev) => ({ ...prev, barangId: value }))
                         }
                       >
-                        <SelectTrigger className="w-full rounded-xl border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
+                        <SelectTrigger className="w-full rounded-lg border-slate-200 focus:ring-blue-600 focus:ring-offset-0">
                           <SelectValue placeholder="Pilih barang" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                        <SelectContent className="rounded-lg border-slate-100 shadow-xl">
                           {barangList.map((barang) => (
                             <SelectItem
                               key={barang.id}
@@ -526,7 +527,7 @@ export default function BarangKeluarPage() {
                         }
                         placeholder="Deskripsikan detail pemakaian barang untuk keperluan apa..."
                         rows={3}
-                        className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 resize-none"
+                        className="rounded-lg border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0 resize-none"
                         required
                       />
                     </div>
@@ -537,13 +538,13 @@ export default function BarangKeluarPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setIsDialogOpen(false)}
-                    className="rounded-xl cursor-pointer"
+                    className="rounded-lg cursor-pointer"
                   >
                     Batal
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 cursor-pointer"
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md shadow-blue-200 cursor-pointer"
                   >
                     {editingBarangKeluar
                       ? "Simpan Perubahan"
@@ -557,7 +558,7 @@ export default function BarangKeluarPage() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -568,14 +569,14 @@ export default function BarangKeluarPage() {
                     {barangKeluarList.length}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
                   <Package className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -584,14 +585,14 @@ export default function BarangKeluarPage() {
                     {todayStats.total}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-green-50 border border-green-100">
+                <div className="p-3 rounded-lg bg-green-50 border border-green-100">
                   <ArrowRight className="h-6 w-6 text-green-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -602,14 +603,14 @@ export default function BarangKeluarPage() {
                     {todayStats.totalItems}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
+                <div className="p-3 rounded-lg bg-purple-50 border border-purple-100">
                   <Package className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -620,7 +621,7 @@ export default function BarangKeluarPage() {
                     {todayStats.uniqueKaryawan}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-orange-50 border border-orange-100">
+                <div className="p-3 rounded-lg bg-orange-50 border border-orange-100">
                   <User className="h-6 w-6 text-orange-600" />
                 </div>
               </div>
@@ -628,7 +629,7 @@ export default function BarangKeluarPage() {
           </Card>
         </div>
 
-        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
+        <Card className="border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white/50 backdrop-blur-sm">
           <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle className="text-lg font-bold text-slate-900">
@@ -640,7 +641,7 @@ export default function BarangKeluarPage() {
                   placeholder="Cari barang keluar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-white"
+                  className="pl-10 rounded-lg border-slate-200 focus-visible:ring-blue-500 bg-white"
                 />
               </div>
             </div>
@@ -713,14 +714,7 @@ export default function BarangKeluarPage() {
                         {barangKeluar.nomor}
                       </TableCell>
                       <TableCell className="px-6 text-slate-600">
-                        {new Date(barangKeluar.tanggal).toLocaleDateString(
-                          "id-ID",
-                          {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          },
-                        )}
+                        {formatDateIndonesia(barangKeluar.tanggal)}
                       </TableCell>
                       <TableCell className="px-6">
                         <Badge
@@ -827,7 +821,7 @@ export default function BarangKeluarPage() {
               </TableBody>
             </Table>
           </CardContent>
-          <div className="p-4 border-t border-slate-100">
+          <div className="border-t border-slate-100">
             <PaginationControls
               currentPage={page}
               totalPages={pagination?.totalPages || 1}

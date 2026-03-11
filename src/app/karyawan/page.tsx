@@ -40,13 +40,11 @@ import {
   Trash2,
   Search,
   Users,
-  Phone,
-  MapPin,
   Briefcase,
   Upload,
   FileText,
-  X,
   ExternalLink,
+  UserCircle2,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -59,6 +57,7 @@ import {
   type KaryawanDokumen,
 } from "@/hooks/use-karyawan";
 import { useToast } from "@/hooks/use-toast";
+import { formatDateIndonesia } from "@/lib/date-format";
 
 import { PaginationControls } from "@/components/ui/pagination-controls"; // Import Added
 
@@ -108,6 +107,8 @@ export default function KaryawanPage() {
     tahunLulus: "",
     tanggalBergabung: "",
     statusKaryawan: "",
+    aktif: true,
+    grupKaryawan: "",
     namaBank: "",
     nomorRekening: "",
     pemilikRekening: "",
@@ -130,6 +131,14 @@ export default function KaryawanPage() {
     "Admin",
     "Security",
     "Driver",
+  ];
+
+  const grupKaryawanOptions = [
+    "Tukang Rakit",
+    "Tukang Cat",
+    "Harian",
+    "Security",
+    "Staff",
   ];
 
   /* Filtering done via hook */
@@ -231,6 +240,8 @@ export default function KaryawanPage() {
         tahunLulus: "",
         tanggalBergabung: "",
         statusKaryawan: "",
+        aktif: true,
+        grupKaryawan: "",
         namaBank: "",
         nomorRekening: "",
         pemilikRekening: "",
@@ -285,6 +296,8 @@ export default function KaryawanPage() {
         ? new Date(karyawan.tanggalBergabung).toISOString().split("T")[0]
         : "",
       statusKaryawan: karyawan.statusKaryawan || "",
+      aktif: typeof karyawan.aktif === "boolean" ? karyawan.aktif : true,
+      grupKaryawan: karyawan.grupKaryawan || "",
       namaBank: karyawan.namaBank || "",
       nomorRekening: karyawan.nomorRekening || "",
       pemilikRekening: karyawan.pemilikRekening || "",
@@ -343,6 +356,8 @@ export default function KaryawanPage() {
       tahunLulus: "",
       tanggalBergabung: "",
       statusKaryawan: "",
+      aktif: true,
+      grupKaryawan: "",
       namaBank: "",
       nomorRekening: "",
       pemilikRekening: "",
@@ -375,15 +390,36 @@ export default function KaryawanPage() {
     );
   };
 
-  const getStatsByJabatan = () => {
+  const getStatsByGroup = () => {
     const stats: { [key: string]: number } = {};
     karyawanList.forEach((k) => {
-      stats[k.jabatan] = (stats[k.jabatan] || 0) + 1;
+      const key = k.grupKaryawan || "Belum Diisi";
+      stats[key] = (stats[key] || 0) + 1;
     });
     return stats;
   };
 
-  const jabatanStats = getStatsByJabatan();
+  const activeCount = karyawanList.filter((k) => k.aktif !== false).length;
+  const nonActiveCount = karyawanList.filter((k) => k.aktif === false).length;
+
+  const groupStats = getStatsByGroup();
+
+  const getEmployeePhotoUrl = (karyawan: Karyawan) => {
+    const photoDoc = karyawan.dokumen?.find((doc) => doc.jenis === "FOTO");
+    return photoDoc?.url || "";
+  };
+
+  const getInitials = (name: string) => {
+    const parts = name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (parts.length === 0) return "";
+    if (parts.length === 1) return parts[0][0]?.toUpperCase() || "";
+    const first = parts[0][0] || "";
+    const last = parts[parts.length - 1][0] || "";
+    return (first + last).toUpperCase();
+  };
 
   return (
     <DashboardLayout>
@@ -421,7 +457,7 @@ export default function KaryawanPage() {
                 </DialogHeader>
                 <ScrollArea className="flex-1 px-1 -mx-1">
                   <Tabs defaultValue="profil" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 mb-4">
+                    <TabsList className="grid w-full grid-cols-5 mb-4">
                       <TabsTrigger value="profil">Profil</TabsTrigger>
                       <TabsTrigger value="pribadi">Pribadi</TabsTrigger>
                       <TabsTrigger value="pekerjaan">Pekerjaan</TabsTrigger>
@@ -524,6 +560,51 @@ export default function KaryawanPage() {
                             <SelectItem value="Harian">Harian</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="aktif">Status Aktif</Label>
+                          <Select
+                            value={formData.aktif ? "AKTIF" : "NONAKTIF"}
+                            onValueChange={(val) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                aktif: val === "AKTIF",
+                              }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih status aktif" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="AKTIF">Aktif</SelectItem>
+                              <SelectItem value="NONAKTIF">Tidak Aktif</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="grupKaryawan">Grup</Label>
+                          <Select
+                            value={formData.grupKaryawan}
+                            onValueChange={(val) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                grupKaryawan: val,
+                              }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih grup karyawan" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {grupKaryawanOptions.map((grup) => (
+                                <SelectItem key={grup} value={grup}>
+                                  {grup}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </TabsContent>
 
@@ -965,30 +1046,61 @@ export default function KaryawanPage() {
             </CardContent>
           </Card>
 
-          {Object.entries(jabatanStats)
-            .slice(0, 3)
-            .map(([jabatan, count]) => (
-              <Card
-                key={jabatan}
-                className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow"
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">
-                        {jabatan}
-                      </p>
-                      <p className="text-2xl font-bold text-slate-900 mt-1">
-                        {count}
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <Briefcase className="h-6 w-6 text-slate-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Karyawan Aktif
+                  </p>
+                  <p className="text-2xl font-bold text-emerald-700 mt-1">
+                    {activeCount}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                  <Users className="h-6 w-6 text-emerald-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Karyawan Tidak Aktif
+                  </p>
+                  <p className="text-2xl font-bold text-red-700 mt-1">
+                    {nonActiveCount}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-red-50 border border-red-100">
+                  <Users className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Grup Terbanyak
+                  </p>
+                  <p className="text-base font-bold text-slate-900 mt-1">
+                    {Object.entries(groupStats).sort(
+                      (a, b) => Number(b[1]) - Number(a[1]),
+                    )[0]?.[0] || "-"}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <Briefcase className="h-6 w-6 text-slate-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
@@ -1013,25 +1125,7 @@ export default function KaryawanPage() {
               <TableHeader>
                 <TableRow className="hover:bg-slate-50/50 border-slate-100">
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        if (sortBy === "nik") {
-                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                        } else {
-                          setSortBy("nik");
-                          setSortOrder("asc");
-                        }
-                      }}
-                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
-                    >
-                      NIK
-                      {sortBy === "nik" && (
-                        <span className="ml-1 text-slate-400">
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </Button>
+                    Foto
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     <Button
@@ -1046,7 +1140,7 @@ export default function KaryawanPage() {
                       }}
                       className="p-0 hover:bg-transparent font-semibold text-slate-500"
                     >
-                      Nama
+                      Nama Lengkap
                       {sortBy === "nama" && (
                         <span className="ml-1 text-slate-400">
                           {sortOrder === "asc" ? "↑" : "↓"}
@@ -1055,31 +1149,7 @@ export default function KaryawanPage() {
                     </Button>
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        if (sortBy === "jabatan") {
-                          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                        } else {
-                          setSortBy("jabatan");
-                          setSortOrder("asc");
-                        }
-                      }}
-                      className="p-0 hover:bg-transparent font-semibold text-slate-500"
-                    >
-                      Jabatan
-                      {sortBy === "jabatan" && (
-                        <span className="ml-1 text-slate-400">
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </Button>
-                  </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Kontak
-                  </TableHead>
-                  <TableHead className="px-6 font-semibold text-slate-500">
-                    Alamat
+                    Jabatan
                   </TableHead>
                   <TableHead className="px-6 font-semibold text-slate-500">
                     Tanggal Dibuat
@@ -1096,21 +1166,23 @@ export default function KaryawanPage() {
                       key={karyawan.id}
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
                     >
-                      <TableCell className="px-6 font-medium text-slate-700">
-                        {karyawan.nik}
+                      <TableCell className="px-6">
+                        {getEmployeePhotoUrl(karyawan) ? (
+                          <img
+                            src={getEmployeePhotoUrl(karyawan)}
+                            alt={karyawan.nama}
+                            className="h-10 w-10 rounded-full object-cover border border-slate-200"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center">
+                            <span className="text-xs font-semibold text-blue-700">
+                              {getInitials(karyawan.nama)}
+                            </span>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="px-6">
                         <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0">
-                            <span className="text-blue-700 text-xs font-bold">
-                              {karyawan.nama
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .substring(0, 2)
-                                .toUpperCase()}
-                            </span>
-                          </div>
                           <span className="font-medium text-slate-900">
                             {karyawan.nama}
                           </span>
@@ -1119,34 +1191,8 @@ export default function KaryawanPage() {
                       <TableCell className="px-6">
                         {getJabatanBadge(karyawan.jabatan)}
                       </TableCell>
-                      <TableCell className="px-6">
-                        {karyawan.telepon ? (
-                          <div className="flex items-center gap-2 text-sm text-slate-600">
-                            <Phone className="h-3 w-3 text-slate-400" />
-                            {karyawan.telepon}
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic text-sm">
-                            Tidak ada
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="px-6">
-                        {karyawan.alamat ? (
-                          <div className="flex items-start gap-2 text-sm max-w-xs text-slate-600">
-                            <MapPin className="h-3 w-3 text-slate-400 mt-0.5 shrink-0" />
-                            <span className="line-clamp-2">
-                              {karyawan.alamat}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic text-sm">
-                            Tidak ada
-                          </span>
-                        )}
-                      </TableCell>
                       <TableCell className="px-6 text-slate-600 text-sm">
-                        {karyawan.createdAt}
+                        {formatDateIndonesia(karyawan.createdAt)}
                       </TableCell>
                       <TableCell className="px-6 text-center">
                         <div className="flex justify-center gap-2">
@@ -1173,7 +1219,7 @@ export default function KaryawanPage() {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={5}
                       className="px-6 h-24 text-center text-slate-500"
                     >
                       Data tidak ditemukan.

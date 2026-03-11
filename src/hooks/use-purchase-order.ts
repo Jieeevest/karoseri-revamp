@@ -19,6 +19,7 @@ export interface PurchaseOrder {
   supplierId: string;
   supplier: Supplier;
   status: "DRAFT" | "DIAJUKAN" | "DISETUJUI" | "DITOLAK" | "SELESAI";
+  alasanPenolakan?: string | null;
   total: number;
   items: PurchaseOrderItem[];
   createdAt: string;

@@ -47,6 +47,21 @@ interface DeleteConfirmationModalProps {
    * Optional name of the item being deleted (for better UX messaging)
    */
   itemName?: string;
+
+  /**
+   * Optional confirmation text requirement to enable delete
+   */
+  confirmText?: string;
+
+  /**
+   * Optional label for the confirmation input
+   */
+  confirmLabel?: string;
+
+  /**
+   * Optional placeholder for the confirmation input
+   */
+  confirmPlaceholder?: string;
 }
 
 /**
@@ -81,8 +96,12 @@ export function DeleteConfirmationModal({
   title = "Konfirmasi Hapus",
   description,
   itemName,
+  confirmText,
+  confirmLabel,
+  confirmPlaceholder,
 }: DeleteConfirmationModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmValue, setConfirmValue] = useState("");
 
   /**
    * Handles the delete confirmation action
@@ -104,12 +123,16 @@ export function DeleteConfirmationModal({
   const handleClose = () => {
     if (!isDeleting) {
       onClose();
+      setConfirmValue("");
     }
   };
 
   const defaultDescription = itemName
     ? `Apakah Anda yakin ingin menghapus "${itemName}"? Tindakan ini tidak dapat dibatalkan.`
     : "Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.";
+
+  const isConfirmMatch =
+    !confirmText || confirmValue.trim().toLowerCase() === confirmText.trim().toLowerCase();
 
   return (
     <AlertDialog open={isOpen} onOpenChange={handleClose}>
@@ -130,6 +153,23 @@ export function DeleteConfirmationModal({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
+        {confirmText && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">
+              {confirmLabel || "Ketik konfirmasi untuk melanjutkan"}
+            </label>
+            <input
+              value={confirmValue}
+              onChange={(event) => setConfirmValue(event.target.value)}
+              placeholder={confirmPlaceholder || confirmText}
+              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+            />
+            <p className="text-xs text-slate-500">
+              Ketik persis: <span className="font-semibold">{confirmText}</span>
+            </p>
+          </div>
+        )}
+
         <AlertDialogFooter className="gap-2 pt-4">
           <AlertDialogCancel
             onClick={handleClose}
@@ -140,7 +180,7 @@ export function DeleteConfirmationModal({
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
-            disabled={isDeleting}
+            disabled={isDeleting || !isConfirmMatch}
             className="bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md shadow-red-200 cursor-pointer min-w-[100px]"
           >
             {isDeleting ? (

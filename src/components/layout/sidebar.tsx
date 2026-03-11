@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { LoadingLink } from "@/components/ui/loading-link";
 import {
   Settings,
   Package,
@@ -106,6 +106,11 @@ const menuItemsRaw: MenuItem[] = [
         roles: [ROLES.SUPERADMIN, ROLES.GUDANG],
       },
       {
+        title: "Retur Barang",
+        href: "/barang/retur-barang",
+        roles: [ROLES.SUPERADMIN, ROLES.GUDANG, ROLES.PURCHASING],
+      },
+      {
         title: "Barang Keluar",
         href: "/barang/barang-keluar",
         roles: [ROLES.SUPERADMIN, ROLES.GUDANG, ROLES.PRODUKSI],
@@ -149,6 +154,11 @@ const menuItemsRaw: MenuItem[] = [
         roles: [ROLES.SUPERADMIN, ROLES.QC, ROLES.PRODUKSI],
       },
       {
+        title: "Form QC",
+        href: "/kendaraan/qc",
+        roles: [ROLES.SUPERADMIN, ROLES.QC],
+      },
+      {
         title: "Form Kendaraan Keluar",
         href: "/kendaraan/kendaraan-keluar",
         roles: [ROLES.SUPERADMIN, ROLES.QC, ROLES.PRODUKSI],
@@ -170,7 +180,7 @@ const menuItemsRaw: MenuItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const userRole = session?.user?.role as Role | undefined;
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
@@ -234,7 +244,34 @@ export function Sidebar() {
   const isChildActive = (item: any) =>
     item.submenus?.some((sub: any) => pathname === sub.href);
 
-  if (!session) return null; // Or a loading skeleton
+  if (status === "loading") {
+    return (
+      <div className="flex h-full w-72 flex-col bg-white text-slate-900 shadow-xl relative overflow-hidden font-sans border-r border-slate-200">
+        <div className="flex items-center px-6 h-20 border-b border-slate-100 relative z-10 shrink-0">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-10 h-10 rounded-xl bg-slate-200 animate-pulse" />
+            <div className="flex flex-col gap-2">
+              <div className="h-3 w-24 rounded bg-slate-200 animate-pulse" />
+              <div className="h-2 w-16 rounded bg-slate-200 animate-pulse" />
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 px-4 py-6 space-y-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-10 w-full rounded-xl bg-slate-200 animate-pulse"
+            />
+          ))}
+        </div>
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+          <div className="h-10 rounded-xl bg-slate-200 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) return null; // Not authenticated
 
   return (
     <div className="flex h-full w-72 flex-col bg-white text-slate-900 shadow-xl relative overflow-hidden font-sans border-r border-slate-200">
@@ -266,7 +303,7 @@ export function Sidebar() {
           return (
             <div key={item.title} className="mb-1">
               {item.href ? (
-                <Link
+                <LoadingLink
                   href={item.href}
                   className={cn(
                     "cursor-pointer group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ease-in-out relative overflow-hidden",
@@ -288,7 +325,7 @@ export function Sidebar() {
                   {active && (
                     <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-blue-500 opacity-100 z-0" />
                   )}
-                </Link>
+                </LoadingLink>
               ) : (
                 <button
                   onClick={() => toggleMenu(item.title)}
@@ -328,7 +365,7 @@ export function Sidebar() {
               >
                 <div className="ml-4 pl-4 border-l border-slate-200 space-y-1 py-1">
                   {item.submenus?.map((submenu) => (
-                    <Link
+                    <LoadingLink
                       key={submenu.href}
                       href={submenu.href}
                       className={cn(
@@ -347,7 +384,7 @@ export function Sidebar() {
                         )}
                       />
                       {submenu.title}
-                    </Link>
+                    </LoadingLink>
                   ))}
                 </div>
               </div>
