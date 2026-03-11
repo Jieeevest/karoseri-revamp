@@ -5,6 +5,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
+    const barangId = searchParams.get("barangId") || "";
+    const supplierId = searchParams.get("supplierId") || "";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const sortBy = searchParams.get("sortBy") || "createdAt";
@@ -13,27 +15,30 @@ export async function GET(request: NextRequest) {
       | "desc";
     const skip = (page - 1) * limit;
 
-    const where = search
-      ? {
-          OR: [
-            {
-              barang: {
-                nama: { contains: search, mode: "insensitive" },
-              },
-            },
-            {
-              barang: {
-                kode: { contains: search, mode: "insensitive" },
-              },
-            },
-            {
-              supplier: {
-                nama: { contains: search, mode: "insensitive" },
-              },
-            },
-          ],
-        }
-      : {};
+    const where: any = {};
+
+    if (search) {
+      where.OR = [
+        {
+          barang: {
+            nama: { contains: search, mode: "insensitive" },
+          },
+        },
+        {
+          barang: {
+            kode: { contains: search, mode: "insensitive" },
+          },
+        },
+        {
+          supplier: {
+            nama: { contains: search, mode: "insensitive" },
+          },
+        },
+      ];
+    }
+
+    if (barangId) where.barangId = barangId;
+    if (supplierId) where.supplierId = supplierId;
 
     const [riwayatList, totalCount] = await Promise.all([
       db.riwayatHarga.findMany({

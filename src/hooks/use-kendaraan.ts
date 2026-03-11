@@ -5,7 +5,7 @@ import { Customer } from "./use-customer";
 
 export interface Kendaraan {
   id: string;
-  nomorPolisi: string;
+  nomorPolisi?: string | null;
   nomorChasis: string;
   nomorMesin: string;
   merekId: string;

@@ -216,7 +216,7 @@ export default function DataKendaraanPage() {
   const handleEdit = (kendaraan: Kendaraan) => {
     setEditingKendaraan(kendaraan);
     setFormData({
-      nomorPolisi: kendaraan.nomorPolisi,
+      nomorPolisi: kendaraan.nomorPolisi || "",
       nomorChasis: kendaraan.nomorChasis,
       nomorMesin: kendaraan.nomorMesin,
       merekId: kendaraan.merekId,
@@ -307,7 +307,7 @@ export default function DataKendaraanPage() {
                       htmlFor="nomorPolisi"
                       className="text-slate-700 font-medium"
                     >
-                      Nomor Polisi
+                      Nomor Polisi (Opsional)
                     </Label>
                     <Input
                       id="nomorPolisi"
@@ -320,7 +320,6 @@ export default function DataKendaraanPage() {
                       }
                       className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                       placeholder="Contoh: B 1234 ABC"
-                      required
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -615,7 +614,7 @@ export default function DataKendaraanPage() {
                       className="hover:bg-blue-50/30 transition-colors border-slate-100 group cursor-default"
                     >
                       <TableCell className="px-6 font-medium text-slate-700">
-                        {kendaraan.nomorPolisi}
+                        {kendaraan.nomorPolisi || "-"}
                       </TableCell>
                       <TableCell className="px-6">
                         <div>
@@ -722,7 +721,7 @@ export default function DataKendaraanPage() {
                       Nomor Polisi
                     </Label>
                     <p className="font-semibold text-lg text-slate-900">
-                      {viewingKendaraan.nomorPolisi}
+                      {viewingKendaraan.nomorPolisi || "-"}
                     </p>
                   </div>
                   <div className="space-y-1">

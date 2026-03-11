@@ -240,9 +240,13 @@ export default function KendaraanMasukPage() {
     kendaraanId: "",
     tanggalMasuk: "",
     showroom: "",
+    namaJasaPengiriman: "",
+    namaSupir: "",
     customerId: "",
     projectId: "",
     nomorPolisi: "",
+    nomorChasis: "",
+    nomorMesin: "",
     merekId: "",
     tipeId: "",
     selectedPengerjaan: [] as string[],
@@ -318,6 +322,8 @@ export default function KendaraanMasukPage() {
       ...prev,
       kendaraanId,
       nomorPolisi: selected?.nomorPolisi || "",
+      nomorChasis: selected?.nomorChasis || "",
+      nomorMesin: selected?.nomorMesin || "",
       merekId: selected?.merekId || "",
       tipeId: selected?.tipeId || "",
       customerId: selected?.customerId || "",
@@ -337,13 +343,35 @@ export default function KendaraanMasukPage() {
         return;
       }
 
+      if (
+        !isService &&
+        (!formData.nomorChasis ||
+          !formData.nomorMesin ||
+          !formData.merekId ||
+          !formData.tipeId ||
+          !formData.customerId ||
+          !formData.namaSupir)
+      ) {
+        toast({
+          title: "Data belum lengkap",
+          description:
+            "Nomor chasis, nomor mesin, merek, tipe, customer, dan nama supir wajib diisi untuk pasang baru.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const payload = {
         jenisMasuk: formData.jenisMasuk,
         kendaraanId: isService ? formData.kendaraanId : undefined,
         tanggalMasuk: formData.tanggalMasuk,
         showroom: formData.showroom,
+        namaJasaPengiriman: formData.namaJasaPengiriman,
+        namaSupir: formData.namaSupir,
         customerId: formData.customerId,
         nomorPolisi: formData.nomorPolisi,
+        nomorChasis: formData.nomorChasis,
+        nomorMesin: formData.nomorMesin,
         merekId: formData.merekId,
         tipeId: formData.tipeId,
         projectId: formData.projectId || undefined,
@@ -385,9 +413,13 @@ export default function KendaraanMasukPage() {
       kendaraanId: "",
       tanggalMasuk: new Date().toISOString().split("T")[0],
       showroom: "",
+      namaJasaPengiriman: "",
+      namaSupir: "",
       customerId: "",
       projectId: "",
       nomorPolisi: "",
+      nomorChasis: "",
+      nomorMesin: "",
       merekId: "",
       tipeId: "",
       selectedPengerjaan: [],
@@ -728,6 +760,34 @@ export default function KendaraanMasukPage() {
                         </div>
                         <div className="grid items-center gap-2">
                           <Label
+                            htmlFor="nomorChasis"
+                            className="text-slate-700 font-medium"
+                          >
+                            Nomor Chasis
+                          </Label>
+                          <Input
+                            id="nomorChasis"
+                            value={formData.nomorChasis}
+                            readOnly
+                            className="rounded-xl border-slate-200 bg-slate-50"
+                          />
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="nomorMesin"
+                            className="text-slate-700 font-medium"
+                          >
+                            Nomor Mesin
+                          </Label>
+                          <Input
+                            id="nomorMesin"
+                            value={formData.nomorMesin}
+                            readOnly
+                            className="rounded-xl border-slate-200 bg-slate-50"
+                          />
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
                             htmlFor="merekTipe"
                             className="text-slate-700 font-medium"
                           >
@@ -759,7 +819,7 @@ export default function KendaraanMasukPage() {
                             htmlFor="nomorPolisi"
                             className="text-slate-700 font-medium"
                           >
-                            Nomor Polisi
+                            Nomor Polisi (Opsional)
                           </Label>
                           <Input
                             id="nomorPolisi"
@@ -772,7 +832,89 @@ export default function KendaraanMasukPage() {
                             }
                             placeholder="Contoh: B 1234 ABC"
                             className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                          />
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="nomorChasis"
+                            className="text-slate-700 font-medium"
+                          >
+                            Nomor Chasis
+                          </Label>
+                          <Input
+                            id="nomorChasis"
+                            value={formData.nomorChasis}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                nomorChasis: e.target.value,
+                              }))
+                            }
+                            placeholder="Nomor chasis"
+                            className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                             required
+                          />
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="nomorMesin"
+                            className="text-slate-700 font-medium"
+                          >
+                            Nomor Mesin
+                          </Label>
+                          <Input
+                            id="nomorMesin"
+                            value={formData.nomorMesin}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                nomorMesin: e.target.value,
+                              }))
+                            }
+                            placeholder="Nomor mesin"
+                            className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                            required
+                          />
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="namaSupir"
+                            className="text-slate-700 font-medium"
+                          >
+                            Nama Supir
+                          </Label>
+                          <Input
+                            id="namaSupir"
+                            value={formData.namaSupir}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                namaSupir: e.target.value,
+                              }))
+                            }
+                            placeholder="Nama supir"
+                            className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                            required
+                          />
+                        </div>
+                        <div className="grid items-center gap-2">
+                          <Label
+                            htmlFor="namaJasaPengiriman"
+                            className="text-slate-700 font-medium"
+                          >
+                            Nama Jasa Pengiriman (Opsional)
+                          </Label>
+                          <Input
+                            id="namaJasaPengiriman"
+                            value={formData.namaJasaPengiriman}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                namaJasaPengiriman: e.target.value,
+                              }))
+                            }
+                            placeholder="Nama jasa pengiriman"
+                            className="rounded-xl border-slate-200 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
                           />
                         </div>
                         <div className="grid items-center gap-2">
@@ -1241,6 +1383,22 @@ export default function KendaraanMasukPage() {
                     </Label>
                     <p className="font-semibold text-slate-700">
                       {viewingKendaraanMasuk.showroom}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Nama Supir
+                    </Label>
+                    <p className="font-semibold text-slate-700">
+                      {viewingKendaraanMasuk.namaSupir || "-"}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Jasa Pengiriman
+                    </Label>
+                    <p className="font-semibold text-slate-700">
+                      {viewingKendaraanMasuk.namaJasaPengiriman || "-"}
                     </p>
                   </div>
                   <div className="space-y-1">

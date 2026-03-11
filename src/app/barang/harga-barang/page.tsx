@@ -53,6 +53,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { useToast } from "@/hooks/use-toast";
+import { Combobox } from "@/components/ui/combobox";
 // import { formatCurrency } from "@/lib/utils"; // Removed as it doesn't exist
 
 export default function PriceMonitoringPage() {
@@ -68,6 +69,8 @@ export default function PriceMonitoringPage() {
   const [editingHarga, setEditingHarga] = useState<any | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingHarga, setDeletingHarga] = useState<any | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [viewingHarga, setViewingHarga] = useState<any | null>(null);
   const [formData, setFormData] = useState({
     barangId: "",
     supplierId: "",
@@ -101,6 +104,20 @@ export default function PriceMonitoringPage() {
     sortBy,
     sortOrder,
   });
+  const { data: detailRiwayatData, isLoading: isDetailLoading } =
+    useRiwayatHarga(
+      viewingHarga
+        ? {
+            page: 1,
+            limit: 50,
+            sortBy: "tanggal",
+            sortOrder: "desc",
+            barangId: viewingHarga.barangId,
+            supplierId: viewingHarga.supplierId,
+          }
+        : undefined,
+      { enabled: !!viewingHarga },
+    );
 
   const { data: barangData } = useBarang({ limit: 200 });
   const barangList = (barangData as any)?.data || [];
@@ -115,6 +132,7 @@ export default function PriceMonitoringPage() {
 
   const riwayatList = (queryData as any)?.data || [];
   const pagination = (queryData as any)?.pagination;
+  const detailRiwayatList = (detailRiwayatData as any)?.data || [];
 
   // Helper currency formatter if not imported or different
   const formatIDR = (amount: number) => {
@@ -168,6 +186,11 @@ export default function PriceMonitoringPage() {
     setIsDeleteModalOpen(true);
   };
 
+  const handleViewHistory = (harga: any) => {
+    setViewingHarga(harga);
+    setIsHistoryOpen(true);
+  };
+
   const handleDeleteConfirm = async () => {
     if (!deletingHarga) return;
     try {
@@ -196,6 +219,7 @@ export default function PriceMonitoringPage() {
         ...formData,
         harga: parseFloat(formData.harga),
       };
+      delete payload.adalahHargaTerbaik;
       if (!payload.kategoriId) {
         delete payload.kategoriId;
       }
@@ -336,9 +360,9 @@ export default function PriceMonitoringPage() {
                       <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                           <Label htmlFor="barangId">Barang</Label>
-                          <Select
+                          <Combobox
                             value={formData.barangId}
-                            onValueChange={(value) => {
+                            onChange={(value) => {
                               const selected = barangList.find(
                                 (b: any) => b.id === value,
                               );
@@ -350,65 +374,43 @@ export default function PriceMonitoringPage() {
                                   : prev.kategoriId,
                               }));
                             }}
-                          >
-                            <SelectTrigger className="rounded-lg border-slate-200">
-                              <SelectValue placeholder="Pilih barang" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {barangList.map((b: any) => (
-                                <SelectItem key={b.id} value={b.id}>
-                                  {b.kode} - {b.nama}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            options={barangList.map((b: any) => ({
+                              value: b.id,
+                              label: `${b.kode} - ${b.nama}`,
+                            }))}
+                            placeholder="Pilih barang"
+                            searchPlaceholder="Cari barang..."
+                          />
                         </div>
                         <div className="grid gap-2">
                           <Label htmlFor="supplierId">Supplier</Label>
-                          <Select
+                          <Combobox
                             value={formData.supplierId}
-                            onValueChange={(value) =>
+                            onChange={(value) =>
                               setFormData((prev) => ({
                                 ...prev,
                                 supplierId: value,
                               }))
                             }
-                          >
-                            <SelectTrigger className="rounded-lg border-slate-200">
-                              <SelectValue placeholder="Pilih supplier" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {supplierList.map((s: any) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                  {s.nama}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            options={supplierList.map((s: any) => ({
+                              value: s.id,
+                              label: s.nama,
+                            }))}
+                            placeholder="Pilih supplier"
+                            searchPlaceholder="Cari supplier..."
+                          />
                         </div>
                         <div className="grid gap-2">
                           <Label htmlFor="kategoriId">Kategori</Label>
-                          <Select
-                            value={formData.kategoriId}
-                            onValueChange={(value) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                kategoriId: value,
-                              }))
+                          <Input
+                            value={
+                              kategoriList.find(
+                                (k) => String(k.id) === formData.kategoriId,
+                              )?.nama || "Kategori otomatis"
                             }
-                            disabled
-                          >
-                            <SelectTrigger className="rounded-lg border-slate-200 bg-slate-50">
-                              <SelectValue placeholder="Kategori otomatis" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {kategoriList.map((k) => (
-                                <SelectItem key={k.id} value={String(k.id)}>
-                                  {k.nama}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            readOnly
+                            className="rounded-lg border-slate-200 bg-slate-50"
+                          />
                         </div>
                         <div className="grid gap-2">
                           <Label htmlFor="harga">Harga</Label>
@@ -432,16 +434,12 @@ export default function PriceMonitoringPage() {
                             id="adalahHargaTerbaik"
                             type="checkbox"
                             checked={formData.adalahHargaTerbaik}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                adalahHargaTerbaik: e.target.checked,
-                              }))
-                            }
+                            onChange={() => {}}
+                            disabled
                             className="h-4 w-4 rounded border-slate-300 text-blue-600"
                           />
                           <Label htmlFor="adalahHargaTerbaik">
-                            Tandai sebagai harga terbaik
+                            Harga terbaik otomatis (termurah per kategori)
                           </Label>
                         </div>
                       </div>
@@ -551,6 +549,14 @@ export default function PriceMonitoringPage() {
                       </TableCell>
                       <TableCell className="px-6 text-center">
                         <div className="flex justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewHistory(harga)}
+                            className="text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                          >
+                            View
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -804,6 +810,90 @@ export default function PriceMonitoringPage() {
         title="Hapus Harga Barang"
         description="Apakah Anda yakin ingin menghapus data harga ini?"
       />
+
+      <Dialog
+        open={isHistoryOpen}
+        onOpenChange={(open) => {
+          setIsHistoryOpen(open);
+          if (!open) setViewingHarga(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[720px] rounded-xl border-slate-100 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-slate-900">
+              Riwayat Harga Barang
+            </DialogTitle>
+            <DialogDescription className="text-slate-500">
+              {viewingHarga
+                ? `${viewingHarga.barang?.nama} • ${viewingHarga.supplier?.nama}`
+                : "Detail perubahan harga"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="border border-slate-100 rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="w-[140px]">Tanggal</TableHead>
+                  <TableHead className="text-right">Harga Lama</TableHead>
+                  <TableHead className="text-right">Harga Baru</TableHead>
+                  <TableHead className="text-right">Selisih</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isDetailLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-20 text-center">
+                      Memuat riwayat...
+                    </TableCell>
+                  </TableRow>
+                ) : detailRiwayatList.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-20 text-center">
+                      Belum ada riwayat perubahan.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  detailRiwayatList.map((log: any) => {
+                    const diff = log.hargaBaru - log.hargaLama;
+                    return (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-slate-600">
+                          {formatDateIndonesia(log.tanggal)}
+                        </TableCell>
+                        <TableCell className="text-right text-slate-500">
+                          {log.hargaLama ? formatIDR(log.hargaLama) : "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-slate-900">
+                          {formatIDR(log.hargaBaru)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span
+                            className={
+                              diff > 0 ? "text-red-600" : "text-green-600"
+                            }
+                          >
+                            {diff > 0 ? "+" : ""}
+                            {formatIDR(diff)}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsHistoryOpen(false)}
+            >
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

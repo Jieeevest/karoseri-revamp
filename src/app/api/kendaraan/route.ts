@@ -82,16 +82,29 @@ export async function POST(request: NextRequest) {
       status, // Optional, defaults to MASUK
     } = body;
 
-    if (!nomorPolisi || !nomorChasis || !merekId || !customerId) {
+    if (!nomorChasis || !nomorMesin || !merekId || !tipeId || !customerId) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 },
       );
     }
 
+    if (nomorPolisi) {
+      const existingVehicle = await db.kendaraan.findFirst({
+        where: { nomorPolisi },
+      });
+
+      if (existingVehicle) {
+        return NextResponse.json(
+          { success: false, error: "Nomor polisi sudah terdaftar" },
+          { status: 409 },
+        );
+      }
+    }
+
     const newItem = await db.kendaraan.create({
       data: {
-        nomorPolisi,
+        nomorPolisi: nomorPolisi || null,
         nomorChasis,
         nomorMesin,
         merekId,

@@ -93,8 +93,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { barangId, supplierId, kategoriId, harga, adalahHargaTerbaik } =
-      body;
+    const { barangId, supplierId, kategoriId, harga } = body;
 
     if (!barangId || !supplierId || harga === undefined) {
       return NextResponse.json(
@@ -121,14 +120,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If marked as best price, unset others for the same barang
-    if (adalahHargaTerbaik) {
-      await db.hargaBarang.updateMany({
-        where: { barangId },
-        data: { adalahHargaTerbaik: false },
-      });
-    }
-
     const barang = await db.barang.findUnique({ where: { id: barangId } });
     if (!barang) {
       return NextResponse.json(
@@ -147,7 +138,7 @@ export async function POST(request: NextRequest) {
         supplierId,
         kategoriId: resolvedKategoriId,
         harga: parseFloat(harga),
-        adalahHargaTerbaik: adalahHargaTerbaik || false,
+        adalahHargaTerbaik: false,
       },
       include: {
         barang: true,
@@ -166,6 +157,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Auto-mark best price by category (lowest price)
+    await updateBestPriceByKategori(resolvedKategoriId);
+
     return NextResponse.json({
       success: true,
       data: newHarga,
@@ -183,8 +177,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, barangId, supplierId, kategoriId, harga, adalahHargaTerbaik } =
-      body;
+    const { id, barangId, supplierId, kategoriId, harga } = body;
 
     if (!id || !barangId || !supplierId || harga === undefined) {
       return NextResponse.json(
@@ -213,13 +206,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (adalahHargaTerbaik) {
-      await db.hargaBarang.updateMany({
-        where: { barangId, id: { not: id } },
-        data: { adalahHargaTerbaik: false },
-      });
-    }
-
     const currentHarga = await db.hargaBarang.findUnique({
       where: { id },
     });
@@ -246,7 +232,7 @@ export async function PUT(request: NextRequest) {
         supplierId,
         kategoriId: resolvedKategoriId,
         harga: newPrice,
-        adalahHargaTerbaik: adalahHargaTerbaik || false,
+        adalahHargaTerbaik: false,
       },
       include: {
         barang: true,
@@ -266,6 +252,9 @@ export async function PUT(request: NextRequest) {
         },
       });
     }
+
+    // Auto-mark best price by category (lowest price)
+    await updateBestPriceByKategori(resolvedKategoriId);
 
     return NextResponse.json({
       success: true,
@@ -293,9 +282,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await db.hargaBarang.delete({
+    const deleted = await db.hargaBarang.delete({
       where: { id },
     });
+
+    if (deleted?.kategoriId) {
+      await updateBestPriceByKategori(deleted.kategoriId);
+    }
 
     return NextResponse.json({
       success: true,
@@ -308,4 +301,29 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+async function updateBestPriceByKategori(kategoriId: number) {
+  const hargaList = await db.hargaBarang.findMany({
+    where: { kategoriId },
+    orderBy: { harga: "asc" },
+  });
+
+  if (hargaList.length === 0) return;
+
+  const minHarga = hargaList[0].harga;
+  const bestIds = hargaList
+    .filter((h) => h.harga === minHarga)
+    .map((h) => h.id);
+
+  await db.$transaction([
+    db.hargaBarang.updateMany({
+      where: { kategoriId },
+      data: { adalahHargaTerbaik: false },
+    }),
+    db.hargaBarang.updateMany({
+      where: { id: { in: bestIds } },
+      data: { adalahHargaTerbaik: true },
+    }),
+  ]);
 }

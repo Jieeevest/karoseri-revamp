@@ -70,9 +70,13 @@ export async function POST(request: NextRequest) {
       tanggalMasuk,
       jenisMasuk,
       showroom,
+      namaJasaPengiriman,
+      namaSupir,
       customerId,
       kendaraanId,
       nomorPolisi,
+      nomorChasis,
+      nomorMesin,
       merekId,
       tipeId,
       pengerjaan,
@@ -139,7 +143,14 @@ export async function POST(request: NextRequest) {
         data: { status: "MASUK" },
       });
     } else {
-      if (!customerId || !nomorPolisi || !merekId || !tipeId) {
+      if (
+        !customerId ||
+        !nomorChasis ||
+        !nomorMesin ||
+        !merekId ||
+        !tipeId ||
+        !namaSupir
+      ) {
         return NextResponse.json(
           { success: false, error: "Field wajib harus diisi" },
           { status: 400 },
@@ -157,26 +168,28 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const existingVehicle = await db.kendaraan.findUnique({
-        where: { nomorPolisi },
-      });
+      if (nomorPolisi) {
+        const existingVehicle = await db.kendaraan.findUnique({
+          where: { nomorPolisi },
+        });
 
-      if (existingVehicle) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "Nomor polisi sudah terdaftar. Gunakan jenis Service untuk kendaraan yang sudah ada.",
-          },
-          { status: 409 },
-        );
+        if (existingVehicle) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                "Nomor polisi sudah terdaftar. Gunakan jenis Service untuk kendaraan yang sudah ada.",
+            },
+            { status: 409 },
+          );
+        }
       }
 
       kendaraanRecord = await db.kendaraan.create({
         data: {
-          nomorPolisi,
-          nomorChasis: "",
-          nomorMesin: "",
+          nomorPolisi: nomorPolisi || null,
+          nomorChasis,
+          nomorMesin,
           merekId,
           tipeId,
           customerId,
@@ -191,6 +204,8 @@ export async function POST(request: NextRequest) {
         jenisMasuk: resolvedJenisMasuk,
         tanggalMasuk: new Date(tanggalMasuk),
         showroom: showroom.trim(),
+        namaJasaPengiriman: namaJasaPengiriman?.trim() || null,
+        namaSupir: namaSupir?.trim() || null,
         customerId: resolvedCustomerId,
         kendaraanId: kendaraanRecord.id,
       },

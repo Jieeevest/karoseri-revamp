@@ -79,18 +79,34 @@ export async function POST(request: NextRequest) {
     // Auto-generate code if not provided
     if (!kode) {
       kode = await generateNextCode("BRG", "barang", "kode");
-    }
+      let guard = 0;
+      // Ensure uniqueness even if there are concurrent inserts or legacy formats
+      while (guard < 50) {
+        const existingKode = await db.barang.findFirst({
+          where: { kode: { equals: kode, mode: "insensitive" } },
+        });
+        if (!existingKode) break;
+        kode = incrementKode(kode, "BRG");
+        guard += 1;
+      }
+      if (guard >= 50) {
+        return NextResponse.json(
+          { success: false, error: "Gagal membuat kode barang unik" },
+          { status: 500 },
+        );
+      }
+    } else {
+      // Check if kode already exists when provided manually
+      const existingKode = await db.barang.findFirst({
+        where: { kode: { equals: kode, mode: "insensitive" } },
+      });
 
-    // Check if kode already exists
-    const existingKode = await db.barang.findFirst({
-      where: { kode: { equals: kode, mode: "insensitive" } },
-    });
-
-    if (existingKode) {
-      return NextResponse.json(
-        { success: false, error: "Kode barang sudah ada" },
-        { status: 400 },
-      );
+      if (existingKode) {
+        return NextResponse.json(
+          { success: false, error: "Kode barang sudah ada" },
+          { status: 400 },
+        );
+      }
     }
 
     const newBarang = await db.barang.create({
@@ -120,6 +136,16 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function incrementKode(kode: string, prefix: string) {
+  const match = kode.match(/(\d+)$/);
+  if (!match) {
+    return `${prefix}-0001`;
+  }
+  const digits = match[1].length;
+  const nextNumber = parseInt(match[1], 10) + 1;
+  return `${prefix}-${nextNumber.toString().padStart(digits, "0")}`;
 }
 
 export async function PUT(request: NextRequest) {

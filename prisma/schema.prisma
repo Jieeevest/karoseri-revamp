@@ -376,7 +376,7 @@ model Customer {
 
 model Kendaraan {
   id              String            @id @default(cuid())
-  nomorPolisi     String            @unique
+  nomorPolisi     String?           @unique
   nomorChasis     String
   nomorMesin      String
   merekId         String
@@ -403,6 +403,8 @@ model KendaraanMasuk {
   jenisMasuk      JenisMasuk        @default(PASANG_BARU)
   tanggalMasuk    DateTime
   showroom        String
+  namaJasaPengiriman String?
+  namaSupir       String?
   customerId      String
   customer        Customer          @relation(fields: [customerId], references: [id])
   kendaraanId     String
